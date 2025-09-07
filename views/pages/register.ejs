@@ -1,0 +1,591 @@
+<!-- Register View -->
+    <div id="register-view" class="view" style="display: none;">
+        <div class="auth-container">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-8 col-lg-6">
+                        <div class="auth-card">
+                            <div class="text-center mb-4">
+                                <i class="fab fa-whatsapp fs-1 text-success mb-3"></i>
+                                <h2>Create Account</h2>
+                                <p class="text-muted">Start your WhatsApp API journey</p>
+                            </div>
+                            <form id="register-form" action="/auth/register" method="POST" novalidate>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Full Name</label>
+                                            <input type="text" class="form-control" id="register-name" name="name" required>
+                                            <div class="invalid-feedback">Please enter your full name.</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Email Address</label>
+                                            <input type="email" class="form-control" id="register-email" name="email" required>
+                                            <div class="invalid-feedback">Please enter a valid email address.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="register-password" name="password" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggle-register-password">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="password-strength mt-2">
+                                        <div class="progress" style="height: 4px;">
+                                            <div class="progress-bar" id="password-strength-bar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="text-muted" id="password-strength-text">Password strength</small>
+                                    </div>
+                                    <div class="form-text">
+                                        <small>Password must contain at least 8 characters, including uppercase, lowercase, number, and special character.</small>
+                                    </div>
+                                    <div class="invalid-feedback">Password must be at least 8 characters long.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="register-confirm-password" name="confirmPassword" required>
+                                    <div class="invalid-feedback">Passwords do not match.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Select Plan</label>
+                                    <select class="form-select" id="register-plan" name="plan">
+                                        <option value="free">Free - $0/month</option>
+                                        <option value="basic" selected>Basic - $5/month (Most Popular)</option>
+                                        <option value="premium">Premium - $20/month</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="terms" name="agreeTerms" required>
+                                    <label class="form-check-label" for="terms">
+                                        I agree to the <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#termsModal">Terms of Service</a> 
+                                        and <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>
+                                    </label>
+                                    <div class="invalid-feedback">You must agree to the terms and conditions.</div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="marketing" name="marketingEmails">
+                                    <label class="form-check-label" for="marketing">
+                                        I'd like to receive product updates and marketing emails
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 mb-3" id="register-btn">
+                                    <i class="fas fa-user-plus me-2"></i>Create Account
+                                </button>
+                                
+                                <div id="register-error" class="alert alert-danger d-none" role="alert"></div>
+                                <div id="register-success" class="alert alert-success d-none" role="alert"></div>
+                            </form>
+                            <div class="text-center">
+                                <p>Already have an account? 
+                                    <a href="#" class="text-decoration-none" data-view="login">Sign in</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Verification Modal -->
+    <div class="modal fade" id="emailVerificationModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-envelope-check me-2"></i>Verify Your Email
+                    </h5>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-envelope-open-text fa-3x text-primary mb-3"></i>
+                        <h6>Check Your Email</h6>
+                        <p class="text-muted">We've sent a verification link to <strong id="verification-email"></strong></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Enter Verification Code</label>
+                        <input type="text" class="form-control text-center" id="verification-code" placeholder="Enter 6-digit code" maxlength="6">
+                    </div>
+                    <div class="alert alert-success d-none" id="verification-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Email verified successfully!
+                    </div>
+                    <div class="alert alert-danger d-none" id="verification-error">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="verification-error-message"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="resend-code">
+                        <i class="fas fa-redo me-2"></i>Resend Code
+                    </button>
+                    <button type="button" class="btn btn-primary" id="verify-email">
+                        <i class="fas fa-check me-2"></i>Verify Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div class="modal fade" id="termsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Terms of Service</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                    <h6>1. Acceptance of Terms</h6>
+                    <p>By using our WhatsApp API service, you agree to these terms and conditions.</p>
+                    
+                    <h6>2. Service Description</h6>
+                    <p>We provide WhatsApp Business API integration services for businesses to communicate with their customers.</p>
+                    
+                    <h6>3. User Responsibilities</h6>
+                    <ul>
+                        <li>Comply with WhatsApp's Business Policy</li>
+                        <li>Not send spam or unsolicited messages</li>
+                        <li>Respect user privacy and data protection laws</li>
+                        <li>Use the service only for legitimate business purposes</li>
+                    </ul>
+                    
+                    <h6>4. Service Limitations</h6>
+                    <p>Message limits and API rate limits apply based on your selected plan.</p>
+                    
+                    <h6>5. Payment Terms</h6>
+                    <p>Subscription fees are billed monthly or annually. Refunds are subject to our refund policy.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div class="modal fade" id="privacyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Privacy Policy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                    <h6>1. Information We Collect</h6>
+                    <p>We collect information you provide directly, such as account details and API usage data.</p>
+                    
+                    <h6>2. How We Use Information</h6>
+                    <ul>
+                        <li>Provide and maintain our services</li>
+                        <li>Process transactions and send notifications</li>
+                        <li>Improve our services and user experience</li>
+                        <li>Comply with legal obligations</li>
+                    </ul>
+                    
+                    <h6>3. Information Sharing</h6>
+                    <p>We do not sell or rent your personal information. We may share data with service providers and as required by law.</p>
+                    
+                    <h6>4. Data Security</h6>
+                    <p>We implement appropriate security measures to protect your information against unauthorized access.</p>
+                    
+                    <h6>5. Your Rights</h6>
+                    <p>You have the right to access, update, or delete your personal information.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Welcome Modal -->
+    <div class="modal fade" id="welcomeModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-rocket me-2"></i>Welcome to WhatsApp API Service!
+                    </h5>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h4>Account Created Successfully!</h4>
+                        <p class="text-muted">Let's get you started with a quick setup</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="fas fa-mobile-alt fa-2x text-primary mb-2"></i>
+                                    <h6>Step 1</h6>
+                                    <small>Connect WhatsApp</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="fas fa-key fa-2x text-warning mb-2"></i>
+                                    <h6>Step 2</h6>
+                                    <small>Get API Keys</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <i class="fas fa-paper-plane fa-2x text-success mb-2"></i>
+                                    <h6>Step 3</h6>
+                                    <small>Send Messages</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" id="skip-onboarding">Skip for Now</button>
+                    <button type="button" class="btn btn-primary" id="start-onboarding">
+                        <i class="fas fa-arrow-right me-2"></i>Get Started
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .password-strength .progress-bar {
+            transition: all 0.3s ease;
+        }
+        .strength-weak { background-color: #dc3545; }
+        .strength-fair { background-color: #fd7e14; }
+        .strength-good { background-color: #ffc107; }
+        .strength-strong { background-color: #198754; }
+        
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        .form-control.is-valid {
+            border-color: #198754;
+        }
+        .invalid-feedback {
+            display: block;
+        }
+    </style>
+
+    <script>
+        // Enhanced form validation
+        document.getElementById('register-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('register-name');
+            const email = document.getElementById('register-email');
+            const password = document.getElementById('register-password');
+            const confirmPassword = document.getElementById('register-confirm-password');
+            const plan = document.getElementById('register-plan');
+            const terms = document.getElementById('terms');
+            const marketingEmails = document.getElementById('marketing');
+            let isValid = true;
+            
+            // Clear previous validation and messages
+            [name, email, password, confirmPassword].forEach(field => {
+                field.classList.remove('is-invalid', 'is-valid');
+                const feedback = field.parentNode.querySelector('.invalid-feedback');
+                if (feedback) feedback.remove();
+            });
+            
+            document.getElementById('register-error').classList.add('d-none');
+            document.getElementById('register-success').classList.add('d-none');
+            
+            // Name validation
+            if (!name.value.trim()) {
+                showFieldError(name, 'Full name is required');
+                isValid = false;
+            } else if (name.value.trim().length < 2) {
+                showFieldError(name, 'Name must be at least 2 characters');
+                isValid = false;
+            } else {
+                name.classList.add('is-valid');
+            }
+            
+            // Email validation
+            if (!email.value) {
+                showFieldError(email, 'Email is required');
+                isValid = false;
+            } else if (!isValidEmail(email.value)) {
+                showFieldError(email, 'Please enter a valid email address');
+                isValid = false;
+            } else {
+                email.classList.add('is-valid');
+            }
+            
+            // Password validation
+            const passwordStrength = checkPasswordStrength(password.value);
+            if (!password.value) {
+                showFieldError(password, 'Password is required');
+                isValid = false;
+            } else if (passwordStrength.score < 3) {
+                showFieldError(password, 'Password is too weak. Please follow the requirements.');
+                isValid = false;
+            } else {
+                password.classList.add('is-valid');
+            }
+            
+            // Confirm password validation
+            if (!confirmPassword.value) {
+                showFieldError(confirmPassword, 'Please confirm your password');
+                isValid = false;
+            } else if (password.value !== confirmPassword.value) {
+                showFieldError(confirmPassword, 'Passwords do not match');
+                isValid = false;
+            } else {
+                confirmPassword.classList.add('is-valid');
+            }
+            
+            // Terms validation
+            if (!terms.checked) {
+                showRegisterError('Please accept the Terms of Service and Privacy Policy');
+                isValid = false;
+            }
+            
+            if (isValid) {
+                // Show loading state
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Account...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch('/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: name.value.trim(),
+                            email: email.value.trim(),
+                            password: password.value,
+                            plan: plan.value,
+                            marketingEmails: marketingEmails.checked
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        showRegisterSuccess('Account created successfully! Please check your email to verify your account.');
+                        
+                        // Show email verification modal
+                        setTimeout(() => {
+                            document.getElementById('verification-email').textContent = email.value;
+                            new bootstrap.Modal(document.getElementById('emailVerificationModal')).show();
+                        }, 1500);
+                    } else {
+                        showRegisterError(data.message || 'Registration failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    showRegisterError('Network error. Please check your connection and try again.');
+                } finally {
+                    // Reset button state
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
+        });
+        
+        function showRegisterError(message) {
+            const errorDiv = document.getElementById('register-error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+        }
+        
+        function showRegisterSuccess(message) {
+            const successDiv = document.getElementById('register-success');
+            successDiv.textContent = message;
+            successDiv.classList.remove('d-none');
+        }
+        
+        // Password strength checker
+        document.getElementById('register-password').addEventListener('input', function() {
+            const strength = checkPasswordStrength(this.value);
+            const bar = document.getElementById('password-strength-bar');
+            const text = document.getElementById('password-strength-text');
+            
+            bar.style.width = (strength.score * 25) + '%';
+            bar.className = 'progress-bar ' + strength.class;
+            text.textContent = strength.text;
+        });
+        
+        // Email verification
+        document.getElementById('verify-email').addEventListener('click', function() {
+            const code = document.getElementById('verification-code').value;
+            const successAlert = document.getElementById('verification-success');
+            const errorAlert = document.getElementById('verification-error');
+            
+            // Hide alerts
+            successAlert.classList.add('d-none');
+            errorAlert.classList.add('d-none');
+            
+            if (!code || code.length !== 6) {
+                errorAlert.classList.remove('d-none');
+                document.getElementById('verification-error-message').textContent = 'Please enter a valid 6-digit code';
+                return;
+            }
+            
+            // Simulate verification
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Verify Email';
+                this.disabled = false;
+                successAlert.classList.remove('d-none');
+                
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('emailVerificationModal')).hide();
+                    new bootstrap.Modal(document.getElementById('welcomeModal')).show();
+                }, 1500);
+            }, 1500);
+        });
+        
+        // Resend verification code
+        document.getElementById('resend-code').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-redo me-2"></i>Resend Code';
+                this.disabled = false;
+                alert('Verification code sent!');
+            }, 1000);
+        });
+        
+        // Onboarding actions
+        document.getElementById('start-onboarding').addEventListener('click', function() {
+            bootstrap.Modal.getInstance(document.getElementById('welcomeModal')).hide();
+            // Redirect to dashboard or onboarding flow
+            alert('Redirecting to dashboard...');
+        });
+        
+        document.getElementById('skip-onboarding').addEventListener('click', function() {
+            bootstrap.Modal.getInstance(document.getElementById('welcomeModal')).hide();
+            alert('Welcome! You can access the onboarding from your dashboard anytime.');
+        });
+        
+        // Email verification reminder
+        function showEmailVerificationReminder(email) {
+            const reminderHtml = `
+                <div class="alert alert-info mt-3" id="email-verification-reminder">
+                    <i class="fas fa-envelope me-2"></i>
+                    <strong>Email Verification Required</strong><br>
+                    We've sent a verification email to <strong>${email}</strong>. 
+                    Please check your inbox and click the verification link to activate your account.
+                    <br><br>
+                    <button class="btn btn-sm btn-outline-primary" onclick="resendVerificationEmail('${email}')">
+                        <i class="fas fa-paper-plane me-1"></i>Resend Verification Email
+                    </button>
+                </div>
+            `;
+            
+            const successAlert = document.getElementById('register-success');
+            successAlert.innerHTML = reminderHtml;
+            successAlert.classList.remove('d-none');
+        }
+        
+        // Resend verification email
+        window.resendVerificationEmail = async function(email) {
+            try {
+                const response = await fetch('/auth/resend-verification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showRegisterSuccess('Verification email sent successfully!');
+                } else {
+                    showRegisterError(data.message || 'Error sending verification email.');
+                }
+            } catch (error) {
+                showRegisterError('Error sending verification email. Please try again.');
+            }
+        }
+        
+        // Password toggle
+        document.getElementById('toggle-register-password').addEventListener('click', function() {
+            const passwordField = document.getElementById('register-password');
+            const icon = this.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+        
+        // Utility functions
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        function showFieldError(field, message) {
+            field.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = message;
+            field.parentNode.appendChild(feedback);
+        }
+        
+        function checkPasswordStrength(password) {
+            let score = 0;
+            let feedback = [];
+            
+            if (password.length >= 8) score++;
+            else feedback.push('at least 8 characters');
+            
+            if (/[a-z]/.test(password)) score++;
+            else feedback.push('lowercase letter');
+            
+            if (/[A-Z]/.test(password)) score++;
+            else feedback.push('uppercase letter');
+            
+            if (/[0-9]/.test(password)) score++;
+            else feedback.push('number');
+            
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+            else feedback.push('special character');
+            
+            const strength = {
+                0: { text: 'Very Weak', class: 'strength-weak' },
+                1: { text: 'Weak', class: 'strength-weak' },
+                2: { text: 'Fair', class: 'strength-fair' },
+                3: { text: 'Good', class: 'strength-good' },
+                4: { text: 'Strong', class: 'strength-strong' },
+                5: { text: 'Very Strong', class: 'strength-strong' }
+            };
+            
+            return {
+                score: score,
+                text: strength[score].text,
+                class: strength[score].class,
+                feedback: feedback
+            };
+        }
+    </script>
+

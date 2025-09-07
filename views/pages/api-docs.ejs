@@ -1,0 +1,616 @@
+<!-- API Documentation View -->
+    <div id="api-docs-view" class="view" style="display: none;">
+        <div class="docs-container">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="docs-sidebar">
+                            <h5>API Documentation</h5>
+                            <nav class="docs-nav">
+                                <a href="#authentication">Authentication</a>
+                                <a href="#sessions">Sessions</a>
+                                <a href="#messages">Messages</a>
+                                <a href="#webhooks">Webhooks</a>
+                                <a href="#rate-limiting">Rate Limiting</a>
+                                <a href="#error-codes">Error Codes</a>
+                                <a href="#sdks">SDKs & Libraries</a>
+                                <a href="#testing">API Testing</a>
+                                <a href="#examples">Code Examples</a>
+                            </nav>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="docs-content">
+                            <h1>API MESSINGIN Documentation</h1>
+                            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Base URL</strong><br>
+                                    <code><%= baseUrl %></code>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" type="button">Copy</button>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <i class="fas fa-key me-2"></i>
+                                <strong>Authentication:</strong> Include your API key in the <code>Authorization</code> header as <code>Bearer YOUR_API_KEY</code>
+                                <% if (user && user.apiKey) { %>
+                                <br><small class="text-muted">Your API Key: <code><%= user.apiKey.substring(0, 8) %>...</code></small>
+                                <% } else if (user) { %>
+                                <br><small class="text-muted"><a href="/dashboard" class="text-decoration-none">Generate your API key in the dashboard</a></small>
+                                <% } else { %>
+                                <br><small class="text-muted"><a href="/login" class="text-decoration-none">Login to get your API key</a></small>
+                                <% } %>
+                            </div>
+                            
+                            <section id="authentication">
+                                <h2>Authentication</h2>
+                                <p>All API requests must include your API key in the Authorization header.</p>
+                                <pre><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Keep your API key secret. Rotate immediately if exposed.
+                                </div>
+                            </section>
+
+                            <section id="sessions">
+                                <h2>Sessions</h2>
+                                <h3>Create Session</h3>
+                                <div class="api-endpoint">
+                                    <span class="method post">POST</span>
+                                    <span class="url">/api/v1/sessions</span>
+                                </div>
+                                <p>Creates a new WhatsApp session and returns a QR code for scanning.</p>
+                                <pre><code>{
+  "sessionId": "session_123",
+  "qrCode": "data:image/png;base64,..."
+}</code></pre>
+                                <h4>cURL</h4>
+                                <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.messingin.com/v1/sessions</code></pre>
+                            </section>
+
+                            <section id="messages">
+                                <h2>Messages</h2>
+                                <h3>Send Message</h3>
+                                <div class="api-endpoint">
+                                    <span class="method post">POST</span>
+                                    <span class="url">/api/v1/messages/send</span>
+                                </div>
+                                <p>Sends a WhatsApp message to the specified number.</p>
+                                <h4>Parameters</h4>
+                                <ul>
+                                    <li><code>sessionId</code> (string, required) - Session ID</li>
+                                    <li><code>to</code> (string, required) - Recipient phone number</li>
+                                    <li><code>message</code> (string, required) - Message text</li>
+                                </ul>
+                                <pre><code>{
+  "sessionId": "session_123",
+  "to": "+1234567890",
+  "message": "Hello from WhatsApp API!"
+}</code></pre>
+                                <h4>cURL</h4>
+                                <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId":"session_123","to":"+1234567890","message":"Hello"}' \
+  https://api.messingin.com/v1/messages/send</code></pre>
+                            </section>
+                            <section id="webhooks">
+                                <h2>Webhooks</h2>
+                                <p>Receive message events by configuring a webhook URL in your dashboard.</p>
+                                <h4>Sample payload</h4>
+                                <pre><code>{
+  "event": "message.delivered",
+  "data": {
+    "id": "msg_001",
+    "to": "+1234567890",
+    "timestamp": "2025-09-02T14:30:00Z"
+  }
+}</code></pre>
+                            </section>
+
+                            <section id="examples">
+                                <h2>Code Examples</h2>
+                                <h3>JavaScript</h3>
+                                <pre><code>const response = await fetch('https://api.messingin.com/v1/messages/send', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    sessionId: 'your_session_id',
+    to: '+1234567890',
+    message: 'Hello World!'
+  })
+});
+
+const result = await response.json();
+console.log(result);</code></pre>
+
+                                <h3>Python</h3>
+                                <pre><code>import requests
+
+    url = "https://api.messingin.com/v1/messages/send"
+headers = {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+}
+data = {
+    "sessionId": "your_session_id",
+    "to": "+1234567890",
+    "message": "Hello World!"
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())</code></pre>
+                            </section>
+                        </div>
+                        
+                        <!-- Interactive API Testing -->
+                        <div class="mt-4">
+                            <div class="card border-primary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="fas fa-play-circle me-2"></i>Try It Out</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">Test this endpoint with your API key:</p>
+                                    <button class="btn btn-success me-2" onclick="testEndpoint('/api/v1/sessions', 'POST')">
+                                        <i class="fas fa-play me-1"></i>Test Create Session
+                                    </button>
+                                    <button class="btn btn-success" onclick="testEndpoint('/api/v1/messages/send', 'POST', {sessionId: 'test_session', to: '+1234567890', message: 'Hello World!'})">
+                                        <i class="fas fa-play me-1"></i>Test Send Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rate Limiting Section -->
+                        <div id="rate-limiting" class="api-section" style="display: none;">
+                            <h2>Rate Limiting</h2>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Rate Limits:</strong> All API endpoints are subject to rate limiting to ensure fair usage.
+                            </div>
+                            
+                            <h4>Current Limits</h4>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Plan</th>
+                                            <th>Requests per Minute</th>
+                                            <th>Requests per Hour</th>
+                                            <th>Burst Limit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Free</td>
+                                            <td>10</td>
+                                            <td>100</td>
+                                            <td>20</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Basic</td>
+                                            <td>60</td>
+                                            <td>1,000</td>
+                                            <td>100</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Premium</td>
+                                            <td>300</td>
+                                            <td>10,000</td>
+                                            <td>500</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h4>Rate Limit Headers</h4>
+                            <p>Every API response includes rate limit information in the headers:</p>
+                            <pre><code>X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 59
+X-RateLimit-Reset: 1640995200</code></pre>
+
+                            <h4>Handling Rate Limits</h4>
+                            <p>When you exceed the rate limit, you'll receive a <code>429 Too Many Requests</code> response:</p>
+                            <pre><code>{
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Try again in 60 seconds.",
+    "retry_after": 60
+  }
+}</code></pre>
+                        </div>
+
+                        <!-- Error Codes Section -->
+                        <div id="error-codes" class="api-section" style="display: none;">
+                            <h2>Error Codes</h2>
+                            <p>The WhatsApp API uses conventional HTTP response codes to indicate success or failure of requests.</p>
+
+                            <h4>HTTP Status Codes</h4>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="card border-success">
+                                        <div class="card-header bg-success text-white">
+                                            <h5 class="mb-0">2xx Success</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled">
+                                                <li><strong>200 OK</strong> - Request successful</li>
+                                                <li><strong>201 Created</strong> - Resource created successfully</li>
+                                                <li><strong>204 No Content</strong> - Request successful, no content returned</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-warning">
+                                        <div class="card-header bg-warning text-dark">
+                                            <h5 class="mb-0">4xx Client Errors</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled">
+                                                <li><strong>400 Bad Request</strong> - Invalid request format</li>
+                                                <li><strong>401 Unauthorized</strong> - Invalid or missing API key</li>
+                                                <li><strong>403 Forbidden</strong> - Insufficient permissions</li>
+                                                <li><strong>404 Not Found</strong> - Resource not found</li>
+                                                <li><strong>429 Too Many Requests</strong> - Rate limit exceeded</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-4 mt-2">
+                                <div class="col-md-6">
+                                    <div class="card border-danger">
+                                        <div class="card-header bg-danger text-white">
+                                            <h5 class="mb-0">5xx Server Errors</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <ul class="list-unstyled">
+                                                <li><strong>500 Internal Server Error</strong> - Server error</li>
+                                                <li><strong>502 Bad Gateway</strong> - WhatsApp service unavailable</li>
+                                                <li><strong>503 Service Unavailable</strong> - Temporary service outage</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-info">
+                                        <div class="card-header bg-info text-white">
+                                            <h5 class="mb-0">Error Response Format</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <pre><code>{
+  "error": {
+    "code": "INVALID_PHONE_NUMBER",
+    "message": "Phone number format is invalid",
+    "details": {
+      "field": "to",
+      "value": "invalid-number"
+    }
+  }
+}</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4>Common Error Codes</h4>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Error Code</th>
+                                            <th>Description</th>
+                                            <th>Resolution</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>INVALID_API_KEY</code></td>
+                                            <td>The provided API key is invalid or expired</td>
+                                            <td>Check your API key in the dashboard</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>SESSION_NOT_FOUND</code></td>
+                                            <td>The specified session ID doesn't exist</td>
+                                            <td>Create a new session or use valid session ID</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>INVALID_PHONE_NUMBER</code></td>
+                                            <td>Phone number format is incorrect</td>
+                                            <td>Use international format (+1234567890)</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>MESSAGE_TOO_LONG</code></td>
+                                            <td>Message exceeds maximum length</td>
+                                            <td>Reduce message length to under 4096 characters</td>
+                                        </tr>
+                                        <tr>
+                                            <td><code>QUOTA_EXCEEDED</code></td>
+                                            <td>Monthly message quota exceeded</td>
+                                            <td>Upgrade your plan or wait for quota reset</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- SDKs Section -->
+                        <div id="sdks" class="api-section" style="display: none;">
+                            <h2>SDKs & Libraries</h2>
+                            <p>Official and community-maintained SDKs to integrate WhatsApp API into your applications.</p>
+
+                            <div class="row g-4">
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex align-items-center">
+                                            <i class="fab fa-js-square text-warning me-2 fs-4"></i>
+                                            <h5 class="mb-0">JavaScript/Node.js</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Official JavaScript SDK for Node.js and browsers</p>
+                                            <div class="mb-3">
+                                                <strong>Installation:</strong>
+                                                <pre><code>npm install whatsapp-api-sdk</code></pre>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Quick Start:</strong>
+                                                <pre><code>const WhatsApp = require('whatsapp-api-sdk');
+
+const client = new WhatsApp({
+  apiKey: 'your-api-key'
+});
+
+await client.sendMessage({
+  to: '+1234567890',
+  message: 'Hello World!'
+});</code></pre>
+                                            </div>
+                                            <a href="#" class="btn btn-primary btn-sm">View Documentation</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex align-items-center">
+                                            <i class="fab fa-python text-primary me-2 fs-4"></i>
+                                            <h5 class="mb-0">Python</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Official Python SDK with async support</p>
+                                            <div class="mb-3">
+                                                <strong>Installation:</strong>
+                                                <pre><code>pip install whatsapp-api-python</code></pre>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Quick Start:</strong>
+                                                <pre><code>from whatsapp_api import WhatsAppClient
+
+client = WhatsAppClient(
+    api_key='your-api-key'
+)
+
+response = client.send_message(
+    to='+1234567890',
+    message='Hello World!'
+)</code></pre>
+                                            </div>
+                                            <a href="#" class="btn btn-primary btn-sm">View Documentation</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex align-items-center">
+                                            <i class="fab fa-php text-info me-2 fs-4"></i>
+                                            <h5 class="mb-0">PHP</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Official PHP SDK with Laravel support</p>
+                                            <div class="mb-3">
+                                                <strong>Installation:</strong>
+                                                <pre><code>composer require whatsapp/api-sdk</code></pre>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Quick Start:</strong>
+                                                <pre><code><?php
+use WhatsApp\ApiClient;
+
+$client = new ApiClient([
+    'api_key' => 'your-api-key'
+]);
+
+$response = $client->sendMessage([
+    'to' => '+1234567890',
+    'message' => 'Hello World!'
+]);</code></pre>
+                                            </div>
+                                            <a href="#" class="btn btn-primary btn-sm">View Documentation</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex align-items-center">
+                                            <i class="fab fa-java text-danger me-2 fs-4"></i>
+                                            <h5 class="mb-0">Java</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Official Java SDK for Spring Boot applications</p>
+                                            <div class="mb-3">
+                                                <strong>Maven:</strong>
+                                                <pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;com.whatsapp&lt;/groupId&gt;
+  &lt;artifactId&gt;api-sdk&lt;/artifactId&gt;
+  &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+                                            </div>
+                                            <a href="#" class="btn btn-primary btn-sm">View Documentation</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex align-items-center">
+                                            <i class="fab fa-golang text-success me-2 fs-4"></i>
+                                            <h5 class="mb-0">Go</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Official Go SDK with high performance</p>
+                                            <div class="mb-3">
+                                                <strong>Installation:</strong>
+                                                <pre><code>go get github.com/whatsapp/api-go</code></pre>
+                                            </div>
+                                            <a href="#" class="btn btn-primary btn-sm">View Documentation</a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header d-flex align-items-center">
+                                            <i class="fas fa-hashtag text-secondary me-2 fs-4"></i>
+                                            <h5 class="mb-0">C# / .NET</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted">Official .NET SDK for C# applications</p>
+                                            <div class="mb-3">
+                                                <strong>NuGet:</strong>
+                                                <pre><code>Install-Package WhatsApp.ApiSdk</code></pre>
+                                            </div>
+                                            <a href="#" class="btn btn-primary btn-sm">View Documentation</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-4">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Community SDKs:</strong> Don't see your language? Check out our <a href="#">community-maintained SDKs</a> or contribute your own!
+                            </div>
+                        </div>
+
+                        <!-- API Testing Playground -->
+                        <div id="testing" class="api-section" style="display: none;">
+                            <h2>API Testing Playground</h2>
+                            <p>Test API endpoints directly from your browser with interactive examples.</p>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5>Send Message Test</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="test-message-form">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">API Key</label>
+                                                <input type="password" class="form-control" id="test-api-key" placeholder="Enter your API key">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Session ID</label>
+                                                <input type="text" class="form-control" id="test-session-id" placeholder="Enter session ID">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Phone Number</label>
+                                                <input type="text" class="form-control" id="test-phone" placeholder="+1234567890">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Message Type</label>
+                                                <select class="form-select" id="test-message-type">
+                                                    <option value="text">Text</option>
+                                                    <option value="image">Image</option>
+                                                    <option value="document">Document</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Message Content</label>
+                                                <textarea class="form-control" id="test-message" rows="3" placeholder="Enter your message"></textarea>
+                                            </div>
+                                            <div class="col-12">
+                                                <button type="submit" class="btn btn-primary me-2">
+                                                    <i class="fas fa-paper-plane me-2"></i>Send Test Message
+                                                </button>
+                                                <button type="button" class="btn btn-outline-secondary" id="generate-curl">
+                                                    <i class="fas fa-code me-2"></i>Generate cURL
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <div id="test-response" class="mt-4" style="display: none;">
+                                        <h6>Response:</h6>
+                                        <pre class="bg-light p-3 rounded"><code id="response-content"></code></pre>
+                                    </div>
+
+                                    <div id="curl-output" class="mt-4" style="display: none;">
+                                        <h6>Generated cURL Command:</h6>
+                                        <pre class="bg-dark text-light p-3 rounded"><code id="curl-content"></code></pre>
+                                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="navigator.clipboard.writeText(document.getElementById('curl-content').textContent)">
+                                            <i class="fas fa-copy me-1"></i>Copy to Clipboard
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row g-4 mt-4">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5>Session Status Check</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Session ID</label>
+                                                <input type="text" class="form-control" id="status-session-id" placeholder="Enter session ID">
+                                            </div>
+                                            <button class="btn btn-success" id="check-status">
+                                                <i class="fas fa-search me-2"></i>Check Status
+                                            </button>
+                                            <div id="status-result" class="mt-3" style="display: none;">
+                                                <div class="alert alert-info">
+                                                    <strong>Status:</strong> <span id="session-status"></span><br>
+                                                    <strong>Connected:</strong> <span id="session-connected"></span><br>
+                                                    <strong>Phone:</strong> <span id="session-phone"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5>Webhook Tester</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Webhook URL</label>
+                                                <input type="url" class="form-control" id="webhook-url" placeholder="https://your-site.com/webhook">
+                                            </div>
+                                            <button class="btn btn-warning" id="test-webhook">
+                                                <i class="fas fa-bolt me-2"></i>Send Test Webhook
+                                            </button>
+                                            <div id="webhook-result" class="mt-3" style="display: none;">
+                                                <div class="alert alert-success">
+                                                    <i class="fas fa-check-circle me-2"></i>Test webhook sent successfully!
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+

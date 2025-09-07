@@ -1,0 +1,357 @@
+<!-- Pricing View -->
+    <div id="pricing-view" class="view" style="display: none;">
+        <div class="pricing-container">
+            <div class="container">
+                <div class="row text-center mb-5">
+                    <div class="col-lg-8 mx-auto">
+                        <h1 class="display-4 fw-bold">Choose Your Plan</h1>
+                        <p class="lead text-muted">Start free and scale as you grow</p>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center gap-2 mb-4">
+                    <button class="btn btn-outline-primary btn-sm active" type="button">Monthly</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button">Yearly – Save 20%</button>
+                </div>
+                <div class="row g-4 justify-content-center">
+                    <% plans.forEach((plan, index) => { %>
+                    <div class="col-lg-4">
+                        <div class="pricing-card <%= plan.name === 'Basic' ? 'popular' : '' %>">
+                            <% if (plan.name === 'Basic') { %>
+                            <div class="popular-badge">Most Popular</div>
+                            <% } %>
+                            <div class="pricing-header">
+                                <h4><%= plan.name %></h4>
+                                <div class="price">
+                                    <span class="amount">$<%= plan.price %></span>
+                                    <span class="period"><%= plan.name === 'Free' ? 'forever' : 'per month' %></span>
+                                </div>
+                            </div>
+                            <ul class="pricing-features">
+                                <% plan.features.forEach(feature => { %>
+                                <li><i class="fas fa-check"></i><%= feature %></li>
+                                <% }); %>
+                            </ul>
+                            <% if (user && user.subscription && user.subscription.plan === plan.name.toLowerCase()) { %>
+                                <button class="btn btn-success w-100" disabled>
+                                    <i class="fas fa-check me-2"></i>Current Plan
+                                </button>
+                            <% } else if (plan.name === 'Free') { %>
+                                <button class="btn btn-outline-primary w-100">Get Started</button>
+                            <% } else { %>
+                                <button class="btn <%= plan.name === 'Basic' ? 'btn-primary' : 'btn-outline-primary' %> w-100" 
+                                        data-action="upgrade" data-plan="<%= plan.name.toLowerCase() %>">
+                                    Upgrade Now
+                                </button>
+                            <% } %>
+                        </div>
+                    </div>
+                    <% }); %>
+                </div>
+                <div class="text-center mt-4">
+                    <small class="text-muted">All paid plans include a 14‑day free trial. Cancel anytime.</small>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="row mt-5">
+                    <div class="col-12">
+                        <h2 class="text-center mb-5">Frequently Asked Questions</h2>
+                        <div class="accordion" id="pricingFAQ">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                        <i class="fas fa-credit-card me-2"></i>
+                                        What payment methods do you accept?
+                                    </button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#pricingFAQ">
+                                    <div class="accordion-body">
+                                        We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers for annual plans. All payments are processed securely through Stripe.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                        <i class="fas fa-exchange-alt me-2"></i>
+                                        Can I upgrade or downgrade my plan anytime?
+                                    </button>
+                                </h2>
+                                <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#pricingFAQ">
+                                    <div class="accordion-body">
+                                        Yes! You can upgrade or downgrade your plan at any time. When upgrading, you'll be charged the prorated difference immediately. When downgrading, the change takes effect at your next billing cycle, and you'll receive account credit for the difference.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                        <i class="fas fa-calendar-times me-2"></i>
+                                        What happens if I exceed my plan limits?
+                                    </button>
+                                </h2>
+                                <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#pricingFAQ">
+                                    <div class="accordion-body">
+                                        If you exceed your monthly message limit, additional messages are charged at $0.01 per message. For API requests, we'll throttle your requests but won't charge extra. We'll notify you when you're approaching your limits and suggest upgrading if needed.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingFour">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                        Is there a free trial available?
+                                    </button>
+                                </h2>
+                                <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#pricingFAQ">
+                                    <div class="accordion-body">
+                                        Yes! All paid plans come with a 14-day free trial. No credit card required to start. You can test all features and send up to 100 messages during your trial period. Cancel anytime during the trial with no charges.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingFive">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
+                                        <i class="fas fa-users me-2"></i>
+                                        Do you offer team or enterprise plans?
+                                    </button>
+                                </h2>
+                                <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#pricingFAQ">
+                                    <div class="accordion-body">
+                                        Yes! We offer custom enterprise plans for teams with higher volume needs. Enterprise plans include dedicated support, custom integrations, SLA guarantees, and volume discounts. Contact our sales team for a custom quote.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingSix">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix">
+                                        <i class="fas fa-question-circle me-2"></i>
+                                        What's included in priority support?
+                                    </button>
+                                </h2>
+                                <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#pricingFAQ">
+                                    <div class="accordion-body">
+                                        Priority support includes faster response times (within 4 hours), dedicated support channels, phone support, and priority bug fixes. Premium plan users also get access to our technical integration specialists for custom implementations.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan Comparison Table -->
+                <div class="row mt-5">
+                    <div class="col-12">
+                        <h2 class="text-center mb-4">Detailed Plan Comparison</h2>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Feature</th>
+                                        <th class="text-center">Free</th>
+                                        <th class="text-center">Basic</th>
+                                        <th class="text-center">Premium</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Monthly Messages</strong></td>
+                                        <td class="text-center">100</td>
+                                        <td class="text-center">5,000</td>
+                                        <td class="text-center">50,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>API Requests/month</strong></td>
+                                        <td class="text-center">1,000</td>
+                                        <td class="text-center">50,000</td>
+                                        <td class="text-center">500,000</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Webhook Support</strong></td>
+                                        <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Chatbot Rules</strong></td>
+                                        <td class="text-center">5</td>
+                                        <td class="text-center">50</td>
+                                        <td class="text-center">Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Analytics & Reporting</strong></td>
+                                        <td class="text-center">Basic</td>
+                                        <td class="text-center">Advanced</td>
+                                        <td class="text-center">Premium + Export</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Support</strong></td>
+                                        <td class="text-center">Community</td>
+                                        <td class="text-center">Email (24h)</td>
+                                        <td class="text-center">Priority (4h)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Custom Integrations</strong></td>
+                                        <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                                        <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Pricing page functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Plan selection handling
+            document.querySelectorAll('[data-action="upgrade"]').forEach(button => {
+                button.addEventListener('click', async function() {
+                    const planName = this.getAttribute('data-plan');
+                    const planPrice = this.textContent.includes('$') ? this.textContent.match(/\$([0-9]+)/)?.[1] : '0';
+                    
+                    // Check if user is logged in
+                    const userLoggedIn = user ? 'true' : 'false' 
+                    if (!isLoggedIn) {
+                        if (confirm(`Please login to select the ${planName} plan. Redirect to login?`)) {
+                            window.location.href = '/login?redirect=/pricing';
+                        }
+                        return;
+                    }
+                    
+                    // Show confirmation modal
+                    if (confirm(`Are you sure you want to upgrade to the ${planName} plan?`)) {
+                        try {
+                            // Disable button and show loading
+                            const originalText = this.innerHTML;
+                            this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+                            this.disabled = true;
+                            
+                            const response = await fetch('/api/billing/subscribe', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    planName: planName,
+                                    billingCycle: 'monthly'
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                                if (data.checkoutUrl) {
+                                    // Redirect to payment processor
+                                    window.location.href = data.checkoutUrl;
+                                } else {
+                                    alert('Plan updated successfully!');
+                                    location.reload();
+                                }
+                            } else {
+                                alert('Error selecting plan: ' + (data.message || 'Please try again.'));
+                                this.innerHTML = originalText;
+                                this.disabled = false;
+                            }
+                        } catch (error) {
+                            alert('Error selecting plan. Please try again.');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }
+                    }
+                });
+            });
+            
+            // Get Started button handling
+            document.querySelectorAll('.btn-outline-primary').forEach(button => {
+                if (button.textContent.includes('Get Started')) {
+                    button.addEventListener('click', function() {
+                        const isLoggedIn =user ? 'true' : 'false' ;
+                        if (!isLoggedIn) {
+                            window.location.href = '/register';
+                        } else {
+                            window.location.href = '/dashboard';
+                        }
+                    });
+                }
+            });
+            
+            // Billing toggle (monthly/yearly)
+            const monthlyBtn = document.querySelector('.btn-outline-primary.active');
+            const yearlyBtn = document.querySelector('.btn-outline-secondary');
+            
+            if (monthlyBtn && yearlyBtn) {
+                monthlyBtn.addEventListener('click', function() {
+                    this.classList.add('active');
+                    this.classList.remove('btn-outline-primary');
+                    this.classList.add('btn-primary');
+                    yearlyBtn.classList.remove('active', 'btn-primary');
+                    yearlyBtn.classList.add('btn-outline-secondary');
+                    updatePricing('monthly');
+                });
+                
+                yearlyBtn.addEventListener('click', function() {
+                    this.classList.add('active');
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-primary');
+                    monthlyBtn.classList.remove('active', 'btn-primary');
+                    monthlyBtn.classList.add('btn-outline-primary');
+                    updatePricing('yearly');
+                });
+            }
+            
+            function updatePricing(cycle) {
+                // This would update pricing display based on monthly/yearly selection
+                // For now, just update the period text
+                document.querySelectorAll('.period').forEach(period => {
+                    if (cycle === 'yearly') {
+                        period.textContent = period.textContent.replace('per month', 'per year');
+                    } else {
+                        period.textContent = period.textContent.replace('per year', 'per month');
+                    }
+                });
+            }
+            
+            // Load user's current subscription status
+            const isLoggedIn =  (typeof user !== 'undefined' && user) ? 'true' : 'false' ;
+            if (isLoggedIn) {
+                loadSubscriptionStatus();
+            }
+        });
+        
+        // Load subscription status
+        async function loadSubscriptionStatus() {
+            try {
+                const response = await fetch('/api/billing/subscription-status');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.subscription) {
+                        // Show billing info
+                        if (data.subscription.nextBillingDate) {
+                            const billingInfo = document.createElement('div');
+                            billingInfo.className = 'alert alert-info mt-4';
+                            billingInfo.innerHTML = `
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Current Subscription:</strong> ${data.subscription.planName}<br>
+                                <strong>Next Billing Date:</strong> ${new Date(data.subscription.nextBillingDate).toLocaleDateString()}<br>
+                                <strong>Status:</strong> ${data.subscription.status}
+                            `;
+                            document.querySelector('.pricing-container .container').prepend(billingInfo);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Error loading subscription status:', error);
+            }
+        }
+    </script>
+

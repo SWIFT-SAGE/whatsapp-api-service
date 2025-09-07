@@ -1,0 +1,364 @@
+<!-- Login View -->
+    <div id="login-view" class="view" style="display: none;">
+        <div class="auth-container">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="auth-card">
+                            <div class="text-center mb-4">
+                                <i class="fab fa-whatsapp fs-1 text-success mb-3"></i>
+                                <h2>Welcome Back</h2>
+                                <p class="text-muted">Sign in to your account</p>
+                            </div>
+                            <form id="login-form" action="/auth/login" method="POST">
+                                <div class="mb-3">
+                                    <label class="form-label">Email Address</label>
+                                    <input type="email" class="form-control" id="login-email" name="email" required>
+                                    <div class="invalid-feedback">Please enter a valid email address.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" id="login-password" name="password" required>
+                                        <button class="btn btn-outline-secondary" type="button" id="toggle-login-password">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback">Password is required.</div>
+                                </div>
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="remember" name="rememberMe">
+                                    <label class="form-check-label" for="remember">Remember me</label>
+                                </div>
+                                <div class="text-end mb-2">
+                                    <a href="#" class="text-decoration-none" data-bs-toggle="modal" data-bs-target="#forgotPasswordModal">Forgot password?</a>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 mb-3" id="loginBtn">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                </button>
+                                <div id="loginError" class="alert alert-danger d-none" role="alert"></div>
+                                <div id="loginSuccess" class="alert alert-success d-none" role="alert"></div>
+                                <div class="text-center">
+                                    <div class="divider my-3">
+                                        <span class="divider-text">Or continue with</span>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-danger" id="google-login">
+                                            <i class="fab fa-google me-2"></i>Continue with Google
+                                        </button>
+                                        <button type="button" class="btn btn-outline-dark" id="github-login">
+                                            <i class="fab fa-github me-2"></i>Continue with GitHub
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" id="microsoft-login">
+                                            <i class="fab fa-microsoft me-2"></i>Continue with Microsoft
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                            <div class="text-center">
+                                <p>Don't have an account? 
+                                    <a href="#" class="text-decoration-none" data-view="register">Sign up</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-key me-2"></i>Reset Password
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="forgot-password-form">
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="forgot-email" required>
+                            <div class="form-text">We'll send you a link to reset your password.</div>
+                        </div>
+                        <div class="alert alert-info d-none" id="forgot-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Password reset link sent! Check your email.
+                        </div>
+                        <div class="alert alert-danger d-none" id="forgot-error">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <span id="forgot-error-message"></span>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="forgot-password-form" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Send Reset Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .divider {
+            position: relative;
+            text-align: center;
+        }
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+        .divider-text {
+            background: white;
+            padding: 0 1rem;
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        .form-control.is-valid {
+            border-color: #198754;
+        }
+        .invalid-feedback {
+            display: block;
+        }
+    </style>
+
+    <script>
+        // Enhanced form validation and submission
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const email = document.getElementById('login-email');
+            const password = document.getElementById('login-password');
+            let isValid = true;
+            
+            // Clear previous validation and messages
+            [email, password].forEach(field => {
+                field.classList.remove('is-invalid', 'is-valid');
+                const feedback = field.parentNode.querySelector('.invalid-feedback');
+                if (feedback) feedback.remove();
+            });
+            
+            document.getElementById('loginError').classList.add('d-none');
+            document.getElementById('loginSuccess').classList.add('d-none');
+            
+            // Email validation
+            if (!email.value) {
+                showFieldError(email, 'Email is required');
+                isValid = false;
+            } else if (!isValidEmail(email.value)) {
+                showFieldError(email, 'Please enter a valid email address');
+                isValid = false;
+            } else {
+                email.classList.add('is-valid');
+            }
+            
+            // Password validation
+            if (!password.value) {
+                showFieldError(password, 'Password is required');
+                isValid = false;
+            } else if (password.value.length < 6) {
+                showFieldError(password, 'Password must be at least 6 characters');
+                isValid = false;
+            } else {
+                password.classList.add('is-valid');
+            }
+            
+            if (isValid) {
+                // Show loading state
+                const submitBtn = document.getElementById('loginBtn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Signing In...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            email: formData.get('email'),
+                            password: formData.get('password'),
+                            rememberMe: !!formData.get('rememberMe')
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        showLoginSuccess('Login successful! Redirecting...');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 1500);
+                    } else {
+                        showLoginError(data.message || 'Login failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showLoginError('Network error. Please check your connection and try again.');
+                } finally {
+                    // Reset button state
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }
+        });
+        
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+        }
+        
+        function showLoginSuccess(message) {
+            const successDiv = document.getElementById('loginSuccess');
+            successDiv.textContent = message;
+            successDiv.classList.remove('d-none');
+        }
+        
+        // Forgot password form
+        document.getElementById('forgot-password-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('forgot-email');
+            const successAlert = document.getElementById('forgot-success');
+            const errorAlert = document.getElementById('forgot-error');
+            
+            // Hide alerts
+            successAlert.classList.add('d-none');
+            errorAlert.classList.add('d-none');
+            
+            if (!email.value || !isValidEmail(email.value)) {
+                errorAlert.classList.remove('d-none');
+                document.getElementById('forgot-error-message').textContent = 'Please enter a valid email address';
+                return;
+            }
+            
+            // Make API call to forgot password endpoint
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/auth/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email.value })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    successAlert.classList.remove('d-none');
+                    email.value = '';
+                } else {
+                    errorAlert.classList.remove('d-none');
+                    document.getElementById('forgot-error-message').textContent = data.message || 'Error sending reset email. Please try again.';
+                }
+            } catch (error) {
+                console.error('Forgot password error:', error);
+                errorAlert.classList.remove('d-none');
+                document.getElementById('forgot-error-message').textContent = 'Network error. Please check your connection and try again.';
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Handle logout functionality
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch('/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(() => {
+                    window.location.href = '/login';
+                }).catch(error => {
+                    console.error('Logout error:', error);
+                    window.location.href = '/login';
+                });
+            }
+        }
+        
+        // Make logout function globally available
+        window.handleLogout = handleLogout;
+        
+        // Social login handlers
+        document.getElementById('google-login').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
+            this.disabled = true;
+            // Simulate OAuth flow
+            setTimeout(() => {
+                this.innerHTML = '<i class="fab fa-google me-2"></i>Continue with Google';
+                this.disabled = false;
+            }, 2000);
+        });
+        
+        document.getElementById('github-login').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
+            this.disabled = true;
+            setTimeout(() => {
+                this.innerHTML = '<i class="fab fa-github me-2"></i>Continue with GitHub';
+                this.disabled = false;
+            }, 2000);
+        });
+        
+        document.getElementById('microsoft-login').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
+            this.disabled = true;
+            setTimeout(() => {
+                this.innerHTML = '<i class="fab fa-microsoft me-2"></i>Continue with Microsoft';
+                this.disabled = false;
+            }, 2000);
+        });
+        
+        // Utility functions
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        function showFieldError(field, message) {
+            field.classList.add('is-invalid');
+            const feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = message;
+            field.parentNode.appendChild(feedback);
+        }
+        
+        // Password toggle
+        document.getElementById('toggle-login-password').addEventListener('click', function() {
+            const passwordField = document.getElementById('login-password');
+            const icon = this.querySelector('i');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordField.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    </script>
+

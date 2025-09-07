@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Page Not Found | WhatsApp API</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-light">
+  <div class="container-fluid h-100">
+    <div class="row justify-content-center align-items-center min-vh-100">
+      <div class="col-lg-8 col-xl-6">
+        <div class="error-page text-center">
+          <!-- Animated 404 Icon -->
+          <div class="error-icon mb-4">
+            <div class="position-relative d-inline-block">
+              <h1 class="display-1 text-primary fw-bold mb-0 error-number">404</h1>
+              <div class="floating-elements">
+                <i class="fas fa-question-circle floating-icon floating-icon-1"></i>
+                <i class="fas fa-exclamation-triangle floating-icon floating-icon-2"></i>
+                <i class="fas fa-search floating-icon floating-icon-3"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Message -->
+          <div class="error-content mb-5">
+            <h2 class="h3 mb-3 text-dark">Oops! Page Not Found</h2>
+            <p class="lead text-muted mb-4">
+              The page you're looking for seems to have wandered off into the digital wilderness. 
+              Don't worry, we'll help you find your way back!
+            </p>
+            
+            <!-- Error Details -->
+            <div class="alert alert-light border mb-4">
+              <div class="row align-items-center">
+                <div class="col-md-2">
+                  <i class="fas fa-info-circle fa-2x text-info"></i>
+                </div>
+                <div class="col-md-10 text-start">
+                  <strong>What happened?</strong><br>
+                  <small class="text-muted">
+                    The URL you entered might be incorrect, the page may have been moved, 
+                    or you might not have permission to access this resource.
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Section -->
+          <div class="search-section mb-5">
+            <h5 class="mb-3">Try searching for what you need:</h5>
+            <div class="row justify-content-center">
+              <div class="col-md-8">
+                <div class="input-group input-group-lg">
+                  <input type="text" class="form-control" id="search-input" 
+                         placeholder="Search documentation, features, or help...">
+                  <button class="btn btn-primary" type="button" id="search-btn">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+                <div class="search-suggestions mt-3 d-none" id="search-suggestions">
+                  <div class="list-group">
+                    <!-- Search suggestions will be populated here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Navigation -->
+          <div class="quick-nav mb-5">
+            <h5 class="mb-4">Popular destinations:</h5>
+            <div class="row g-3">
+              <div class="col-md-6 col-lg-3">
+                <a href="/" class="card h-100 text-decoration-none nav-card">
+                  <div class="card-body text-center">
+                    <i class="fas fa-home fa-2x text-primary mb-2"></i>
+                    <h6 class="card-title">Home</h6>
+                    <small class="text-muted">Main landing page</small>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <a href="/dashboard" class="card h-100 text-decoration-none nav-card">
+                  <div class="card-body text-center">
+                    <i class="fas fa-tachometer-alt fa-2x text-success mb-2"></i>
+                    <h6 class="card-title">Dashboard</h6>
+                    <small class="text-muted">Manage your account</small>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <a href="/api-docs" class="card h-100 text-decoration-none nav-card">
+                  <div class="card-body text-center">
+                    <i class="fas fa-book fa-2x text-info mb-2"></i>
+                    <h6 class="card-title">API Docs</h6>
+                    <small class="text-muted">Integration guide</small>
+                  </div>
+                </a>
+              </div>
+              <div class="col-md-6 col-lg-3">
+                <a href="/pricing" class="card h-100 text-decoration-none nav-card">
+                  <div class="card-body text-center">
+                    <i class="fas fa-tags fa-2x text-warning mb-2"></i>
+                    <h6 class="card-title">Pricing</h6>
+                    <small class="text-muted">View our plans</small>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Help Section -->
+          <div class="help-section mb-4">
+            <div class="card bg-primary text-white">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-md-8 text-start">
+                    <h6 class="mb-1">Still need help?</h6>
+                    <small>Our support team is here to assist you 24/7</small>
+                  </div>
+                  <div class="col-md-4 text-end">
+                    <button class="btn btn-light" id="contact-support">
+                      <i class="fas fa-headset me-2"></i>Contact Support
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+              <button class="btn btn-primary btn-lg me-md-2" onclick="history.back()">
+                <i class="fas fa-arrow-left me-2"></i>Go Back
+              </button>
+              <a href="/" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-home me-2"></i>Home Page
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support Modal -->
+  <div class="modal fade" id="supportModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-headset me-2"></i>Contact Support
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body text-center">
+                  <i class="fas fa-envelope fa-2x text-primary mb-3"></i>
+                  <h6>Email Support</h6>
+                  <p class="text-muted mb-2">Get help via email</p>
+                  <a href="mailto:support@whatsapp-api.com" class="btn btn-outline-primary btn-sm">
+                    support@whatsapp-api.com
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body text-center">
+                  <i class="fas fa-comments fa-2x text-success mb-3"></i>
+                  <h6>Live Chat</h6>
+                  <p class="text-muted mb-2">Chat with our team</p>
+                  <button class="btn btn-outline-success btn-sm" id="start-chat">
+                    Start Chat
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body text-center">
+                  <i class="fas fa-question-circle fa-2x text-info mb-3"></i>
+                  <h6>Help Center</h6>
+                  <p class="text-muted mb-2">Browse FAQs</p>
+                  <a href="/help" class="btn btn-outline-info btn-sm">
+                    Visit Help Center
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .error-number {
+      font-size: 8rem;
+      line-height: 1;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .floating-elements {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+    }
+    
+    .floating-icon {
+      position: absolute;
+      font-size: 1.5rem;
+      opacity: 0.3;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .floating-icon-1 {
+      top: 20%;
+      left: 10%;
+      animation-delay: 0s;
+      color: #007bff;
+    }
+    
+    .floating-icon-2 {
+      top: 60%;
+      right: 15%;
+      animation-delay: 1s;
+      color: #ffc107;
+    }
+    
+    .floating-icon-3 {
+      bottom: 30%;
+      left: 20%;
+      animation-delay: 2s;
+      color: #28a745;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    
+    .nav-card {
+      transition: all 0.3s ease;
+      border: 1px solid #e9ecef;
+    }
+    
+    .nav-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      border-color: #007bff;
+    }
+    
+    .search-suggestions .list-group-item {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    
+    .search-suggestions .list-group-item:hover {
+      background-color: #f8f9fa;
+    }
+    
+    @media (max-width: 768px) {
+      .error-number {
+        font-size: 5rem;
+      }
+      
+      .floating-icon {
+        font-size: 1rem;
+      }
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Search functionality
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const searchSuggestions = document.getElementById('search-suggestions');
+    
+    const suggestions = [
+      { title: 'API Documentation', url: '/api-docs', icon: 'fas fa-book' },
+      { title: 'Getting Started Guide', url: '/api-docs#getting-started', icon: 'fas fa-play' },
+      { title: 'Authentication', url: '/api-docs#authentication', icon: 'fas fa-key' },
+      { title: 'Send Messages', url: '/api-docs#send-message', icon: 'fas fa-paper-plane' },
+      { title: 'Webhooks Setup', url: '/api-docs#webhooks', icon: 'fas fa-link' },
+      { title: 'Pricing Plans', url: '/pricing', icon: 'fas fa-tags' },
+      { title: 'Dashboard', url: '/dashboard', icon: 'fas fa-tachometer-alt' },
+      { title: 'Account Settings', url: '/dashboard#settings', icon: 'fas fa-cog' },
+      { title: 'Billing Information', url: '/dashboard#billing', icon: 'fas fa-credit-card' },
+      { title: 'Support Center', url: '/help', icon: 'fas fa-question-circle' }
+    ];
+    
+    searchInput.addEventListener('input', function() {
+      const query = this.value.toLowerCase().trim();
+      
+      if (query.length > 0) {
+        const filtered = suggestions.filter(item => 
+          item.title.toLowerCase().includes(query)
+        ).slice(0, 5);
+        
+        if (filtered.length > 0) {
+          const suggestionsList = filtered.map(item => `
+            <a href="${item.url}" class="list-group-item list-group-item-action d-flex align-items-center">
+              <i class="${item.icon} me-3 text-muted"></i>
+              <div>
+                <div class="fw-medium">${item.title}</div>
+                <small class="text-muted">${item.url}</small>
+              </div>
+            </a>
+          `).join('');
+          
+          searchSuggestions.querySelector('.list-group').innerHTML = suggestionsList;
+          searchSuggestions.classList.remove('d-none');
+        } else {
+          searchSuggestions.classList.add('d-none');
+        }
+      } else {
+        searchSuggestions.classList.add('d-none');
+      }
+    });
+    
+    searchBtn.addEventListener('click', function() {
+      const query = searchInput.value.trim();
+      if (query) {
+        // Redirect to search results or help page
+        window.location.href = `/help?search=${encodeURIComponent(query)}`;
+      }
+    });
+    
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        searchBtn.click();
+      }
+    });
+    
+    // Support modal
+    document.getElementById('contact-support').addEventListener('click', function() {
+      new bootstrap.Modal(document.getElementById('supportModal')).show();
+    });
+    
+    // Live chat simulation
+    document.getElementById('start-chat').addEventListener('click', function() {
+      alert('Live chat feature will be available soon! Please use email support for now.');
+    });
+    
+    // Hide search suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+        searchSuggestions.classList.add('d-none');
+      }
+    });
+    
+    // Add some interactive feedback
+    document.querySelectorAll('.nav-card').forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+      });
+      
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0)';
+      });
+    });
+    
+    // Report error functionality (optional)
+    function reportError() {
+      const errorData = {
+        url: window.location.href,
+        referrer: document.referrer,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+      };
+      
+      // In a real application, you would send this to your error tracking service
+      console.log('Error reported:', errorData);
+      alert('Error reported successfully. Thank you for helping us improve!');
+    }
+  </script>
+</body>
+</html>
