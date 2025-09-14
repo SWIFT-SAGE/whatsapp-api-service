@@ -260,9 +260,33 @@ app.get('/api-docs', optionalAuth, (req, res) => {
   const apiDocsData = {
     user: req.user || null,
     baseUrl: `${req.protocol}://${req.get('host')}/api`,
-    version: '1.0.0'
+    version: '1.0.0',
+    currentPage: 'overview'
   };
   res.render('pages/api-docs', apiDocsData);
+});
+
+// API documentation pages routes
+app.get('/api-docs/docs/:page', optionalAuth, (req, res) => {
+  const { page } = req.params;
+  const validPages = [
+    'authentication', 'sessions', 'messages', 'webhooks', 
+    'rate-limiting', 'error-codes', 'sdks-libraries', 
+    'api-testing', 'code-examples'
+  ];
+  
+  if (!validPages.includes(page)) {
+    return res.status(404).render('pages/404');
+  }
+  
+  const docData = {
+    user: req.user || null,
+    baseUrl: `${req.protocol}://${req.get('host')}/api`,
+    version: '1.0.0',
+    currentPage: page
+  };
+  
+  res.render(`pages/docs/${page}`, docData);
 });
 
 // Authentication routes for form submissions

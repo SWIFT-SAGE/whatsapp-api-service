@@ -1,7 +1,28 @@
 <!-- Messages Documentation Page -->
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body>
+    <%- include('../../partials/navbar') %>
+    <div class="container-fluid">
+        <div class="docs-container">
+            <div class="docs-sidebar">
+                <h5>API Documentation</h5>
+                <nav class="docs-nav">
+                    <a href="/api-docs/docs/authentication" class="<%= currentPage === 'authentication' ? 'active' : '' %>">Authentication</a>
+                    <a href="/api-docs/docs/sessions" class="<%= currentPage === 'sessions' ? 'active' : '' %>">Sessions</a>
+                    <a href="/api-docs/docs/messages" class="<%= currentPage === 'messages' ? 'active' : '' %>">Messages</a>
+                    <a href="/api-docs/docs/webhooks" class="<%= currentPage === 'webhooks' ? 'active' : '' %>">Webhooks</a>
+                    <a href="/api-docs/docs/rate-limiting" class="<%= currentPage === 'rate-limiting' ? 'active' : '' %>">Rate Limiting</a>
+                    <a href="/api-docs/docs/error-codes" class="<%= currentPage === 'error-codes' ? 'active' : '' %>">Error Codes</a>
+                    <a href="/api-docs/docs/sdks-libraries" class="<%= currentPage === 'sdks-libraries' ? 'active' : '' %>">SDKs & Libraries</a>
+                    <a href="/api-docs/docs/api-testing" class="<%= currentPage === 'api-testing' ? 'active' : '' %>">API Testing</a>
+                    <a href="/api-docs/docs/code-examples" class="<%= currentPage === 'code-examples' ? 'active' : '' %>">Code Examples</a>
+                </nav>
+            </div>
+            <div class="docs-content">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
@@ -477,4 +498,10 @@
             </div>
         </div>
     </div>
-</div>
+    
+    <%- include('../../partials/footer') %>
+    <%- include('../../partials/modals') %>
+    <%- include('../../partials/toast') %>
+    <%- include('../../partials/scripts') %>
+</body>
+</html>
