@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
+import { config } from '../config';
 
 // Extend Express Request interface
 declare global {
@@ -31,7 +32,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as JwtPayload;
+    const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user) {

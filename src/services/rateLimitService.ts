@@ -1,34 +1,21 @@
-import { RateLimiterRedis } from 'rate-limiter-flexible';
-import Redis from 'ioredis';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 import { logger } from '../utils/logger';
 import User from '../models/User';
 
 class RateLimitService {
-  private redis: Redis;
-  private freePlanLimiter!: RateLimiterRedis;
-  private basicPlanLimiter!: RateLimiterRedis;
-  private apiLimiter!: RateLimiterRedis;
+  private freePlanLimiter!: RateLimiterMemory;
+  private basicPlanLimiter!: RateLimiterMemory;
+  private apiLimiter!: RateLimiterMemory;
 
   constructor() {
-    // Initialize Redis connection
-    this.redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-
-    this.redis.on('error', (err: Error) => {
-      logger.error('Redis connection error:', err);
-    });
-
-    this.redis.on('connect', () => {
-      logger.info('✓ Connected to Redis for rate limiting');
-    });
-
-    // Initialize rate limiters
+    // Initialize rate limiters using in-memory storage
     this.initializeLimiters();
+    logger.info('✓ Initialized in-memory rate limiters');
   }
 
   private initializeLimiters(): void {
     // Free plan: 3 messages per day
-    this.freePlanLimiter = new RateLimiterRedis({
-      storeClient: this.redis,
+    this.freePlanLimiter = new RateLimiterMemory({
       keyPrefix: 'free_plan',
       points: 3, // Number of requests
       duration: 86400, // Per 24 hours (in seconds)
@@ -36,8 +23,7 @@ class RateLimitService {
     });
 
     // Basic plan: 10,000 messages per month
-    this.basicPlanLimiter = new RateLimiterRedis({
-      storeClient: this.redis,
+    this.basicPlanLimiter = new RateLimiterMemory({
       keyPrefix: 'basic_plan',
       points: 10000,
       duration: 2592000, // Per 30 days (in seconds)
@@ -45,8 +31,7 @@ class RateLimitService {
     });
 
     // API rate limiting: 100 requests per 15 minutes
-    this.apiLimiter = new RateLimiterRedis({
-      storeClient: this.redis,
+    this.apiLimiter = new RateLimiterMemory({
       keyPrefix: 'api_requests',
       points: 100,
       duration: 900, // 15 minutes
@@ -172,10 +157,11 @@ class RateLimitService {
   }
 
   /**
-   * Close Redis connection
+   * Cleanup resources
    */
   async close(): Promise<void> {
-    await this.redis.quit();
+    // No Redis connection to clean up with in-memory storage
+    logger.info('Rate limit service cleaned up');
   }
 }
 

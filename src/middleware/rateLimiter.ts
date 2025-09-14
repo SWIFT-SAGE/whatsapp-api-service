@@ -1,33 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
-import Redis from 'ioredis';
 import { logger } from '../utils/logger';
 
-// Redis client for rate limiting
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: 3,
-  lazyConnect: true
-});
-
-// Handle Redis connection errors
-redis.on('error', (err: any) => {
-  logger.error('Redis connection error:', err);
-});
-
-// Create Redis store for rate limiting
-const redisStore = new RedisStore({
-  sendCommand: (...args: any[]): Promise<any> => redis.call(args[0], ...args.slice(1)),
-});
+// Using in-memory store for rate limiting instead of Redis
+// Note: In a production environment with multiple instances,
+// you might want to use a distributed solution or database for rate limiting
 
 /**
  * General API rate limiter
  */
 export const generalRateLimit = rateLimit({
-  store: redisStore,
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Limit each IP to 1000 requests per windowMs
   message: {
@@ -53,7 +35,6 @@ export const generalRateLimit = rateLimit({
  * Strict rate limiter for authentication endpoints
  */
 export const authRateLimit = rateLimit({
-  store: redisStore,
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 auth attempts per windowMs
   message: {
@@ -72,7 +53,6 @@ export const authRateLimit = rateLimit({
  * Message sending rate limiter
  */
 export const messageRateLimit = rateLimit({
-  store: redisStore,
   windowMs: 60 * 1000, // 1 minute
   max: (req: Request) => {
     // Different limits based on subscription plan
@@ -105,7 +85,7 @@ export const messageRateLimit = rateLimit({
  * Webhook rate limiter
  */
 export const webhookRateLimit = rateLimit({
-  store: redisStore,
+  // Using in-memory store by default
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 webhook calls per minute
   message: {
@@ -124,7 +104,7 @@ export const webhookRateLimit = rateLimit({
  * API key rate limiter
  */
 export const apiKeyRateLimit = rateLimit({
-  store: redisStore,
+  // Using in-memory store by default
   windowMs: 60 * 1000, // 1 minute
   max: (req: Request) => {
     // Different limits based on subscription plan
@@ -163,7 +143,7 @@ export const createCustomRateLimit = (options: {
   keyPrefix?: string;
 }) => {
   return rateLimit({
-    store: redisStore,
+    // Using in-memory store by default
     windowMs: options.windowMs,
     max: options.max,
     message: {

@@ -247,28 +247,8 @@ const healthChecks: Record<string, () => Promise<HealthCheck>> = {
     }
   },
   
-  redis: async (): Promise<HealthCheck> => {
-    const start = performance.now();
-    try {
-      // This would be replaced with actual Redis ping
-      // await redisClient.ping();
-      const responseTime = performance.now() - start;
-      return {
-        name: 'redis',
-        status: responseTime < 500 ? 'healthy' : 'degraded',
-        responseTime,
-        lastCheck: new Date(),
-      };
-    } catch (error) {
-      return {
-        name: 'redis',
-        status: 'unhealthy',
-        message: (error as Error).message,
-        responseTime: performance.now() - start,
-        lastCheck: new Date(),
-      };
-    }
-  },
+  // Redis health check has been removed
+
   
   memory: async (): Promise<HealthCheck> => {
     const memUsage = process.memoryUsage();

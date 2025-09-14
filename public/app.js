@@ -247,17 +247,26 @@ function validateField(field) {
 }
 
 function validateConfirmPassword() {
-  const password = document.getElementById('register-password')?.value;
-  const confirmPassword = document.getElementById('register-confirm-password');
+  const passwordField = document.getElementById('register-password');
+  const confirmPasswordField = document.getElementById('register-confirm-password');
   
-  if (!confirmPassword || !fieldInteractions.has('register-confirm-password')) {
+  if (!confirmPasswordField || !fieldInteractions.has('register-confirm-password')) {
     return true;
   }
 
-  const isValid = password === confirmPassword.value;
+  const password = passwordField?.value || '';
+  const confirmPassword = confirmPasswordField.value || '';
+  
+  // First check if confirm password is empty
+  if (!confirmPassword) {
+    updateFieldValidationUI(confirmPasswordField, false, 'Confirm password is required.');
+    return false;
+  }
+  
+  const isValid = password === confirmPassword;
   const errorMessage = isValid ? '' : 'Passwords do not match.';
   
-  updateFieldValidationUI(confirmPassword, isValid, errorMessage);
+  updateFieldValidationUI(confirmPasswordField, isValid, errorMessage);
   return isValid;
 }
 
@@ -438,6 +447,12 @@ function checkAuthState() {
 // Navigation Functions
 function showView(viewName) {
   console.log('Showing view:', viewName);
+  
+  // Handle API docs redirection
+  if (viewName === 'api-docs') {
+    window.open('/api-docs', '_blank');
+    return;
+  }
   
   // Hide all views
   const views = document.querySelectorAll('.view');

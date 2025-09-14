@@ -16,12 +16,8 @@ const envSchema = z.object({
   MONGODB_URI: z.string().min(1, 'MongoDB URI is required'),
   MONGODB_DB_NAME: z.string().default('whatsapp_api'),
   
-  // Redis Configuration (for caching and sessions)
-  REDIS_URL: z.string().optional(),
-  REDIS_HOST: z.string().default('localhost'),
-  REDIS_PORT: z.string().transform(Number).default('6379'),
-  REDIS_PASSWORD: z.string().optional(),
-  REDIS_DB: z.string().transform(Number).default('0'),  
+  // Redis Configuration has been removed
+
   
   // JWT Configuration
   JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
@@ -147,17 +143,7 @@ export const config = {
     },
   },
   
-  // Redis
-  redis: {
-    url: env.REDIS_URL,
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD,
-    db: env.REDIS_DB,
-    retryDelayOnFailover: 100,
-    enableReadyCheck: true,
-    maxRetriesPerRequest: 3,
-  },
+  // Redis configuration has been removed,
   
   // JWT
   jwt: {

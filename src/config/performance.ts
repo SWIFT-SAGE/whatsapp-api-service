@@ -79,23 +79,51 @@ export const cachingConfig = {
     },
   },
   
-  // Redis caching middleware
-  redisCache: (ttl: number = 300) => {
+  // In-memory caching middleware
+  memoryCache: (ttl: number = 300) => {
+    // Simple in-memory cache
+    const cache = new Map<string, { data: any; expires: number }>();
+    
     return async (req: Request, res: Response, next: NextFunction) => {
       if (req.method !== 'GET') {
         return next();
       }
       
       const cacheKey = `cache:${req.originalUrl}`;
+      const now = Date.now();
       
-      try {
-        // Try to get from cache (Redis implementation would go here)
-        // For now, just continue to next middleware
-        next();
-      } catch (error) {
-        // If cache fails, continue without caching
-        next();
+      // Check if we have a valid cache entry
+      const cacheEntry = cache.get(cacheKey);
+      if (cacheEntry && cacheEntry.expires > now) {
+        // Return cached response
+        return res.json(cacheEntry.data);
       }
+      
+      // Store the original res.json method
+      const originalJson = res.json;
+      
+      // Override res.json to cache the response
+      res.json = function(data) {
+        // Store in cache
+        cache.set(cacheKey, {
+          data,
+          expires: now + (ttl * 1000)
+        });
+        
+        // Clean up old cache entries periodically
+        if (Math.random() < 0.01) { // 1% chance to clean up on each request
+          for (const [key, value] of cache.entries()) {
+            if (value.expires <= now) {
+              cache.delete(key);
+            }
+          }
+        }
+        
+        // Call the original method
+        return originalJson.call(this, data);
+      };
+      
+      next();
     };
   },
 };

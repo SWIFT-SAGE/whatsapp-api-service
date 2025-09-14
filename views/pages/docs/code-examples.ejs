@@ -1,0 +1,1605 @@
+<!-- Code Examples Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Code Examples</li>
+                </ol>
+            </nav>
+            
+            <h1>Code Examples</h1>
+            <div class="alert alert-info">
+                <p>This page provides practical code examples for common use cases with our WhatsApp API service across different programming languages.</p>
+            </div>
+            
+            <!-- Language Selector Tabs -->
+            <ul class="nav nav-tabs" id="languageTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="javascript-tab" data-toggle="tab" href="#javascript" role="tab" aria-controls="javascript" aria-selected="true">JavaScript</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="python-tab" data-toggle="tab" href="#python" role="tab" aria-controls="python" aria-selected="false">Python</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="php-tab" data-toggle="tab" href="#php" role="tab" aria-controls="php" aria-selected="false">PHP</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="java-tab" data-toggle="tab" href="#java" role="tab" aria-controls="java" aria-selected="false">Java</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="curl-tab" data-toggle="tab" href="#curl" role="tab" aria-controls="curl" aria-selected="false">cURL</a>
+                </li>
+            </ul>
+            
+            <!-- Tab Content -->
+            <div class="tab-content" id="languageTabContent">
+                <!-- JavaScript Examples -->
+                <div class="tab-pane fade show active" id="javascript" role="tabpanel" aria-labelledby="javascript-tab">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h2>JavaScript Examples</h2>
+                        </div>
+                        <div class="card-body">
+                            <h3>Installation</h3>
+                            <pre><code>npm install whatsapp-api-client</code></pre>
+                            
+                            <h3>Basic Setup</h3>
+                            <pre><code>const WhatsAppClient = require('whatsapp-api-client');
+
+// Initialize the client
+const client = new WhatsAppClient({
+  apiKey: 'YOUR_API_KEY',
+  // Optional: specify environment
+  baseUrl: 'https://api.messingin.com/v1' // Default is production
+});</code></pre>
+                            
+                            <h3>Complete Messaging Workflow</h3>
+                            <pre><code>async function completeWorkflow() {
+  try {
+    // 1. Create a session
+    const sessionResponse = await client.sessions.create({
+      phoneNumber: '14155552671'
+    });
+    
+    if (!sessionResponse.success) {
+      throw new Error(`Failed to create session: ${sessionResponse.error.message}`);
+    }
+    
+    const sessionId = sessionResponse.data.sessionId;
+    console.log(`Session created with ID: ${sessionId}`);
+    
+    // 2. Check session status until ready
+    let sessionStatus;
+    do {
+      const statusResponse = await client.sessions.getStatus(sessionId);
+      sessionStatus = statusResponse.data.status;
+      console.log(`Session status: ${sessionStatus}`);
+      
+      if (sessionStatus === 'failed') {
+        throw new Error('Session initialization failed');
+      }
+      
+      if (sessionStatus !== 'ready') {
+        // Wait before checking again
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    } while (sessionStatus !== 'ready');
+    
+    // 3. Send a text message
+    const textMessageResponse = await client.messages.sendText({
+      sessionId: sessionId,
+      to: '14155552671',
+      text: 'Hello from the WhatsApp API!'
+    });
+    
+    console.log(`Text message sent with ID: ${textMessageResponse.data.messageId}`);
+    
+    // 4. Send a media message
+    const mediaMessageResponse = await client.messages.sendMedia({
+      sessionId: sessionId,
+      to: '14155552671',
+      mediaType: 'image',
+      mediaUrl: 'https://example.com/image.jpg',
+      caption: 'Check out this image!'
+    });
+    
+    console.log(`Media message sent with ID: ${mediaMessageResponse.data.messageId}`);
+    
+    // 5. Send a button message
+    const buttonMessageResponse = await client.messages.sendButtons({
+      sessionId: sessionId,
+      to: '14155552671',
+      text: 'Please select an option:',
+      buttons: [
+        { id: 'btn1', text: 'Option 1' },
+        { id: 'btn2', text: 'Option 2' },
+        { id: 'btn3', text: 'Option 3' }
+      ]
+    });
+    
+    console.log(`Button message sent with ID: ${buttonMessageResponse.data.messageId}`);
+    
+    // Wait for some time to allow messages to be delivered
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    
+    // 6. Delete the session when done
+    const deleteResponse = await client.sessions.delete(sessionId);
+    console.log(`Session deleted: ${deleteResponse.success}`);
+    
+  } catch (error) {
+    console.error('Error in workflow:', error);
+  }
+}
+
+completeWorkflow();</code></pre>
+                            
+                            <h3>Webhook Handler (Express.js)</h3>
+                            <pre><code>const express = require('express');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
+
+const app = express();
+app.use(bodyParser.json());
+
+// Webhook secret from your dashboard
+const WEBHOOK_SECRET = 'your_webhook_secret';
+
+// Verify webhook signature
+function verifySignature(req) {
+  const signature = req.headers['x-webhook-signature'];
+  const payload = JSON.stringify(req.body);
+  
+  const expectedSignature = crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(payload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+// Webhook endpoint
+app.post('/webhooks/whatsapp', (req, res) => {
+  try {
+    // Verify the webhook signature
+    if (!verifySignature(req)) {
+      console.error('Invalid webhook signature');
+      return res.status(401).send('Invalid signature');
+    }
+    
+    const event = req.body.event;
+    const data = req.body.data;
+    
+    console.log(`Received webhook event: ${event}`);
+    
+    // Handle different event types
+    switch (event) {
+      case 'message.received':
+        handleIncomingMessage(data);
+        break;
+      
+      case 'message.status.updated':
+        handleMessageStatusUpdate(data);
+        break;
+      
+      case 'session.status.updated':
+        handleSessionStatusUpdate(data);
+        break;
+      
+      default:
+        console.log(`Unhandled event type: ${event}`);
+    }
+    
+    // Always respond with 200 OK to acknowledge receipt
+    res.status(200).send('Webhook received');
+    
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(500).send('Error processing webhook');
+  }
+});
+
+// Handle incoming messages
+function handleIncomingMessage(data) {
+  const { messageId, sessionId, from, type, text } = data;
+  
+  console.log(`Received ${type} message from ${from} in session ${sessionId}`);
+  
+  if (type === 'text') {
+    console.log(`Message content: ${text.body}`);
+    // Process the message based on content
+    // For example, implement a chatbot logic here
+  }
+}
+
+// Handle message status updates
+function handleMessageStatusUpdate(data) {
+  const { messageId, status } = data;
+  console.log(`Message ${messageId} status updated to: ${status}`);
+}
+
+// Handle session status updates
+function handleSessionStatusUpdate(data) {
+  const { sessionId, status } = data;
+  console.log(`Session ${sessionId} status updated to: ${status}`);
+}
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Webhook server listening on port ${PORT}`);
+});</code></pre>
+                            
+                            <h3>Error Handling with Retry Logic</h3>
+                            <pre><code>async function sendMessageWithRetry(sessionId, to, text, maxRetries = 3) {
+  let retries = 0;
+  
+  while (retries <= maxRetries) {
+    try {
+      const response = await client.messages.sendText({
+        sessionId,
+        to,
+        text
+      });
+      
+      return response;
+      
+    } catch (error) {
+      // Check if it's a rate limit error
+      if (error.response && error.response.status === 429) {
+        const retryAfter = parseInt(error.response.headers['retry-after'] || '1', 10);
+        retries++;
+        
+        if (retries <= maxRetries) {
+          console.log(`Rate limited. Retrying after ${retryAfter} seconds (Attempt ${retries}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+          continue;
+        }
+      }
+      
+      // For other errors or if max retries reached
+      throw error;
+    }
+  }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Python Examples -->
+                <div class="tab-pane fade" id="python" role="tabpanel" aria-labelledby="python-tab">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h2>Python Examples</h2>
+                        </div>
+                        <div class="card-body">
+                            <h3>Installation</h3>
+                            <pre><code>pip install whatsapp-api-python</code></pre>
+                            
+                            <h3>Basic Setup</h3>
+                            <pre><code>from whatsapp_api import WhatsAppClient
+
+# Initialize the client
+client = WhatsAppClient(
+    api_key='YOUR_API_KEY',
+    # Optional: specify environment
+    base_url='https://api.messingin.com/v1'  # Default is production
+)</code></pre>
+                            
+                            <h3>Complete Messaging Workflow</h3>
+                            <pre><code>import time
+
+def complete_workflow():
+    try:
+        # 1. Create a session
+        session_response = client.sessions.create({
+            'phone_number': '14155552671'
+        })
+        
+        if not session_response['success']:
+            raise Exception(f"Failed to create session: {session_response['error']['message']}")
+        
+        session_id = session_response['data']['sessionId']
+        print(f"Session created with ID: {session_id}")
+        
+        # 2. Check session status until ready
+        session_status = None
+        while session_status != 'ready':
+            status_response = client.sessions.get_status(session_id)
+            session_status = status_response['data']['status']
+            print(f"Session status: {session_status}")
+            
+            if session_status == 'failed':
+                raise Exception("Session initialization failed")
+            
+            if session_status != 'ready':
+                # Wait before checking again
+                time.sleep(2)
+        
+        # 3. Send a text message
+        text_message_response = client.messages.send_text({
+            'sessionId': session_id,
+            'to': '14155552671',
+            'text': 'Hello from the WhatsApp API!'
+        })
+        
+        print(f"Text message sent with ID: {text_message_response['data']['messageId']}")
+        
+        # 4. Send a media message
+        media_message_response = client.messages.send_media({
+            'sessionId': session_id,
+            'to': '14155552671',
+            'mediaType': 'image',
+            'mediaUrl': 'https://example.com/image.jpg',
+            'caption': 'Check out this image!'
+        })
+        
+        print(f"Media message sent with ID: {media_message_response['data']['messageId']}")
+        
+        # 5. Send a button message
+        button_message_response = client.messages.send_buttons({
+            'sessionId': session_id,
+            'to': '14155552671',
+            'text': 'Please select an option:',
+            'buttons': [
+                {'id': 'btn1', 'text': 'Option 1'},
+                {'id': 'btn2', 'text': 'Option 2'},
+                {'id': 'btn3', 'text': 'Option 3'}
+            ]
+        })
+        
+        print(f"Button message sent with ID: {button_message_response['data']['messageId']}")
+        
+        # Wait for some time to allow messages to be delivered
+        time.sleep(5)
+        
+        # 6. Delete the session when done
+        delete_response = client.sessions.delete(session_id)
+        print(f"Session deleted: {delete_response['success']}")
+        
+    except Exception as e:
+        print(f"Error in workflow: {e}")
+
+# Run the workflow
+complete_workflow()</code></pre>
+                            
+                            <h3>Webhook Handler (Flask)</h3>
+                            <pre><code>from flask import Flask, request, jsonify
+import hmac
+import hashlib
+
+app = Flask(__name__)
+
+# Webhook secret from your dashboard
+WEBHOOK_SECRET = 'your_webhook_secret'
+
+# Verify webhook signature
+def verify_signature(payload, signature):
+    expected_signature = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, expected_signature)
+
+@app.route('/webhooks/whatsapp', methods=['POST'])
+def webhook_handler():
+    try:
+        # Get the signature from headers
+        signature = request.headers.get('X-Webhook-Signature')
+        if not signature:
+            return jsonify({'error': 'Missing signature'}), 401
+        
+        # Get the raw request payload
+        payload = request.get_data()
+        
+        # Verify the signature
+        if not verify_signature(payload, signature):
+            return jsonify({'error': 'Invalid signature'}), 401
+        
+        # Parse the JSON payload
+        data = request.json
+        event = data.get('event')
+        event_data = data.get('data', {})
+        
+        print(f"Received webhook event: {event}")
+        
+        # Handle different event types
+        if event == 'message.received':
+            handle_incoming_message(event_data)
+        elif event == 'message.status.updated':
+            handle_message_status_update(event_data)
+        elif event == 'session.status.updated':
+            handle_session_status_update(event_data)
+        else:
+            print(f"Unhandled event type: {event}")
+        
+        # Always respond with 200 OK to acknowledge receipt
+        return jsonify({'status': 'success'}), 200
+        
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+# Handle incoming messages
+def handle_incoming_message(data):
+    message_id = data.get('messageId')
+    session_id = data.get('sessionId')
+    sender = data.get('from')
+    msg_type = data.get('type')
+    
+    print(f"Received {msg_type} message from {sender} in session {session_id}")
+    
+    if msg_type == 'text':
+        text = data.get('text', {}).get('body', '')
+        print(f"Message content: {text}")
+        # Process the message based on content
+        # For example, implement a chatbot logic here
+
+# Handle message status updates
+def handle_message_status_update(data):
+    message_id = data.get('messageId')
+    status = data.get('status')
+    print(f"Message {message_id} status updated to: {status}")
+
+# Handle session status updates
+def handle_session_status_update(data):
+    session_id = data.get('sessionId')
+    status = data.get('status')
+    print(f"Session {session_id} status updated to: {status}")
+
+if __name__ == '__main__':
+    app.run(port=3000)</code></pre>
+                            
+                            <h3>Error Handling with Retry Logic</h3>
+                            <pre><code>import time
+
+def send_message_with_retry(session_id, to, text, max_retries=3):
+    retries = 0
+    
+    while retries <= max_retries:
+        try:
+            response = client.messages.send_text({
+                'sessionId': session_id,
+                'to': to,
+                'text': text
+            })
+            
+            return response
+            
+        except Exception as e:
+            # Check if it's a rate limit error
+            if hasattr(e, 'response') and e.response.status_code == 429:
+                retry_after = int(e.response.headers.get('Retry-After', '1'))
+                retries += 1
+                
+                if retries <= max_retries:
+                    print(f"Rate limited. Retrying after {retry_after} seconds (Attempt {retries}/{max_retries})")
+                    time.sleep(retry_after)
+                    continue
+            
+            # For other errors or if max retries reached
+            raise e</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PHP Examples -->
+                <div class="tab-pane fade" id="php" role="tabpanel" aria-labelledby="php-tab">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h2>PHP Examples</h2>
+                        </div>
+                        <div class="card-body">
+                            <h3>Installation</h3>
+                            <pre><code>composer require messingin/whatsapp-api-php</code></pre>
+                            
+                            <h3>Basic Setup</h3>
+                            <pre><code>&lt;?php
+require_once 'vendor/autoload.php';
+
+use MessingIn\WhatsAppApi\Client;
+
+// Initialize the client
+$client = new Client(
+    'YOUR_API_KEY',
+    // Optional: specify environment
+    'https://api.messingin.com/v1' // Default is production
+);</code></pre>
+                            
+                            <h3>Complete Messaging Workflow</h3>
+                            <pre><code>&lt;?php
+require_once 'vendor/autoload.php';
+
+use MessingIn\WhatsAppApi\Client;
+
+function completeWorkflow() {
+    $client = new Client('YOUR_API_KEY');
+    
+    try {
+        // 1. Create a session
+        $sessionResponse = $client->sessions->create([
+            'phoneNumber' => '14155552671'
+        ]);
+        
+        if (!$sessionResponse['success']) {
+            throw new Exception("Failed to create session: {$sessionResponse['error']['message']}");
+        }
+        
+        $sessionId = $sessionResponse['data']['sessionId'];
+        echo "Session created with ID: {$sessionId}\n";
+        
+        // 2. Check session status until ready
+        $sessionStatus = null;
+        do {
+            $statusResponse = $client->sessions->getStatus($sessionId);
+            $sessionStatus = $statusResponse['data']['status'];
+            echo "Session status: {$sessionStatus}\n";
+            
+            if ($sessionStatus === 'failed') {
+                throw new Exception("Session initialization failed");
+            }
+            
+            if ($sessionStatus !== 'ready') {
+                // Wait before checking again
+                sleep(2);
+            }
+        } while ($sessionStatus !== 'ready');
+        
+        // 3. Send a text message
+        $textMessageResponse = $client->messages->sendText([
+            'sessionId' => $sessionId,
+            'to' => '14155552671',
+            'text' => 'Hello from the WhatsApp API!'
+        ]);
+        
+        echo "Text message sent with ID: {$textMessageResponse['data']['messageId']}\n";
+        
+        // 4. Send a media message
+        $mediaMessageResponse = $client->messages->sendMedia([
+            'sessionId' => $sessionId,
+            'to' => '14155552671',
+            'mediaType' => 'image',
+            'mediaUrl' => 'https://example.com/image.jpg',
+            'caption' => 'Check out this image!'
+        ]);
+        
+        echo "Media message sent with ID: {$mediaMessageResponse['data']['messageId']}\n";
+        
+        // 5. Send a button message
+        $buttonMessageResponse = $client->messages->sendButtons([
+            'sessionId' => $sessionId,
+            'to' => '14155552671',
+            'text' => 'Please select an option:',
+            'buttons' => [
+                ['id' => 'btn1', 'text' => 'Option 1'],
+                ['id' => 'btn2', 'text' => 'Option 2'],
+                ['id' => 'btn3', 'text' => 'Option 3']
+            ]
+        ]);
+        
+        echo "Button message sent with ID: {$buttonMessageResponse['data']['messageId']}\n";
+        
+        // Wait for some time to allow messages to be delivered
+        sleep(5);
+        
+        // 6. Delete the session when done
+        $deleteResponse = $client->sessions->delete($sessionId);
+        echo "Session deleted: " . ($deleteResponse['success'] ? 'true' : 'false') . "\n";
+        
+    } catch (Exception $e) {
+        echo "Error in workflow: {$e->getMessage()}\n";
+    }
+}
+
+// Run the workflow
+completeWorkflow();</code></pre>
+                            
+                            <h3>Webhook Handler (Laravel)</h3>
+                            <pre><code>&lt;?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WebhookController extends Controller
+{
+    // Webhook secret from your dashboard
+    private $webhookSecret = 'your_webhook_secret';
+    
+    /**
+     * Handle WhatsApp webhook requests
+     */
+    public function handleWhatsAppWebhook(Request $request)
+    {
+        try {
+            // Get the signature from headers
+            $signature = $request->header('X-Webhook-Signature');
+            if (!$signature) {
+                return response()->json(['error' => 'Missing signature'], 401);
+            }
+            
+            // Get the raw request payload
+            $payload = $request->getContent();
+            
+            // Verify the signature
+            if (!$this->verifySignature($payload, $signature)) {
+                return response()->json(['error' => 'Invalid signature'], 401);
+            }
+            
+            // Parse the JSON payload
+            $data = $request->json()->all();
+            $event = $data['event'] ?? null;
+            $eventData = $data['data'] ?? [];
+            
+            Log::info("Received webhook event: {$event}");
+            
+            // Handle different event types
+            switch ($event) {
+                case 'message.received':
+                    $this->handleIncomingMessage($eventData);
+                    break;
+                
+                case 'message.status.updated':
+                    $this->handleMessageStatusUpdate($eventData);
+                    break;
+                
+                case 'session.status.updated':
+                    $this->handleSessionStatusUpdate($eventData);
+                    break;
+                
+                default:
+                    Log::info("Unhandled event type: {$event}");
+            }
+            
+            // Always respond with 200 OK to acknowledge receipt
+            return response()->json(['status' => 'success']);
+            
+        } catch (\Exception $e) {
+            Log::error("Error processing webhook: {$e->getMessage()}");
+            return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+    
+    /**
+     * Verify webhook signature
+     */
+    private function verifySignature($payload, $signature)
+    {
+        $expectedSignature = hash_hmac('sha256', $payload, $this->webhookSecret);
+        return hash_equals($expectedSignature, $signature);
+    }
+    
+    /**
+     * Handle incoming messages
+     */
+    private function handleIncomingMessage($data)
+    {
+        $messageId = $data['messageId'] ?? null;
+        $sessionId = $data['sessionId'] ?? null;
+        $sender = $data['from'] ?? null;
+        $msgType = $data['type'] ?? null;
+        
+        Log::info("Received {$msgType} message from {$sender} in session {$sessionId}");
+        
+        if ($msgType === 'text') {
+            $text = $data['text']['body'] ?? '';
+            Log::info("Message content: {$text}");
+            // Process the message based on content
+            // For example, implement a chatbot logic here
+        }
+    }
+    
+    /**
+     * Handle message status updates
+     */
+    private function handleMessageStatusUpdate($data)
+    {
+        $messageId = $data['messageId'] ?? null;
+        $status = $data['status'] ?? null;
+        Log::info("Message {$messageId} status updated to: {$status}");
+    }
+    
+    /**
+     * Handle session status updates
+     */
+    private function handleSessionStatusUpdate($data)
+    {
+        $sessionId = $data['sessionId'] ?? null;
+        $status = $data['status'] ?? null;
+        Log::info("Session {$sessionId} status updated to: {$status}");
+    }
+}</code></pre>
+                            
+                            <h3>Error Handling with Retry Logic</h3>
+                            <pre><code>&lt;?php
+
+function sendMessageWithRetry($client, $sessionId, $to, $text, $maxRetries = 3)
+{
+    $retries = 0;
+    
+    while ($retries <= $maxRetries) {
+        try {
+            $response = $client->messages->sendText([
+                'sessionId' => $sessionId,
+                'to' => $to,
+                'text' => $text
+            ]);
+            
+            return $response;
+            
+        } catch (\Exception $e) {
+            // Check if it's a rate limit error
+            if ($e->getCode() === 429) {
+                $retryAfter = (int) ($e->getResponse()->getHeader('Retry-After')[0] ?? 1);
+                $retries++;
+                
+                if ($retries <= $maxRetries) {
+                    echo "Rate limited. Retrying after {$retryAfter} seconds (Attempt {$retries}/{$maxRetries})\n";
+                    sleep($retryAfter);
+                    continue;
+                }
+            }
+            
+            // For other errors or if max retries reached
+            throw $e;
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Java Examples -->
+                <div class="tab-pane fade" id="java" role="tabpanel" aria-labelledby="java-tab">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h2>Java Examples</h2>
+                        </div>
+                        <div class="card-body">
+                            <h3>Installation</h3>
+                            <p>Maven:</p>
+                            <pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;com.messingin&lt;/groupId&gt;
+    &lt;artifactId&gt;whatsapp-api-java&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+                            
+                            <p>Gradle:</p>
+                            <pre><code>implementation 'com.messingin:whatsapp-api-java:1.0.0'</code></pre>
+                            
+                            <h3>Basic Setup</h3>
+                            <pre><code>import com.messingin.whatsapp.WhatsAppClient;
+
+// Initialize the client
+WhatsAppClient client = new WhatsAppClient(
+    "YOUR_API_KEY",
+    // Optional: specify environment
+    "https://api.messingin.com/v1" // Default is production
+);</code></pre>
+                            
+                            <h3>Complete Messaging Workflow</h3>
+                            <pre><code>import com.messingin.whatsapp.WhatsAppClient;
+import com.messingin.whatsapp.models.*;
+import com.messingin.whatsapp.responses.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class CompleteWorkflow {
+    
+    public static void main(String[] args) {
+        WhatsAppClient client = new WhatsAppClient("YOUR_API_KEY");
+        
+        try {
+            // 1. Create a session
+            SessionRequest sessionRequest = new SessionRequest();
+            sessionRequest.setPhoneNumber("14155552671");
+            
+            SessionResponse sessionResponse = client.sessions().create(sessionRequest);
+            
+            if (!sessionResponse.isSuccess()) {
+                throw new Exception("Failed to create session: " + sessionResponse.getError().getMessage());
+            }
+            
+            String sessionId = sessionResponse.getData().getSessionId();
+            System.out.println("Session created with ID: " + sessionId);
+            
+            // 2. Check session status until ready
+            String sessionStatus;
+            do {
+                SessionStatusResponse statusResponse = client.sessions().getStatus(sessionId);
+                sessionStatus = statusResponse.getData().getStatus();
+                System.out.println("Session status: " + sessionStatus);
+                
+                if ("failed".equals(sessionStatus)) {
+                    throw new Exception("Session initialization failed");
+                }
+                
+                if (!"ready".equals(sessionStatus)) {
+                    // Wait before checking again
+                    Thread.sleep(2000);
+                }
+            } while (!"ready".equals(sessionStatus));
+            
+            // 3. Send a text message
+            TextMessage textMessage = new TextMessage()
+                .sessionId(sessionId)
+                .to("14155552671")
+                .text("Hello from the WhatsApp API!");
+                
+            MessageResponse textMessageResponse = client.messages().sendText(textMessage);
+            System.out.println("Text message sent with ID: " + textMessageResponse.getData().getMessageId());
+            
+            // 4. Send a media message
+            MediaMessage mediaMessage = new MediaMessage()
+                .sessionId(sessionId)
+                .to("14155552671")
+                .mediaType("image")
+                .mediaUrl("https://example.com/image.jpg")
+                .caption("Check out this image!");
+                
+            MessageResponse mediaMessageResponse = client.messages().sendMedia(mediaMessage);
+            System.out.println("Media message sent with ID: " + mediaMessageResponse.getData().getMessageId());
+            
+            // 5. Send a button message
+            List<Button> buttons = new ArrayList<>();
+            buttons.add(new Button("btn1", "Option 1"));
+            buttons.add(new Button("btn2", "Option 2"));
+            buttons.add(new Button("btn3", "Option 3"));
+            
+            ButtonMessage buttonMessage = new ButtonMessage()
+                .sessionId(sessionId)
+                .to("14155552671")
+                .text("Please select an option:")
+                .buttons(buttons);
+                
+            MessageResponse buttonMessageResponse = client.messages().sendButtons(buttonMessage);
+            System.out.println("Button message sent with ID: " + buttonMessageResponse.getData().getMessageId());
+            
+            // Wait for some time to allow messages to be delivered
+            Thread.sleep(5000);
+            
+            // 6. Delete the session when done
+            DeleteSessionResponse deleteResponse = client.sessions().delete(sessionId);
+            System.out.println("Session deleted: " + deleteResponse.isSuccess());
+            
+        } catch (Exception e) {
+            System.err.println("Error in workflow: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                            
+                            <h3>Webhook Handler (Spring Boot)</h3>
+                            <pre><code>import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@RestController
+@RequestMapping("/webhooks")
+public class WebhookController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(WebhookController.class);
+    
+    // Webhook secret from your dashboard
+    private static final String WEBHOOK_SECRET = "your_webhook_secret";
+    
+    @PostMapping("/whatsapp")
+    public ResponseEntity<?> handleWhatsAppWebhook(
+            @RequestBody String payload,
+            @RequestHeader("X-Webhook-Signature") String signature) {
+        
+        try {
+            // Verify the signature
+            if (!verifySignature(payload, signature)) {
+                logger.error("Invalid webhook signature");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid signature");
+            }
+            
+            // Parse the JSON payload
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> data = mapper.readValue(payload, Map.class);
+            
+            String event = (String) data.get("event");
+            Map<String, Object> eventData = (Map<String, Object>) data.get("data");
+            
+            logger.info("Received webhook event: {}", event);
+            
+            // Handle different event types
+            switch (event) {
+                case "message.received":
+                    handleIncomingMessage(eventData);
+                    break;
+                
+                case "message.status.updated":
+                    handleMessageStatusUpdate(eventData);
+                    break;
+                
+                case "session.status.updated":
+                    handleSessionStatusUpdate(eventData);
+                    break;
+                
+                default:
+                    logger.info("Unhandled event type: {}", event);
+            }
+            
+            // Always respond with 200 OK to acknowledge receipt
+            return ResponseEntity.ok().body("Webhook received");
+            
+        } catch (Exception e) {
+            logger.error("Error processing webhook: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error processing webhook");
+        }
+    }
+    
+    /**
+     * Verify webhook signature
+     */
+    private boolean verifySignature(String payload, String signature) 
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        
+        Mac sha256Hmac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secretKey = new SecretKeySpec(
+            WEBHOOK_SECRET.getBytes(StandardCharsets.UTF_8), 
+            "HmacSHA256"
+        );
+        sha256Hmac.init(secretKey);
+        
+        byte[] hash = sha256Hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+        String expectedSignature = bytesToHex(hash);
+        
+        return expectedSignature.equals(signature);
+    }
+    
+    /**
+     * Convert bytes to hexadecimal string
+     */
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+    
+    /**
+     * Handle incoming messages
+     */
+    private void handleIncomingMessage(Map<String, Object> data) {
+        String messageId = (String) data.get("messageId");
+        String sessionId = (String) data.get("sessionId");
+        String sender = (String) data.get("from");
+        String msgType = (String) data.get("type");
+        
+        logger.info("Received {} message from {} in session {}", msgType, sender, sessionId);
+        
+        if ("text".equals(msgType)) {
+            Map<String, Object> textData = (Map<String, Object>) data.get("text");
+            String text = (String) textData.get("body");
+            logger.info("Message content: {}", text);
+            // Process the message based on content
+            // For example, implement a chatbot logic here
+        }
+    }
+    
+    /**
+     * Handle message status updates
+     */
+    private void handleMessageStatusUpdate(Map<String, Object> data) {
+        String messageId = (String) data.get("messageId");
+        String status = (String) data.get("status");
+        logger.info("Message {} status updated to: {}", messageId, status);
+    }
+    
+    /**
+     * Handle session status updates
+     */
+    private void handleSessionStatusUpdate(Map<String, Object> data) {
+        String sessionId = (String) data.get("sessionId");
+        String status = (String) data.get("status");
+        logger.info("Session {} status updated to: {}", sessionId, status);
+    }
+}</code></pre>
+                            
+                            <h3>Error Handling with Retry Logic</h3>
+                            <pre><code>import com.messingin.whatsapp.WhatsAppClient;
+import com.messingin.whatsapp.models.TextMessage;
+import com.messingin.whatsapp.responses.MessageResponse;
+import com.messingin.whatsapp.exceptions.ApiException;
+
+public class RetryExample {
+    
+    public static MessageResponse sendMessageWithRetry(
+            WhatsAppClient client, 
+            String sessionId, 
+            String to, 
+            String text, 
+            int maxRetries) throws Exception {
+        
+        int retries = 0;
+        
+        while (retries <= maxRetries) {
+            try {
+                TextMessage message = new TextMessage()
+                    .sessionId(sessionId)
+                    .to(to)
+                    .text(text);
+                    
+                return client.messages().sendText(message);
+                
+            } catch (ApiException e) {
+                // Check if it's a rate limit error
+                if (e.getStatusCode() == 429) {
+                    String retryAfterHeader = e.getHeaders().get("Retry-After");
+                    int retryAfter = retryAfterHeader != null ? 
+                        Integer.parseInt(retryAfterHeader) : 1;
+                    
+                    retries++;
+                    
+                    if (retries <= maxRetries) {
+                        System.out.println("Rate limited. Retrying after " + 
+                            retryAfter + " seconds (Attempt " + retries + "/" + maxRetries + ")");
+                        
+                        Thread.sleep(retryAfter * 1000);
+                        continue;
+                    }
+                }
+                
+                // For other errors or if max retries reached
+                throw e;
+            }
+        }
+        
+        throw new Exception("Max retries exceeded");
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- cURL Examples -->
+                <div class="tab-pane fade" id="curl" role="tabpanel" aria-labelledby="curl-tab">
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h2>cURL Examples</h2>
+                        </div>
+                        <div class="card-body">
+                            <h3>Authentication</h3>
+                            <pre><code>curl -X GET \
+  "https://api.messingin.com/v1/health" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+                            
+                            <h3>Create a Session</h3>
+                            <pre><code>curl -X POST \
+  "https://api.messingin.com/v1/sessions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "phoneNumber": "14155552671"
+  }'</code></pre>
+                            
+                            <h3>Check Session Status</h3>
+                            <pre><code>curl -X GET \
+  "https://api.messingin.com/v1/sessions/SESSION_ID/status" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+                            
+                            <h3>Send a Text Message</h3>
+                            <pre><code>curl -X POST \
+  "https://api.messingin.com/v1/messages/text" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "sessionId": "SESSION_ID",
+    "to": "14155552671",
+    "text": "Hello from the WhatsApp API!"
+  }'</code></pre>
+                            
+                            <h3>Send a Media Message</h3>
+                            <pre><code>curl -X POST \
+  "https://api.messingin.com/v1/messages/media" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "sessionId": "SESSION_ID",
+    "to": "14155552671",
+    "mediaType": "image",
+    "mediaUrl": "https://example.com/image.jpg",
+    "caption": "Check out this image!"
+  }'</code></pre>
+                            
+                            <h3>Send a Button Message</h3>
+                            <pre><code>curl -X POST \
+  "https://api.messingin.com/v1/messages/buttons" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{
+    "sessionId": "SESSION_ID",
+    "to": "14155552671",
+    "text": "Please select an option:",
+    "buttons": [
+      {"id": "btn1", "text": "Option 1"},
+      {"id": "btn2", "text": "Option 2"},
+      {"id": "btn3", "text": "Option 3"}
+    ]
+  }'</code></pre>
+                            
+                            <h3>Delete a Session</h3>
+                            <pre><code>curl -X DELETE \
+  "https://api.messingin.com/v1/sessions/SESSION_ID" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+                            
+                            <h3>List All Sessions</h3>
+                            <pre><code>curl -X GET \
+  "https://api.messingin.com/v1/sessions" \
+  -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="mt-4">Common Use Cases</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="accordion" id="useCasesAccordion">
+                        <div class="card">
+                            <div class="card-header" id="chatbotHeading">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#chatbot" aria-expanded="true" aria-controls="chatbot">
+                                        Building a Simple Chatbot
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="chatbot" class="collapse show" aria-labelledby="chatbotHeading" data-parent="#useCasesAccordion">
+                                <div class="card-body">
+                                    <p>This example shows how to build a simple chatbot that responds to user messages:</p>
+                                    
+                                    <ul class="nav nav-tabs" id="chatbotTabs" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="chatbot-js-tab" data-toggle="tab" href="#chatbot-js" role="tab" aria-controls="chatbot-js" aria-selected="true">JavaScript</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="chatbot-py-tab" data-toggle="tab" href="#chatbot-py" role="tab" aria-controls="chatbot-py" aria-selected="false">Python</a>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="tab-content" id="chatbotTabContent">
+                                        <div class="tab-pane fade show active" id="chatbot-js" role="tabpanel" aria-labelledby="chatbot-js-tab">
+                                            <pre><code>const express = require('express');
+const bodyParser = require('body-parser');
+const crypto = require('crypto');
+const WhatsAppClient = require('whatsapp-api-client');
+
+const app = express();
+app.use(bodyParser.json());
+
+const client = new WhatsAppClient({
+  apiKey: 'YOUR_API_KEY'
+});
+
+const WEBHOOK_SECRET = 'your_webhook_secret';
+
+// Verify webhook signature
+function verifySignature(req) {
+  const signature = req.headers['x-webhook-signature'];
+  const payload = JSON.stringify(req.body);
+  
+  const expectedSignature = crypto
+    .createHmac('sha256', WEBHOOK_SECRET)
+    .update(payload)
+    .digest('hex');
+  
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+// Webhook endpoint
+app.post('/webhooks/whatsapp', async (req, res) => {
+  try {
+    // Verify the webhook signature
+    if (!verifySignature(req)) {
+      console.error('Invalid webhook signature');
+      return res.status(401).send('Invalid signature');
+    }
+    
+    const event = req.body.event;
+    const data = req.body.data;
+    
+    console.log(`Received webhook event: ${event}`);
+    
+    // Handle incoming messages
+    if (event === 'message.received' && data.type === 'text') {
+      await handleIncomingMessage(data);
+    }
+    
+    // Always respond with 200 OK to acknowledge receipt
+    res.status(200).send('Webhook received');
+    
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(500).send('Error processing webhook');
+  }
+});
+
+// Handle incoming messages
+async function handleIncomingMessage(data) {
+  const { sessionId, from, text } = data;
+  const message = text.body.toLowerCase();
+  
+  console.log(`Received message from ${from}: ${message}`);
+  
+  let response;
+  
+  // Simple keyword-based responses
+  if (message.includes('hello') || message.includes('hi')) {
+    response = 'Hello! How can I help you today?';
+  } else if (message.includes('help')) {
+    response = 'I can help you with:\n- Product information\n- Pricing\n- Support\n\nJust let me know what you need!';
+  } else if (message.includes('price') || message.includes('pricing')) {
+    response = 'Our pricing starts at $10/month. Would you like to see our full pricing plans?';
+  } else if (message.includes('support')) {
+    response = 'For support, please email support@example.com or call us at +1-800-123-4567.';
+  } else {
+    response = "I'm sorry, I didn't understand that. Can you please rephrase or type 'help' for assistance?";
+  }
+  
+  // Send the response back
+  try {
+    await client.messages.sendText({
+      sessionId,
+      to: from,
+      text: response
+    });
+    
+    console.log(`Response sent to ${from}`);
+  } catch (error) {
+    console.error('Error sending response:', error);
+  }
+}
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Chatbot server listening on port ${PORT}`);
+});</code></pre>
+                                        </div>
+                                        <div class="tab-pane fade" id="chatbot-py" role="tabpanel" aria-labelledby="chatbot-py-tab">
+                                            <pre><code>from flask import Flask, request, jsonify
+import hmac
+import hashlib
+import json
+from whatsapp_api import WhatsAppClient
+
+app = Flask(__name__)
+
+# Initialize the client
+client = WhatsAppClient(api_key='YOUR_API_KEY')
+
+# Webhook secret from your dashboard
+WEBHOOK_SECRET = 'your_webhook_secret'
+
+# Verify webhook signature
+def verify_signature(payload, signature):
+    expected_signature = hmac.new(
+        WEBHOOK_SECRET.encode(),
+        payload,
+        hashlib.sha256
+    ).hexdigest()
+    
+    return hmac.compare_digest(signature, expected_signature)
+
+@app.route('/webhooks/whatsapp', methods=['POST'])
+def webhook_handler():
+    try:
+        # Get the signature from headers
+        signature = request.headers.get('X-Webhook-Signature')
+        if not signature:
+            return jsonify({'error': 'Missing signature'}), 401
+        
+        # Get the raw request payload
+        payload = request.get_data()
+        
+        # Verify the signature
+        if not verify_signature(payload, signature):
+            return jsonify({'error': 'Invalid signature'}), 401
+        
+        # Parse the JSON payload
+        data = request.json
+        event = data.get('event')
+        event_data = data.get('data', {})
+        
+        print(f"Received webhook event: {event}")
+        
+        # Handle incoming messages
+        if event == 'message.received' and event_data.get('type') == 'text':
+            handle_incoming_message(event_data)
+        
+        # Always respond with 200 OK to acknowledge receipt
+        return jsonify({'status': 'success'}), 200
+        
+    except Exception as e:
+        print(f"Error processing webhook: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+# Handle incoming messages
+def handle_incoming_message(data):
+    session_id = data.get('sessionId')
+    sender = data.get('from')
+    message = data.get('text', {}).get('body', '').lower()
+    
+    print(f"Received message from {sender}: {message}")
+    
+    # Simple keyword-based responses
+    if 'hello' in message or 'hi' in message:
+        response = 'Hello! How can I help you today?'
+    elif 'help' in message:
+        response = 'I can help you with:\n- Product information\n- Pricing\n- Support\n\nJust let me know what you need!'
+    elif 'price' in message or 'pricing' in message:
+        response = 'Our pricing starts at $10/month. Would you like to see our full pricing plans?'
+    elif 'support' in message:
+        response = 'For support, please email support@example.com or call us at +1-800-123-4567.'
+    else:
+        response = "I'm sorry, I didn't understand that. Can you please rephrase or type 'help' for assistance?"
+    
+    # Send the response back
+    try:
+        client.messages.send_text({
+            'sessionId': session_id,
+            'to': sender,
+            'text': response
+        })
+        
+        print(f"Response sent to {sender}")
+    except Exception as e:
+        print(f"Error sending response: {e}")
+
+if __name__ == '__main__':
+    app.run(port=3000)</code></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header" id="notificationsHeading">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#notifications" aria-expanded="false" aria-controls="notifications">
+                                        Sending Notifications
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="notifications" class="collapse" aria-labelledby="notificationsHeading" data-parent="#useCasesAccordion">
+                                <div class="card-body">
+                                    <p>This example shows how to send notifications to users:</p>
+                                    
+                                    <pre><code>const WhatsAppClient = require('whatsapp-api-client');
+
+const client = new WhatsAppClient({
+  apiKey: 'YOUR_API_KEY'
+});
+
+async function sendNotification(phoneNumber, notificationType, data) {
+  try {
+    // 1. Get or create a session
+    let sessionId;
+    
+    // Check if we have a stored session ID for this user
+    const storedSession = await getStoredSession(phoneNumber); // Implement this function
+    
+    if (storedSession && storedSession.isActive) {
+      sessionId = storedSession.sessionId;
+    } else {
+      // Create a new session
+      const sessionResponse = await client.sessions.create({
+        phoneNumber: phoneNumber
+      });
+      
+      if (!sessionResponse.success) {
+        throw new Error(`Failed to create session: ${sessionResponse.error.message}`);
+      }
+      
+      sessionId = sessionResponse.data.sessionId;
+      
+      // Wait for session to be ready
+      await waitForSessionReady(sessionId);
+      
+      // Store the session for future use
+      await storeSession(phoneNumber, sessionId); // Implement this function
+    }
+    
+    // 2. Send notification based on type
+    let response;
+    
+    switch (notificationType) {
+      case 'order_confirmation':
+        response = await sendOrderConfirmation(sessionId, phoneNumber, data);
+        break;
+      
+      case 'delivery_update':
+        response = await sendDeliveryUpdate(sessionId, phoneNumber, data);
+        break;
+      
+      case 'payment_reminder':
+        response = await sendPaymentReminder(sessionId, phoneNumber, data);
+        break;
+      
+      case 'appointment_reminder':
+        response = await sendAppointmentReminder(sessionId, phoneNumber, data);
+        break;
+      
+      default:
+        throw new Error(`Unknown notification type: ${notificationType}`);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.error(`Failed to send ${notificationType} notification:`, error);
+    throw error;
+  }
+}
+
+async function waitForSessionReady(sessionId) {
+  let sessionStatus;
+  do {
+    const statusResponse = await client.sessions.getStatus(sessionId);
+    sessionStatus = statusResponse.data.status;
+    
+    if (sessionStatus === 'failed') {
+      throw new Error('Session initialization failed');
+    }
+    
+    if (sessionStatus !== 'ready') {
+      // Wait before checking again
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  } while (sessionStatus !== 'ready');
+}
+
+async function sendOrderConfirmation(sessionId, phoneNumber, data) {
+  const { orderNumber, items, total, estimatedDelivery } = data;
+  
+  // Format items list
+  const itemsList = items.map(item => `- ${item.quantity}x ${item.name}: $${item.price.toFixed(2)}`);
+  
+  const message = `🛒 *Order Confirmation #${orderNumber}*\n\n` +
+    `Thank you for your order! Here's a summary:\n\n` +
+    `${itemsList.join('\n')}\n\n` +
+    `*Total:* $${total.toFixed(2)}\n` +
+    `*Estimated Delivery:* ${estimatedDelivery}\n\n` +
+    `Track your order status at: https://example.com/orders/${orderNumber}`;
+  
+  return await client.messages.sendText({
+    sessionId,
+    to: phoneNumber,
+    text: message
+  });
+}
+
+async function sendDeliveryUpdate(sessionId, phoneNumber, data) {
+  const { orderNumber, status, estimatedArrival, trackingLink } = data;
+  
+  const message = `🚚 *Delivery Update for Order #${orderNumber}*\n\n` +
+    `Your order status: *${status}*\n` +
+    `Estimated arrival: ${estimatedArrival}\n\n` +
+    `Track your delivery: ${trackingLink}`;
+  
+  return await client.messages.sendText({
+    sessionId,
+    to: phoneNumber,
+    text: message
+  });
+}
+
+async function sendPaymentReminder(sessionId, phoneNumber, data) {
+  const { invoiceNumber, amount, dueDate, paymentLink } = data;
+  
+  const message = `💰 *Payment Reminder*\n\n` +
+    `Invoice: #${invoiceNumber}\n` +
+    `Amount Due: $${amount.toFixed(2)}\n` +
+    `Due Date: ${dueDate}\n\n` +
+    `Pay now: ${paymentLink}`;
+  
+  return await client.messages.sendText({
+    sessionId,
+    to: phoneNumber,
+    text: message
+  });
+}
+
+async function sendAppointmentReminder(sessionId, phoneNumber, data) {
+  const { appointmentType, date, time, location } = data;
+  
+  const message = `📅 *Appointment Reminder*\n\n` +
+    `This is a reminder about your upcoming ${appointmentType} appointment:\n\n` +
+    `📆 Date: ${date}\n` +
+    `⏰ Time: ${time}\n` +
+    `📍 Location: ${location}\n\n` +
+    `Need to reschedule? Reply 'RESCHEDULE' or call us at +1-800-123-4567.`;
+  
+  return await client.messages.sendText({
+    sessionId,
+    to: phoneNumber,
+    text: message
+  });
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Best Practices</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <ul>
+                        <li><strong>Error Handling:</strong> Always implement proper error handling and retry logic for API calls.</li>
+                        <li><strong>Session Management:</strong> Reuse sessions when possible to avoid creating unnecessary sessions.</li>
+                        <li><strong>Webhook Security:</strong> Always verify webhook signatures to ensure requests are legitimate.</li>
+                        <li><strong>Rate Limiting:</strong> Implement exponential backoff for retries when hitting rate limits.</li>
+                        <li><strong>Message Templates:</strong> Use consistent message templates for better user experience.</li>
+                        <li><strong>Testing:</strong> Test your integration thoroughly in the sandbox environment before going live.</li>
+                        <li><strong>Logging:</strong> Implement comprehensive logging for debugging and auditing purposes.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Copy to clipboard functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const codeBlocks = document.querySelectorAll('pre code');
+        
+        codeBlocks.forEach(function(codeBlock) {
+            const pre = codeBlock.parentNode;
+            
+            // Create copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'btn btn-sm btn-outline-secondary copy-btn';
+            copyButton.textContent = 'Copy';
+            copyButton.style.position = 'absolute';
+            copyButton.style.top = '5px';
+            copyButton.style.right = '5px';
+            
+            // Set position relative on pre element
+            pre.style.position = 'relative';
+            
+            // Add copy functionality
+            copyButton.addEventListener('click', function() {
+                const code = codeBlock.textContent;
+                navigator.clipboard.writeText(code).then(function() {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(function() {
+                        copyButton.textContent = 'Copy';
+                    }, 2000);
+                });
+            });
+            
+            pre.appendChild(copyButton);
+        });
+    });
+</script>
