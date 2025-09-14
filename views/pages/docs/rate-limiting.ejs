@@ -1,0 +1,305 @@
+<!-- Rate Limiting Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Rate Limiting</li>
+                </ol>
+            </nav>
+            
+            <h1>Rate Limiting</h1>
+            <div class="alert alert-info">
+                <p><strong>Rate limiting</strong> is implemented to ensure fair usage of the WhatsApp API service and to prevent abuse.</p>
+            </div>
+            
+            <h2>Rate Limit Overview</h2>
+            <p>Our API implements rate limiting to ensure stable service for all users. When you exceed your rate limit, requests will be rejected with a 429 Too Many Requests status code until the rate limit window resets.</p>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Rate Limit Headers</h3>
+                </div>
+                <div class="card-body">
+                    <p>All API responses include headers that provide information about your current rate limit status:</p>
+                    
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Header</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>X-RateLimit-Limit</code></td>
+                                <td>The maximum number of requests allowed in the current time window</td>
+                            </tr>
+                            <tr>
+                                <td><code>X-RateLimit-Remaining</code></td>
+                                <td>The number of requests remaining in the current time window</td>
+                            </tr>
+                            <tr>
+                                <td><code>X-RateLimit-Reset</code></td>
+                                <td>The time at which the current rate limit window resets, in Unix epoch seconds</td>
+                            </tr>
+                            <tr>
+                                <td><code>Retry-After</code></td>
+                                <td>Only present when rate limited. Indicates how many seconds to wait before making another request</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Example Headers</h4>
+                    <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1726483200</code></pre>
+                    
+                    <h4>Rate Limit Exceeded Example</h4>
+                    <pre><code>HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1726483200
+Retry-After: 60
+
+{
+  "success": false,
+  "error": {
+    "code": "rate_limit_exceeded",
+    "message": "Rate limit exceeded. Please try again in 60 seconds."
+  }
+}</code></pre>
+                </div>
+            </div>
+            
+            <h2>Rate Limit Tiers</h2>
+            <p>Rate limits vary based on your subscription plan and the specific API endpoint being accessed.</p>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0">Plan-Based Rate Limits</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Plan</th>
+                                <th>Requests per Minute</th>
+                                <th>Requests per Hour</th>
+                                <th>Requests per Day</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Free</td>
+                                <td>10</td>
+                                <td>100</td>
+                                <td>1,000</td>
+                            </tr>
+                            <tr>
+                                <td>Basic</td>
+                                <td>60</td>
+                                <td>1,000</td>
+                                <td>10,000</td>
+                            </tr>
+                            <tr>
+                                <td>Premium</td>
+                                <td>300</td>
+                                <td>5,000</td>
+                                <td>50,000</td>
+                            </tr>
+                            <tr>
+                                <td>Enterprise</td>
+                                <td>1,000</td>
+                                <td>20,000</td>
+                                <td>200,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h3 class="mb-0">Endpoint-Specific Rate Limits</h3>
+                </div>
+                <div class="card-body">
+                    <p>Some endpoints have specific rate limits regardless of your plan:</p>
+                    
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Endpoint</th>
+                                <th>Rate Limit</th>
+                                <th>Window</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>/api/v1/sessions</code> (POST)</td>
+                                <td>5 requests</td>
+                                <td>Per hour</td>
+                                <td>Creating new sessions is limited to prevent abuse</td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/v1/messages/bulk</code></td>
+                                <td>1 request</td>
+                                <td>Per minute</td>
+                                <td>Bulk message sending is heavily rate limited</td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/v1/media/*</code></td>
+                                <td>30 requests</td>
+                                <td>Per minute</td>
+                                <td>Media upload/download operations</td>
+                            </tr>
+                            <tr>
+                                <td><code>/api/v1/webhooks/test</code></td>
+                                <td>5 requests</td>
+                                <td>Per hour</td>
+                                <td>Testing webhooks is limited to prevent abuse</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Best Practices</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4>Handling Rate Limits</h4>
+                    <p>To effectively work with our rate limits, we recommend the following practices:</p>
+                    
+                    <ul>
+                        <li><strong>Implement exponential backoff</strong>: When you receive a 429 response, use the <code>Retry-After</code> header to determine how long to wait before retrying.</li>
+                        <li><strong>Monitor your usage</strong>: Keep track of the rate limit headers in responses to understand your current usage patterns.</li>
+                        <li><strong>Batch requests</strong>: Where possible, batch multiple operations into a single API call to reduce the number of requests.</li>
+                        <li><strong>Cache responses</strong>: Implement client-side caching for responses that don't change frequently.</li>
+                        <li><strong>Distribute traffic</strong>: If you have predictable high-volume periods, try to distribute your API calls more evenly throughout the day.</li>
+                    </ul>
+                    
+                    <h4>Code Example: Handling Rate Limits</h4>
+                    <div class="code-tabs">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="js-tab" data-toggle="tab" href="#js" role="tab">JavaScript</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="py-tab" data-toggle="tab" href="#py" role="tab">Python</a>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="js" role="tabpanel">
+                                <pre><code>async function makeApiRequest(url, options, maxRetries = 3) {
+  let retries = 0;
+  
+  while (retries < maxRetries) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Check rate limit headers
+      console.log(`Rate limit: ${response.headers.get('X-RateLimit-Remaining')}/${response.headers.get('X-RateLimit-Limit')}`);
+      
+      if (response.status === 429) {
+        // Rate limited - get retry time from header
+        const retryAfter = parseInt(response.headers.get('Retry-After') || '60');
+        console.log(`Rate limited. Retrying after ${retryAfter} seconds`);
+        
+        // Wait for the specified time
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        retries++;
+        continue;
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      retries++;
+      
+      if (retries >= maxRetries) {
+        throw new Error(`Failed after ${maxRetries} retries`);
+      }
+      
+      // Exponential backoff
+      const backoffTime = Math.pow(2, retries) * 1000;
+      await new Promise(resolve => setTimeout(resolve, backoffTime));
+    }
+  }
+}</code></pre>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="py" role="tabpanel">
+                                <pre><code>import requests
+import time
+
+def make_api_request(url, options, max_retries=3):
+    retries = 0
+    
+    while retries < max_retries:
+        try:
+            response = requests.request(
+                method=options.get('method', 'GET'),
+                url=url,
+                headers=options.get('headers', {}),
+                json=options.get('json'),
+                data=options.get('data')
+            )
+            
+            # Check rate limit headers
+            remaining = response.headers.get('X-RateLimit-Remaining')
+            limit = response.headers.get('X-RateLimit-Limit')
+            print(f"Rate limit: {remaining}/{limit}")
+            
+            if response.status_code == 429:
+                # Rate limited - get retry time from header
+                retry_after = int(response.headers.get('Retry-After', 60))
+                print(f"Rate limited. Retrying after {retry_after} seconds")
+                
+                # Wait for the specified time
+                time.sleep(retry_after)
+                retries += 1
+                continue
+            
+            return response.json()
+        
+        except Exception as e:
+            print(f"API request failed: {e}")
+            retries += 1
+            
+            if retries >= max_retries:
+                raise Exception(f"Failed after {max_retries} retries")
+            
+            # Exponential backoff
+            backoff_time = 2 ** retries
+            time.sleep(backoff_time)</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Rate Limit Increase</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>If you need higher rate limits than what your current plan provides, you have the following options:</p>
+                    
+                    <ol>
+                        <li><strong>Upgrade your plan</strong>: Moving to a higher tier plan will automatically increase your rate limits.</li>
+                        <li><strong>Contact support</strong>: Enterprise customers can contact our support team to discuss custom rate limit adjustments based on specific needs.</li>
+                        <li><strong>Optimize your implementation</strong>: Review your integration to ensure you're using the API efficiently and not making unnecessary requests.</li>
+                    </ol>
+                    
+                    <div class="alert alert-warning">
+                        <p><strong>Note:</strong> Repeatedly exceeding rate limits may result in temporary or permanent restrictions on your API access. Always implement proper rate limit handling in your applications.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

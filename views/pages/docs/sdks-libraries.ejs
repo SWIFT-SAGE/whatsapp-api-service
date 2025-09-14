@@ -1,0 +1,295 @@
+<!-- SDKs & Libraries Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">SDKs & Libraries</li>
+                </ol>
+            </nav>
+            
+            <h1>SDKs & Libraries</h1>
+            <div class="alert alert-info">
+                <p>To make integration with our WhatsApp API service easier, we provide official SDKs for popular programming languages and frameworks. This page lists available SDKs and community-maintained libraries.</p>
+            </div>
+            
+            <h2>Official SDKs</h2>
+            <p>Our official SDKs provide a convenient way to interact with the WhatsApp API service from your preferred programming language.</p>
+            
+            <div class="card-deck mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">JavaScript/Node.js</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4>Installation</h4>
+                        <pre><code>npm install whatsapp-api-client</code></pre>
+                        
+                        <h4>Basic Usage</h4>
+                        <pre><code>const WhatsAppClient = require('whatsapp-api-client');
+
+const client = new WhatsAppClient({
+  apiKey: 'YOUR_API_KEY'
+});
+
+async function sendMessage() {
+  try {
+    const result = await client.messages.sendText({
+      sessionId: 'session_123abc',
+      to: '14155552671',
+      text: 'Hello from the WhatsApp API!'
+    });
+    
+    console.log('Message sent:', result.data.messageId);
+  } catch (error) {
+    console.error('Failed to send message:', error);
+  }
+}</code></pre>
+                        
+                        <div class="mt-3">
+                            <a href="https://github.com/messingin/whatsapp-api-node" class="btn btn-primary" target="_blank">GitHub Repository</a>
+                            <a href="https://www.npmjs.com/package/whatsapp-api-client" class="btn btn-secondary ml-2" target="_blank">NPM Package</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="mb-0">Python</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4>Installation</h4>
+                        <pre><code>pip install whatsapp-api-python</code></pre>
+                        
+                        <h4>Basic Usage</h4>
+                        <pre><code>from whatsapp_api import WhatsAppClient
+
+client = WhatsAppClient(api_key='YOUR_API_KEY')
+
+def send_message():
+    try:
+        result = client.messages.send_text(
+            session_id='session_123abc',
+            to='14155552671',
+            text='Hello from the WhatsApp API!'
+        )
+        
+        print(f"Message sent: {result['data']['messageId']}")
+    except Exception as e:
+        print(f"Failed to send message: {e}")</code></pre>
+                        
+                        <div class="mt-3">
+                            <a href="https://github.com/messingin/whatsapp-api-python" class="btn btn-success" target="_blank">GitHub Repository</a>
+                            <a href="https://pypi.org/project/whatsapp-api-python" class="btn btn-secondary ml-2" target="_blank">PyPI Package</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-deck mb-4">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h3 class="mb-0">PHP</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4>Installation</h4>
+                        <pre><code>composer require messingin/whatsapp-api-php</code></pre>
+                        
+                        <h4>Basic Usage</h4>
+                        <pre><code>&lt;?php
+require_once 'vendor/autoload.php';
+
+use MessingIn\WhatsAppApi\Client;
+
+$client = new Client('YOUR_API_KEY');
+
+try {
+    $result = $client->messages->sendText([
+        'sessionId' => 'session_123abc',
+        'to' => '14155552671',
+        'text' => 'Hello from the WhatsApp API!'
+    ]);
+    
+    echo "Message sent: " . $result['data']['messageId'];
+} catch (Exception $e) {
+    echo "Failed to send message: " . $e->getMessage();
+}
+?&gt;</code></pre>
+                        
+                        <div class="mt-3">
+                            <a href="https://github.com/messingin/whatsapp-api-php" class="btn btn-danger" target="_blank">GitHub Repository</a>
+                            <a href="https://packagist.org/packages/messingin/whatsapp-api-php" class="btn btn-secondary ml-2" target="_blank">Packagist</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h3 class="mb-0">Java</h3>
+                    </div>
+                    <div class="card-body">
+                        <h4>Installation</h4>
+                        <p>Maven:</p>
+                        <pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;com.messingin&lt;/groupId&gt;
+    &lt;artifactId&gt;whatsapp-api-java&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+                        
+                        <p>Gradle:</p>
+                        <pre><code>implementation 'com.messingin:whatsapp-api-java:1.0.0'</code></pre>
+                        
+                        <h4>Basic Usage</h4>
+                        <pre><code>import com.messingin.whatsapp.WhatsAppClient;
+import com.messingin.whatsapp.models.TextMessage;
+import com.messingin.whatsapp.responses.MessageResponse;
+
+public class WhatsAppExample {
+    public static void main(String[] args) {
+        WhatsAppClient client = new WhatsAppClient("YOUR_API_KEY");
+        
+        try {
+            TextMessage message = new TextMessage()
+                .sessionId("session_123abc")
+                .to("14155552671")
+                .text("Hello from the WhatsApp API!");
+                
+            MessageResponse response = client.messages().sendText(message);
+            System.out.println("Message sent: " + response.getData().getMessageId());
+        } catch (Exception e) {
+            System.err.println("Failed to send message: " + e.getMessage());
+        }
+    }
+}</code></pre>
+                        
+                        <div class="mt-3">
+                            <a href="https://github.com/messingin/whatsapp-api-java" class="btn btn-info" target="_blank">GitHub Repository</a>
+                            <a href="https://search.maven.org/artifact/com.messingin/whatsapp-api-java" class="btn btn-secondary ml-2" target="_blank">Maven Central</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Community Libraries</h2>
+            <p>These libraries are maintained by the community and provide additional functionality or integration with specific frameworks.</p>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Library</th>
+                                    <th>Language/Framework</th>
+                                    <th>Description</th>
+                                    <th>Links</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>whatsapp-api-react</td>
+                                    <td>React</td>
+                                    <td>React components and hooks for WhatsApp API integration</td>
+                                    <td>
+                                        <a href="https://github.com/community/whatsapp-api-react" target="_blank">GitHub</a> |
+                                        <a href="https://www.npmjs.com/package/whatsapp-api-react" target="_blank">NPM</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>whatsapp-api-laravel</td>
+                                    <td>Laravel</td>
+                                    <td>Laravel package for WhatsApp API integration</td>
+                                    <td>
+                                        <a href="https://github.com/community/whatsapp-api-laravel" target="_blank">GitHub</a> |
+                                        <a href="https://packagist.org/packages/community/whatsapp-api-laravel" target="_blank">Packagist</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>whatsapp-api-django</td>
+                                    <td>Django</td>
+                                    <td>Django app for WhatsApp API integration</td>
+                                    <td>
+                                        <a href="https://github.com/community/whatsapp-api-django" target="_blank">GitHub</a> |
+                                        <a href="https://pypi.org/project/whatsapp-api-django" target="_blank">PyPI</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>whatsapp-api-go</td>
+                                    <td>Go</td>
+                                    <td>Go client for WhatsApp API</td>
+                                    <td>
+                                        <a href="https://github.com/community/whatsapp-api-go" target="_blank">GitHub</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>whatsapp-api-ruby</td>
+                                    <td>Ruby</td>
+                                    <td>Ruby gem for WhatsApp API integration</td>
+                                    <td>
+                                        <a href="https://github.com/community/whatsapp-api-ruby" target="_blank">GitHub</a> |
+                                        <a href="https://rubygems.org/gems/whatsapp-api-ruby" target="_blank">RubyGems</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>SDK Features</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>Our official SDKs provide the following features:</p>
+                    
+                    <ul>
+                        <li><strong>Complete API Coverage</strong>: All API endpoints are supported</li>
+                        <li><strong>Type Safety</strong>: Type definitions for request and response objects</li>
+                        <li><strong>Error Handling</strong>: Structured error handling with detailed error information</li>
+                        <li><strong>Authentication</strong>: Built-in API key authentication</li>
+                        <li><strong>Rate Limiting</strong>: Automatic handling of rate limit errors with retry capabilities</li>
+                        <li><strong>Webhook Verification</strong>: Utilities for verifying webhook signatures</li>
+                        <li><strong>Pagination</strong>: Helper methods for paginated endpoints</li>
+                        <li><strong>Logging</strong>: Configurable logging for debugging</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>Contributing</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>We welcome contributions to our SDKs and libraries! If you'd like to contribute, please follow these steps:</p>
+                    
+                    <ol>
+                        <li>Fork the repository on GitHub</li>
+                        <li>Create a new branch for your feature or bug fix</li>
+                        <li>Make your changes and add tests if applicable</li>
+                        <li>Run the tests to ensure they pass</li>
+                        <li>Submit a pull request with a clear description of your changes</li>
+                    </ol>
+                    
+                    <p>For more detailed information, please see the CONTRIBUTING.md file in each repository.</p>
+                </div>
+            </div>
+            
+            <h2>Support</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>If you encounter any issues with our SDKs or have questions about integration, you can get help through the following channels:</p>
+                    
+                    <ul>
+                        <li><strong>GitHub Issues</strong>: Report bugs or request features through the GitHub repository</li>
+                        <li><strong>Documentation</strong>: Comprehensive documentation is available for each SDK</li>
+                        <li><strong>Support Portal</strong>: Premium support is available for paid plans</li>
+                        <li><strong>Community Forum</strong>: Discuss with other developers in our community forum</li>
+                    </ul>
+                    
+                    <div class="mt-3">
+                        <a href="https://community.messingin.com" class="btn btn-primary" target="_blank">Community Forum</a>
+                        <a href="https://support.messingin.com" class="btn btn-secondary ml-2" target="_blank">Support Portal</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

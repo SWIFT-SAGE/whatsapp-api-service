@@ -1,0 +1,284 @@
+<!-- Sessions Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Sessions</li>
+                </ol>
+            </nav>
+            
+            <h1>WhatsApp Sessions</h1>
+            <div class="alert alert-info">
+                <p><strong>Sessions</strong> are required to connect to WhatsApp and send/receive messages.</p>
+            </div>
+            
+            <h2>Session Management</h2>
+            <p>Each WhatsApp connection requires a session. Sessions persist until explicitly disconnected or timed out.</p>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Create Session</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method post">POST</span>
+                        <span class="url">/api/v1/sessions</span>
+                    </div>
+                    
+                    <p>Creates a new WhatsApp session and returns a QR code for scanning with your WhatsApp mobile app.</p>
+                    
+                    <h4>Request Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>name</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Custom name for the session</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "sessionId": "session_123abc",
+    "qrCode": "data:image/png;base64,...",
+    "status": "pending"
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"my-whatsapp-session"}' \
+  https://api.messingin.com/v1/sessions</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Get Session Status</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method get">GET</span>
+                        <span class="url">/api/v1/sessions/{sessionId}</span>
+                    </div>
+                    
+                    <p>Retrieves the current status of a WhatsApp session.</p>
+                    
+                    <h4>Path Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>sessionId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the session to check</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "sessionId": "session_123abc",
+    "status": "connected",
+    "name": "my-whatsapp-session",
+    "createdAt": "2025-09-14T15:30:00Z",
+    "lastActivity": "2025-09-14T15:35:00Z"
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X GET \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.messingin.com/v1/sessions/session_123abc</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">Delete Session</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method delete">DELETE</span>
+                        <span class="url">/api/v1/sessions/{sessionId}</span>
+                    </div>
+                    
+                    <p>Disconnects and removes a WhatsApp session.</p>
+                    
+                    <h4>Path Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>sessionId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the session to delete</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "message": "Session successfully deleted"
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X DELETE \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.messingin.com/v1/sessions/session_123abc</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">List All Sessions</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method get">GET</span>
+                        <span class="url">/api/v1/sessions</span>
+                    </div>
+                    
+                    <p>Retrieves a list of all your WhatsApp sessions.</p>
+                    
+                    <h4>Query Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>limit</code></td>
+                                <td>integer</td>
+                                <td>Optional</td>
+                                <td>Maximum number of sessions to return (default: 10)</td>
+                            </tr>
+                            <tr>
+                                <td><code>offset</code></td>
+                                <td>integer</td>
+                                <td>Optional</td>
+                                <td>Number of sessions to skip (default: 0)</td>
+                            </tr>
+                            <tr>
+                                <td><code>status</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Filter by session status (connected, disconnected, pending)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "sessions": [
+      {
+        "sessionId": "session_123abc",
+        "status": "connected",
+        "name": "my-whatsapp-session",
+        "createdAt": "2025-09-14T15:30:00Z",
+        "lastActivity": "2025-09-14T15:35:00Z"
+      },
+      {
+        "sessionId": "session_456def",
+        "status": "disconnected",
+        "name": "second-session",
+        "createdAt": "2025-09-13T10:00:00Z",
+        "lastActivity": "2025-09-13T12:00:00Z"
+      }
+    ],
+    "total": 2,
+    "limit": 10,
+    "offset": 0
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X GET \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.messingin.com/v1/sessions?status=connected</code></pre>
+                </div>
+            </div>
+            
+            <h2>Session States</h2>
+            <p>A WhatsApp session can be in one of the following states:</p>
+            <ul>
+                <li><strong>pending</strong>: Session created, waiting for QR code scan</li>
+                <li><strong>connected</strong>: Successfully connected to WhatsApp</li>
+                <li><strong>disconnected</strong>: Session was disconnected</li>
+                <li><strong>timeout</strong>: QR code expired without being scanned</li>
+                <li><strong>error</strong>: An error occurred with the session</li>
+            </ul>
+            
+            <h2>Session Limits</h2>
+            <p>The number of concurrent sessions you can create depends on your subscription plan:</p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Plan</th>
+                        <th>Maximum Sessions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Free</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>Basic</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>Premium</td>
+                        <td>20</td>
+                    </tr>
+                    <tr>
+                        <td>Enterprise</td>
+                        <td>Unlimited</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

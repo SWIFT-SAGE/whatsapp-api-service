@@ -1,0 +1,96 @@
+<!-- Authentication Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Authentication</li>
+                </ol>
+            </nav>
+            
+            <h1>Authentication</h1>
+            <div class="alert alert-info">
+                <p><strong>All API requests require authentication</strong> using your API key.</p>
+            </div>
+            
+            <h2>API Key Authentication</h2>
+            <p>To authenticate your API requests, include your API key in the <code>Authorization</code> header:</p>
+            <pre><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+            
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Security Notice:</strong> Keep your API key secure. Do not share it in public repositories or client-side code.
+            </div>
+            
+            <h2>Getting Your API Key</h2>
+            <p>You can obtain your API key from your dashboard after registering for an account.</p>
+            <% if (user && user.apiKey) { %>
+            <div class="card border-success mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Your API Key</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <code class="api-key"><%= user.apiKey %></code>
+                        <button class="btn btn-sm btn-outline-secondary copy-btn" data-clipboard-text="<%= user.apiKey %>">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <% } else if (user) { %>
+            <div class="card border-warning mb-4">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Generate API Key</h5>
+                </div>
+                <div class="card-body">
+                    <p>You don't have an API key yet. Generate one from your dashboard.</p>
+                    <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="card border-info mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Get Started</h5>
+                </div>
+                <div class="card-body">
+                    <p>Sign up or log in to get your API key.</p>
+                    <a href="/register" class="btn btn-primary me-2">Sign Up</a>
+                    <a href="/login" class="btn btn-outline-primary">Log In</a>
+                </div>
+            </div>
+            <% } %>
+            
+            <h2>API Key Management</h2>
+            <p>Best practices for API key management:</p>
+            <ul>
+                <li>Store API keys securely in environment variables or secure vaults</li>
+                <li>Rotate keys periodically for enhanced security</li>
+                <li>Use different API keys for development and production environments</li>
+                <li>Revoke compromised keys immediately</li>
+            </ul>
+            
+            <h2>Rate Limiting</h2>
+            <p>API requests are subject to rate limiting based on your subscription plan. See the <a href="/api-docs#rate-limiting">Rate Limiting</a> section for details.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize clipboard.js for copy buttons
+        new ClipboardJS('.copy-btn');
+        
+        // Add copy success feedback
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                }, 2000);
+            });
+        });
+    });
+</script>

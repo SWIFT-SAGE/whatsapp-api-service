@@ -1,0 +1,480 @@
+<!-- Messages Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Messages</li>
+                </ol>
+            </nav>
+            
+            <h1>WhatsApp Messages</h1>
+            <div class="alert alert-info">
+                <p><strong>Messages</strong> are the core functionality of the WhatsApp API, allowing you to send various types of content to recipients.</p>
+            </div>
+            
+            <h2>Sending Messages</h2>
+            <p>You can send different types of messages using our API, including text, media, and interactive messages.</p>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Send Text Message</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method post">POST</span>
+                        <span class="url">/api/v1/messages/text</span>
+                    </div>
+                    
+                    <p>Sends a simple text message to a WhatsApp recipient.</p>
+                    
+                    <h4>Request Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>sessionId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the WhatsApp session to use</td>
+                            </tr>
+                            <tr>
+                                <td><code>to</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Recipient's phone number in international format (e.g., 14155552671)</td>
+                            </tr>
+                            <tr>
+                                <td><code>text</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>The text message to send</td>
+                            </tr>
+                            <tr>
+                                <td><code>quotedMessageId</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>ID of a message to quote/reply to</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "messageId": "msg_abc123",
+    "status": "sent",
+    "timestamp": "2025-09-14T15:45:30Z"
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "session_123abc",
+    "to": "14155552671",
+    "text": "Hello from the WhatsApp API!"
+  }' \
+  https://api.messingin.com/v1/messages/text</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Send Media Message</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method post">POST</span>
+                        <span class="url">/api/v1/messages/media</span>
+                    </div>
+                    
+                    <p>Sends a media message (image, video, document, audio) to a WhatsApp recipient.</p>
+                    
+                    <h4>Request Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>sessionId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the WhatsApp session to use</td>
+                            </tr>
+                            <tr>
+                                <td><code>to</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Recipient's phone number in international format</td>
+                            </tr>
+                            <tr>
+                                <td><code>mediaType</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Type of media: image, video, document, audio</td>
+                            </tr>
+                            <tr>
+                                <td><code>media</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>URL or base64 data of the media</td>
+                            </tr>
+                            <tr>
+                                <td><code>caption</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Caption for the media (not applicable for audio)</td>
+                            </tr>
+                            <tr>
+                                <td><code>filename</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Filename for document type</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "messageId": "msg_def456",
+    "status": "sent",
+    "timestamp": "2025-09-14T15:50:00Z",
+    "mediaType": "image"
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "session_123abc",
+    "to": "14155552671",
+    "mediaType": "image",
+    "media": "https://example.com/image.jpg",
+    "caption": "Check out this image!"
+  }' \
+  https://api.messingin.com/v1/messages/media</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Send Location Message</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method post">POST</span>
+                        <span class="url">/api/v1/messages/location</span>
+                    </div>
+                    
+                    <p>Sends a location message to a WhatsApp recipient.</p>
+                    
+                    <h4>Request Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>sessionId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the WhatsApp session to use</td>
+                            </tr>
+                            <tr>
+                                <td><code>to</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Recipient's phone number in international format</td>
+                            </tr>
+                            <tr>
+                                <td><code>latitude</code></td>
+                                <td>number</td>
+                                <td>Required</td>
+                                <td>Latitude coordinate</td>
+                            </tr>
+                            <tr>
+                                <td><code>longitude</code></td>
+                                <td>number</td>
+                                <td>Required</td>
+                                <td>Longitude coordinate</td>
+                            </tr>
+                            <tr>
+                                <td><code>name</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Name of the location</td>
+                            </tr>
+                            <tr>
+                                <td><code>address</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Address of the location</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "messageId": "msg_ghi789",
+    "status": "sent",
+    "timestamp": "2025-09-14T15:55:00Z"
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "session_123abc",
+    "to": "14155552671",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "name": "San Francisco",
+    "address": "San Francisco, CA, USA"
+  }' \
+  https://api.messingin.com/v1/messages/location</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Send Button Message</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method post">POST</span>
+                        <span class="url">/api/v1/messages/buttons</span>
+                    </div>
+                    
+                    <p>Sends an interactive button message to a WhatsApp recipient.</p>
+                    
+                    <h4>Request Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>sessionId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the WhatsApp session to use</td>
+                            </tr>
+                            <tr>
+                                <td><code>to</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Recipient's phone number in international format</td>
+                            </tr>
+                            <tr>
+                                <td><code>text</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Message text</td>
+                            </tr>
+                            <tr>
+                                <td><code>buttons</code></td>
+                                <td>array</td>
+                                <td>Required</td>
+                                <td>Array of button objects (max 3)</td>
+                            </tr>
+                            <tr>
+                                <td><code>footer</code></td>
+                                <td>string</td>
+                                <td>Optional</td>
+                                <td>Footer text for the message</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Button Object</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>id</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Unique identifier for the button</td>
+                            </tr>
+                            <tr>
+                                <td><code>text</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>Button text (max 20 characters)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "messageId": "msg_jkl012",
+    "status": "sent",
+    "timestamp": "2025-09-14T16:00:00Z"
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "session_123abc",
+    "to": "14155552671",
+    "text": "Please select an option:",
+    "buttons": [
+      {"id": "btn1", "text": "Yes"},
+      {"id": "btn2", "text": "No"},
+      {"id": "btn3", "text": "Maybe"}
+    ],
+    "footer": "Powered by WhatsApp API"
+  }' \
+  https://api.messingin.com/v1/messages/buttons</code></pre>
+                </div>
+            </div>
+            
+            <h2>Message Status</h2>
+            <p>Messages can have the following statuses:</p>
+            <ul>
+                <li><strong>sent</strong>: Message has been sent from your WhatsApp client</li>
+                <li><strong>delivered</strong>: Message has been delivered to the recipient's device</li>
+                <li><strong>read</strong>: Message has been read by the recipient</li>
+                <li><strong>failed</strong>: Message failed to send</li>
+            </ul>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Get Message Status</h3>
+                </div>
+                <div class="card-body">
+                    <div class="api-endpoint mb-3">
+                        <span class="method get">GET</span>
+                        <span class="url">/api/v1/messages/{messageId}</span>
+                    </div>
+                    
+                    <p>Retrieves the current status of a message.</p>
+                    
+                    <h4>Path Parameters</h4>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Type</th>
+                                <th>Required</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>messageId</code></td>
+                                <td>string</td>
+                                <td>Required</td>
+                                <td>ID of the message to check</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <h4>Response</h4>
+                    <pre><code>{
+  "success": true,
+  "data": {
+    "messageId": "msg_abc123",
+    "status": "delivered",
+    "timestamp": "2025-09-14T15:45:30Z",
+    "deliveredAt": "2025-09-14T15:45:35Z",
+    "readAt": null
+  }
+}</code></pre>
+                    
+                    <h4>cURL Example</h4>
+                    <pre><code>curl -X GET \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.messingin.com/v1/messages/msg_abc123</code></pre>
+                </div>
+            </div>
+            
+            <h2>Message Limits</h2>
+            <p>The number of messages you can send depends on your subscription plan:</p>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Plan</th>
+                        <th>Daily Message Limit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Free</td>
+                        <td>50</td>
+                    </tr>
+                    <tr>
+                        <td>Basic</td>
+                        <td>1,000</td>
+                    </tr>
+                    <tr>
+                        <td>Premium</td>
+                        <td>10,000</td>
+                    </tr>
+                    <tr>
+                        <td>Enterprise</td>
+                        <td>Unlimited</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="alert alert-warning mt-4">
+                <h4>Important Notes</h4>
+                <ul>
+                    <li>Messages can only be sent to numbers that have WhatsApp installed</li>
+                    <li>The recipient must have your number saved in their contacts to receive messages if you're using a personal WhatsApp account</li>
+                    <li>Media messages have size limits: Images (5MB), Videos (16MB), Documents (100MB), Audio (16MB)</li>
+                    <li>WhatsApp may block accounts that send spam or unwanted messages</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

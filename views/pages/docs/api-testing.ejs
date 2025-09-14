@@ -1,0 +1,438 @@
+<!-- API Testing Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">API Testing</li>
+                </ol>
+            </nav>
+            
+            <h1>API Testing</h1>
+            <div class="alert alert-info">
+                <p>This guide provides information on how to test our WhatsApp API service effectively, including available testing environments, tools, and best practices.</p>
+            </div>
+            
+            <h2>Testing Environments</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>We provide different environments to help you test your integration without affecting production data:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Environment</th>
+                                    <th>Base URL</th>
+                                    <th>Purpose</th>
+                                    <th>Limitations</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="badge badge-primary">Sandbox</span></td>
+                                    <td><code>https://sandbox-api.messingin.com/v1</code></td>
+                                    <td>Development and initial testing</td>
+                                    <td>
+                                        <ul>
+                                            <li>Messages are not delivered to real recipients</li>
+                                            <li>Limited to 100 requests per day</li>
+                                            <li>Simulated responses</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-warning">Staging</span></td>
+                                    <td><code>https://staging-api.messingin.com/v1</code></td>
+                                    <td>Pre-production testing</td>
+                                    <td>
+                                        <ul>
+                                            <li>Can send to whitelisted numbers only</li>
+                                            <li>Limited to 500 requests per day</li>
+                                            <li>Real message delivery to whitelisted numbers</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><span class="badge badge-success">Production</span></td>
+                                    <td><code>https://api.messingin.com/v1</code></td>
+                                    <td>Live environment</td>
+                                    <td>
+                                        <ul>
+                                            <li>Full functionality</li>
+                                            <li>Rate limits based on your plan</li>
+                                            <li>Real message delivery to any valid number</li>
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Test API Keys</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>Each environment requires a different API key:</p>
+                    
+                    <ul>
+                        <li><strong>Sandbox API Key</strong>: Generate from your dashboard under "Developer" → "Sandbox Keys"</li>
+                        <li><strong>Staging API Key</strong>: Request through support after completing sandbox testing</li>
+                        <li><strong>Production API Key</strong>: Generate from your dashboard under "Developer" → "Production Keys"</li>
+                    </ul>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Important:</strong> Never use production API keys in development or testing environments. Each key is environment-specific and should only be used in its intended environment.
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Testing Tools</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3>Built-in Testing Console</h3>
+                    <p>Our API documentation includes an interactive testing console that allows you to make API requests directly from your browser. To use it:</p>
+                    
+                    <ol>
+                        <li>Navigate to the endpoint you want to test in the API documentation</li>
+                        <li>Click the "Try it out" button</li>
+                        <li>Enter your API key and request parameters</li>
+                        <li>Click "Execute" to send the request</li>
+                    </ol>
+                    
+                    <h3>Recommended External Tools</h3>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Tool</th>
+                                    <th>Type</th>
+                                    <th>Best For</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Postman</td>
+                                    <td>API Client</td>
+                                    <td>Manual testing, creating collections of requests</td>
+                                    <td><a href="https://www.postman.com" target="_blank">Website</a></td>
+                                </tr>
+                                <tr>
+                                    <td>Insomnia</td>
+                                    <td>API Client</td>
+                                    <td>Simple interface, GraphQL support</td>
+                                    <td><a href="https://insomnia.rest" target="_blank">Website</a></td>
+                                </tr>
+                                <tr>
+                                    <td>cURL</td>
+                                    <td>Command-line tool</td>
+                                    <td>Quick tests, automation scripts</td>
+                                    <td><a href="https://curl.se" target="_blank">Website</a></td>
+                                </tr>
+                                <tr>
+                                    <td>Jest</td>
+                                    <td>Testing framework</td>
+                                    <td>Automated JavaScript testing</td>
+                                    <td><a href="https://jestjs.io" target="_blank">Website</a></td>
+                                </tr>
+                                <tr>
+                                    <td>Pytest</td>
+                                    <td>Testing framework</td>
+                                    <td>Automated Python testing</td>
+                                    <td><a href="https://pytest.org" target="_blank">Website</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h3>Webhook Testing</h3>
+                    <p>For testing webhooks during development, we recommend:</p>
+                    
+                    <ul>
+                        <li><a href="https://webhook.site" target="_blank">Webhook.site</a> - Provides a temporary URL to receive and inspect webhook payloads</li>
+                        <li><a href="https://ngrok.com" target="_blank">ngrok</a> - Creates a secure tunnel to your localhost for receiving webhooks</li>
+                        <li><a href="https://requestbin.com" target="_blank">RequestBin</a> - Collects, inspects and debugs HTTP requests and webhooks</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2>Testing Best Practices</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3>General Testing Tips</h3>
+                    <ul>
+                        <li><strong>Start with the sandbox:</strong> Always begin testing in the sandbox environment</li>
+                        <li><strong>Test error scenarios:</strong> Deliberately trigger errors to test your error handling</li>
+                        <li><strong>Validate responses:</strong> Check that your code correctly handles all response fields</li>
+                        <li><strong>Test rate limiting:</strong> Ensure your application handles rate limit errors gracefully</li>
+                        <li><strong>Test with realistic data:</strong> Use data that resembles your production use case</li>
+                    </ul>
+                    
+                    <h3>Automated Testing</h3>
+                    <p>For reliable integration, we recommend implementing automated tests:</p>
+                    
+                    <div class="accordion" id="testingAccordion">
+                        <div class="card">
+                            <div class="card-header" id="unitTestingHeading">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#unitTesting" aria-expanded="true" aria-controls="unitTesting">
+                                        Unit Testing
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="unitTesting" class="collapse show" aria-labelledby="unitTestingHeading" data-parent="#testingAccordion">
+                                <div class="card-body">
+                                    <p>Test individual components of your integration:</p>
+                                    <pre><code>// Example Jest test for sending a message
+test('sends a text message successfully', async () => {
+  const client = new WhatsAppClient({
+    apiKey: 'test_api_key',
+    baseUrl: 'https://sandbox-api.messingin.com/v1'
+  });
+  
+  const mockResponse = {
+    success: true,
+    data: {
+      messageId: 'msg_123456789'
+    }
+  };
+  
+  // Mock the API call
+  client.api.post = jest.fn().mockResolvedValue({ data: mockResponse });
+  
+  const result = await client.messages.sendText({
+    sessionId: 'test_session',
+    to: '14155552671',
+    text: 'Test message'
+  });
+  
+  expect(result.success).toBe(true);
+  expect(result.data.messageId).toBe('msg_123456789');
+});</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header" id="integrationTestingHeading">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#integrationTesting" aria-expanded="false" aria-controls="integrationTesting">
+                                        Integration Testing
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="integrationTesting" class="collapse" aria-labelledby="integrationTestingHeading" data-parent="#testingAccordion">
+                                <div class="card-body">
+                                    <p>Test the interaction between your application and the API:</p>
+                                    <pre><code># Example Python pytest integration test
+import pytest
+from whatsapp_api import WhatsAppClient
+
+@pytest.fixture
+def client():
+    return WhatsAppClient(
+        api_key='sandbox_test_key',
+        base_url='https://sandbox-api.messingin.com/v1'
+    )
+
+def test_session_workflow(client):
+    # Create a session
+    session_response = client.sessions.create({
+        'phone_number': '14155552671'
+    })
+    assert session_response['success'] == True
+    session_id = session_response['data']['sessionId']
+    
+    # Send a message using the session
+    message_response = client.messages.send_text({
+        'sessionId': session_id,
+        'to': '14155552671',
+        'text': 'Integration test message'
+    })
+    assert message_response['success'] == True
+    
+    # Delete the session
+    delete_response = client.sessions.delete(session_id)
+    assert delete_response['success'] == True</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header" id="webhookTestingHeading">
+                                <h2 class="mb-0">
+                                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#webhookTesting" aria-expanded="false" aria-controls="webhookTesting">
+                                        Webhook Testing
+                                    </button>
+                                </h2>
+                            </div>
+                            <div id="webhookTesting" class="collapse" aria-labelledby="webhookTestingHeading" data-parent="#testingAccordion">
+                                <div class="card-body">
+                                    <p>Test your webhook handling code:</p>
+                                    <pre><code>// Example Express.js webhook handler test
+const request = require('supertest');
+const app = require('../app');
+const crypto = require('crypto');
+
+describe('Webhook Handler', () => {
+  it('processes message received webhook correctly', async () => {
+    // Sample webhook payload
+    const payload = {
+      event: 'message.received',
+      data: {
+        messageId: 'msg_123456789',
+        sessionId: 'session_abcdef',
+        from: '14155552671',
+        timestamp: new Date().toISOString(),
+        type: 'text',
+        text: {
+          body: 'Hello from webhook test'
+        }
+      }
+    };
+    
+    // Create signature for webhook verification
+    const webhookSecret = 'test_webhook_secret';
+    const signature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(JSON.stringify(payload))
+      .digest('hex');
+    
+    // Send webhook request
+    const response = await request(app)
+      .post('/api/webhooks/whatsapp')
+      .set('X-Webhook-Signature', signature)
+      .send(payload);
+    
+    expect(response.status).toBe(200);
+    
+    // Verify the webhook was processed correctly
+    // This depends on your implementation
+    // For example, check if a database record was created
+  });
+});</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Testing Checklist</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>Before moving to production, ensure you've tested the following:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th>Test Case</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="3">Authentication</td>
+                                    <td>Valid API key</td>
+                                    <td>Requests with valid API key succeed</td>
+                                </tr>
+                                <tr>
+                                    <td>Invalid API key</td>
+                                    <td>Requests with invalid API key fail with 401</td>
+                                </tr>
+                                <tr>
+                                    <td>Missing API key</td>
+                                    <td>Requests without API key fail with 401</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="4">Sessions</td>
+                                    <td>Create session</td>
+                                    <td>Session is created successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>Get session status</td>
+                                    <td>Session status is retrieved correctly</td>
+                                </tr>
+                                <tr>
+                                    <td>Delete session</td>
+                                    <td>Session is deleted successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>List sessions</td>
+                                    <td>All sessions are listed correctly</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="5">Messages</td>
+                                    <td>Send text message</td>
+                                    <td>Text message is sent successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>Send media message</td>
+                                    <td>Media message is sent successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>Send location message</td>
+                                    <td>Location message is sent successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>Send button message</td>
+                                    <td>Button message is sent successfully</td>
+                                </tr>
+                                <tr>
+                                    <td>Message status updates</td>
+                                    <td>Webhooks for message status updates are received</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="3">Webhooks</td>
+                                    <td>Webhook verification</td>
+                                    <td>Webhook signatures are verified correctly</td>
+                                </tr>
+                                <tr>
+                                    <td>Message received webhook</td>
+                                    <td>Incoming messages trigger webhooks</td>
+                                </tr>
+                                <tr>
+                                    <td>Webhook retry handling</td>
+                                    <td>Application handles webhook retries correctly</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="2">Error Handling</td>
+                                    <td>Rate limit handling</td>
+                                    <td>Application handles rate limit errors gracefully</td>
+                                </tr>
+                                <tr>
+                                    <td>General error handling</td>
+                                    <td>Application handles various error responses correctly</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <h2>Moving to Production</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>Once you've completed testing in the sandbox and staging environments, follow these steps to move to production:</p>
+                    
+                    <ol>
+                        <li>Generate a production API key from your dashboard</li>
+                        <li>Update your application configuration to use the production base URL and API key</li>
+                        <li>Configure production webhooks with proper security measures</li>
+                        <li>Monitor your initial production traffic closely</li>
+                        <li>Set up alerts for any unusual error rates or response times</li>
+                    </ol>
+                    
+                    <div class="alert alert-success">
+                        <strong>Need help?</strong> Our support team is available to assist with your production deployment. Contact us through the <a href="https://support.messingin.com" target="_blank">Support Portal</a> for assistance.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

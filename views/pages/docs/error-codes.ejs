@@ -1,0 +1,459 @@
+<!-- Error Codes Documentation Page -->
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/api-docs">API Documentation</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Error Codes</li>
+                </ol>
+            </nav>
+            
+            <h1>Error Codes</h1>
+            <div class="alert alert-info">
+                <p>This page provides a comprehensive list of error codes that may be returned by the WhatsApp API service, along with explanations and troubleshooting tips.</p>
+            </div>
+            
+            <h2>Error Response Format</h2>
+            <p>When an error occurs, the API returns a JSON response with the following structure:</p>
+            
+            <pre><code>{
+  "success": false,
+  "error": {
+    "code": "error_code_here",
+    "message": "Human-readable error message",
+    "details": {  // Optional additional information
+      "field": "specific_field_with_error",
+      "reason": "specific_reason_for_error"
+    }
+  }
+}</code></pre>
+            
+            <h2>HTTP Status Codes</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>The API uses standard HTTP status codes to indicate the success or failure of requests:</p>
+                    
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Status Code</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>200 OK</td>
+                                <td>The request was successful</td>
+                            </tr>
+                            <tr>
+                                <td>201 Created</td>
+                                <td>A resource was successfully created</td>
+                            </tr>
+                            <tr>
+                                <td>400 Bad Request</td>
+                                <td>The request was invalid or cannot be served</td>
+                            </tr>
+                            <tr>
+                                <td>401 Unauthorized</td>
+                                <td>Authentication failed or user doesn't have permissions</td>
+                            </tr>
+                            <tr>
+                                <td>403 Forbidden</td>
+                                <td>The request is understood but it has been refused or access is not allowed</td>
+                            </tr>
+                            <tr>
+                                <td>404 Not Found</td>
+                                <td>The requested resource could not be found</td>
+                            </tr>
+                            <tr>
+                                <td>409 Conflict</td>
+                                <td>The request conflicts with the current state of the server</td>
+                            </tr>
+                            <tr>
+                                <td>422 Unprocessable Entity</td>
+                                <td>The request was well-formed but was unable to be followed due to semantic errors</td>
+                            </tr>
+                            <tr>
+                                <td>429 Too Many Requests</td>
+                                <td>Rate limit exceeded</td>
+                            </tr>
+                            <tr>
+                                <td>500 Internal Server Error</td>
+                                <td>An error occurred on the server</td>
+                            </tr>
+                            <tr>
+                                <td>503 Service Unavailable</td>
+                                <td>The server is temporarily unavailable</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Authentication Errors</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>HTTP Status</th>
+                                <th>Description</th>
+                                <th>Troubleshooting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>invalid_api_key</code></td>
+                                <td>401</td>
+                                <td>The API key provided is invalid</td>
+                                <td>Check that you're using the correct API key and that it hasn't been revoked</td>
+                            </tr>
+                            <tr>
+                                <td><code>missing_api_key</code></td>
+                                <td>401</td>
+                                <td>No API key was provided in the request</td>
+                                <td>Include your API key in the Authorization header</td>
+                            </tr>
+                            <tr>
+                                <td><code>expired_api_key</code></td>
+                                <td>401</td>
+                                <td>The API key has expired</td>
+                                <td>Generate a new API key from your dashboard</td>
+                            </tr>
+                            <tr>
+                                <td><code>insufficient_permissions</code></td>
+                                <td>403</td>
+                                <td>The API key doesn't have permission to perform this action</td>
+                                <td>Use an API key with the required permissions or contact support to upgrade your plan</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Session Errors</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>HTTP Status</th>
+                                <th>Description</th>
+                                <th>Troubleshooting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>session_not_found</code></td>
+                                <td>404</td>
+                                <td>The specified session ID doesn't exist</td>
+                                <td>Check that you're using the correct session ID</td>
+                            </tr>
+                            <tr>
+                                <td><code>session_not_connected</code></td>
+                                <td>400</td>
+                                <td>The session exists but is not connected to WhatsApp</td>
+                                <td>Ensure the QR code has been scanned and the session is active</td>
+                            </tr>
+                            <tr>
+                                <td><code>session_limit_reached</code></td>
+                                <td>403</td>
+                                <td>You've reached the maximum number of sessions allowed for your plan</td>
+                                <td>Delete unused sessions or upgrade your plan</td>
+                            </tr>
+                            <tr>
+                                <td><code>qr_code_expired</code></td>
+                                <td>400</td>
+                                <td>The QR code for session initialization has expired</td>
+                                <td>Create a new session to get a fresh QR code</td>
+                            </tr>
+                            <tr>
+                                <td><code>session_disconnected</code></td>
+                                <td>400</td>
+                                <td>The WhatsApp session has been disconnected</td>
+                                <td>Reconnect by creating a new session and scanning the QR code</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Message Errors</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>HTTP Status</th>
+                                <th>Description</th>
+                                <th>Troubleshooting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>invalid_phone_number</code></td>
+                                <td>400</td>
+                                <td>The recipient phone number is invalid</td>
+                                <td>Ensure the phone number is in international format (e.g., 14155552671)</td>
+                            </tr>
+                            <tr>
+                                <td><code>recipient_not_on_whatsapp</code></td>
+                                <td>400</td>
+                                <td>The recipient doesn't have WhatsApp installed</td>
+                                <td>Verify that the recipient has an active WhatsApp account</td>
+                            </tr>
+                            <tr>
+                                <td><code>message_too_long</code></td>
+                                <td>400</td>
+                                <td>The message exceeds the maximum allowed length</td>
+                                <td>Reduce the message length (max 4096 characters for text messages)</td>
+                            </tr>
+                            <tr>
+                                <td><code>media_size_exceeded</code></td>
+                                <td>400</td>
+                                <td>The media file exceeds the maximum allowed size</td>
+                                <td>Reduce the file size (limits: Images 5MB, Videos 16MB, Documents 100MB)</td>
+                            </tr>
+                            <tr>
+                                <td><code>invalid_media_type</code></td>
+                                <td>400</td>
+                                <td>The media type is not supported</td>
+                                <td>Use a supported media type (image, video, document, audio)</td>
+                            </tr>
+                            <tr>
+                                <td><code>media_url_inaccessible</code></td>
+                                <td>400</td>
+                                <td>The media URL provided cannot be accessed</td>
+                                <td>Ensure the URL is publicly accessible and the file exists</td>
+                            </tr>
+                            <tr>
+                                <td><code>message_not_found</code></td>
+                                <td>404</td>
+                                <td>The specified message ID doesn't exist</td>
+                                <td>Check that you're using the correct message ID</td>
+                            </tr>
+                            <tr>
+                                <td><code>message_sending_failed</code></td>
+                                <td>500</td>
+                                <td>The message could not be sent due to a WhatsApp error</td>
+                                <td>Check the session status and try again later</td>
+                            </tr>
+                            <tr>
+                                <td><code>daily_message_limit_reached</code></td>
+                                <td>403</td>
+                                <td>You've reached the maximum number of messages allowed for your plan today</td>
+                                <td>Wait until the limit resets or upgrade your plan</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Webhook Errors</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>HTTP Status</th>
+                                <th>Description</th>
+                                <th>Troubleshooting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>invalid_webhook_url</code></td>
+                                <td>400</td>
+                                <td>The webhook URL provided is invalid</td>
+                                <td>Ensure the URL is properly formatted and uses HTTPS (for production)</td>
+                            </tr>
+                            <tr>
+                                <td><code>webhook_url_unreachable</code></td>
+                                <td>400</td>
+                                <td>The webhook URL cannot be reached</td>
+                                <td>Verify that your webhook server is running and accessible from the internet</td>
+                            </tr>
+                            <tr>
+                                <td><code>webhook_response_timeout</code></td>
+                                <td>400</td>
+                                <td>The webhook URL took too long to respond</td>
+                                <td>Ensure your webhook server responds within 5 seconds</td>
+                            </tr>
+                            <tr>
+                                <td><code>invalid_webhook_event</code></td>
+                                <td>400</td>
+                                <td>One or more of the specified webhook events are invalid</td>
+                                <td>Use only supported event types (message.received, message.status, etc.)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Rate Limiting Errors</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>HTTP Status</th>
+                                <th>Description</th>
+                                <th>Troubleshooting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>rate_limit_exceeded</code></td>
+                                <td>429</td>
+                                <td>You've exceeded the rate limit for this endpoint</td>
+                                <td>Wait for the rate limit to reset (see Retry-After header) or upgrade your plan</td>
+                            </tr>
+                            <tr>
+                                <td><code>concurrent_request_limit_exceeded</code></td>
+                                <td>429</td>
+                                <td>Too many concurrent requests are being made</td>
+                                <td>Reduce the number of simultaneous requests to the API</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>General Errors</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Error Code</th>
+                                <th>HTTP Status</th>
+                                <th>Description</th>
+                                <th>Troubleshooting</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>invalid_request</code></td>
+                                <td>400</td>
+                                <td>The request is malformed or contains invalid parameters</td>
+                                <td>Check the request format and parameters against the API documentation</td>
+                            </tr>
+                            <tr>
+                                <td><code>missing_required_parameter</code></td>
+                                <td>400</td>
+                                <td>A required parameter is missing from the request</td>
+                                <td>Check the API documentation for required parameters</td>
+                            </tr>
+                            <tr>
+                                <td><code>invalid_parameter_type</code></td>
+                                <td>400</td>
+                                <td>A parameter has the wrong data type</td>
+                                <td>Check the API documentation for the correct parameter types</td>
+                            </tr>
+                            <tr>
+                                <td><code>resource_not_found</code></td>
+                                <td>404</td>
+                                <td>The requested resource could not be found</td>
+                                <td>Verify that the resource ID or path is correct</td>
+                            </tr>
+                            <tr>
+                                <td><code>method_not_allowed</code></td>
+                                <td>405</td>
+                                <td>The HTTP method used is not supported for this endpoint</td>
+                                <td>Use the correct HTTP method (GET, POST, etc.) as specified in the documentation</td>
+                            </tr>
+                            <tr>
+                                <td><code>internal_server_error</code></td>
+                                <td>500</td>
+                                <td>An unexpected error occurred on the server</td>
+                                <td>Contact support if the issue persists</td>
+                            </tr>
+                            <tr>
+                                <td><code>service_unavailable</code></td>
+                                <td>503</td>
+                                <td>The service is temporarily unavailable</td>
+                                <td>Try again later</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <h2>Error Handling Best Practices</h2>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>To effectively handle errors in your application, we recommend the following practices:</p>
+                    
+                    <ul>
+                        <li><strong>Check error codes</strong>: Always check the error code in the response to understand what went wrong.</li>
+                        <li><strong>Implement retry logic</strong>: For transient errors (like rate limiting or temporary service unavailability), implement retry logic with exponential backoff.</li>
+                        <li><strong>Log errors</strong>: Log errors with their full details for debugging purposes.</li>
+                        <li><strong>Display user-friendly messages</strong>: Translate API error messages into user-friendly messages in your application.</li>
+                        <li><strong>Monitor error rates</strong>: Keep track of error rates to identify potential issues with your integration.</li>
+                    </ul>
+                    
+                    <h4>Example Error Handling</h4>
+                    <pre><code>async function sendWhatsAppMessage(sessionId, to, text) {
+  try {
+    const response = await fetch('https://api.messingin.com/v1/messages/text', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sessionId, to, text })
+    });
+    
+    const data = await response.json();
+    
+    if (!data.success) {
+      // Handle specific error codes
+      switch (data.error.code) {
+        case 'session_not_connected':
+          console.error('WhatsApp session is not connected. Please scan the QR code.');
+          // Prompt user to reconnect
+          break;
+          
+        case 'invalid_phone_number':
+          console.error('Invalid phone number format. Use international format.');
+          // Show validation error to user
+          break;
+          
+        case 'rate_limit_exceeded':
+          const retryAfter = response.headers.get('Retry-After') || 60;
+          console.error(`Rate limit exceeded. Retrying after ${retryAfter} seconds.`);
+          // Implement retry logic
+          setTimeout(() => sendWhatsAppMessage(sessionId, to, text), retryAfter * 1000);
+          break;
+          
+        default:
+          console.error(`WhatsApp API error: ${data.error.message}`);
+          // Show generic error to user
+      }
+      
+      return { success: false, error: data.error };
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Failed to send WhatsApp message:', error);
+    return { 
+      success: false, 
+      error: { 
+        code: 'network_error', 
+        message: 'Failed to connect to the API' 
+      } 
+    };
+  }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
