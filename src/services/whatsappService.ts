@@ -14,24 +14,52 @@ interface WhatsAppClientManager {
 
 class WhatsAppService {
   private clients: WhatsAppClientManager = {};
+  private initialized: boolean = false;
 
   constructor() {
-    this.initializeExistingSessions();
+    // Don't initialize sessions in constructor to avoid database connection issues
   }
 
   /**
-   * Initialize existing sessions on server start
+   * Initialize existing sessions - call this after database connection is established
    */
-  private async initializeExistingSessions(): Promise<void> {
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      logger.warn('WhatsApp service already initialized');
+      return;
+    }
+
     try {
+      // Wait a bit to ensure database connection is fully ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if mongoose connection is ready
+      const mongoose = require('mongoose');
+      if (mongoose.connection.readyState !== 1) {
+        logger.warn('Database connection not ready, skipping WhatsApp session initialization');
+        this.initialized = true;
+        return;
+      }
+
       const sessions = await WhatsappSession.find({ isConnected: true });
       for (const session of sessions) {
         await this.createClient(session.sessionId, session.userId.toString());
       }
+      this.initialized = true;
       logger.info(`Initialized ${sessions.length} existing WhatsApp sessions`);
     } catch (error) {
       logger.error('Error initializing existing sessions:', error);
+      // Don't throw error to prevent server startup failure
+      logger.warn('Continuing server startup without existing session initialization');
+      this.initialized = true;
     }
+  }
+
+  /**
+   * Initialize existing sessions on server start (deprecated - use initialize() instead)
+   */
+  private async initializeExistingSessions(): Promise<void> {
+    return this.initialize();
   }
 
   /**

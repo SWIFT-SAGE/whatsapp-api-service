@@ -1493,3 +1493,34 @@ footer a:hover .fa-lg {
   color: var(--whatsapp-green);
   transform: translateY(-2px);
 }
+
+/* Form validation styles */
+.invalid-feedback {
+  display: none !important;
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+  margin-top: 0.25rem;
+}
+
+.form-control.is-invalid ~ .invalid-feedback,
+.form-check-input.is-invalid ~ .invalid-feedback {
+  display: block !important;
+}
+
+.form-control.is-invalid {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 0.2rem rgba(var(--color-error-rgb), 0.25);
+}
+
+.form-control.is-valid {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 0.2rem rgba(var(--color-success-rgb), 0.25);
+}
+
+.form-check-input.is-invalid {
+  border-color: var(--color-error);
+}
+
+.form-check-input.is-valid {
+  border-color: var(--color-success);
+}

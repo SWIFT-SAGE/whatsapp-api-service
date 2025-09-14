@@ -1,6 +1,7 @@
 import express from 'express';
 import authRoutes from './auth';
 import whatsappRoutes from './whatsapp';
+import analyticsRoutes from './analytics';
 import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.get('/', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       whatsapp: '/api/whatsapp',
+      analytics: '/api/analytics',
       health: '/api/health'
     },
     documentation: '/api-docs'
@@ -32,6 +34,7 @@ router.get('/', (req, res) => {
 // Route handlers
 router.use('/auth', authRoutes);
 router.use('/whatsapp', whatsappRoutes);
+router.use('/analytics', authenticateToken, analyticsRoutes);
 
 // 404 handler for API routes
 router.use('*', (req, res) => {

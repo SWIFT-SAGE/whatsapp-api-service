@@ -19,7 +19,7 @@ export class AuthController {
         return;
       }
 
-      const { email, password, name } = req.body;
+      const { email, password, name, plan, marketingEmails } = req.body;
 
       // Check if user already exists
       const existingUser = await User.findOne({ email });
@@ -31,11 +31,39 @@ export class AuthController {
       // Create verification token
       const verificationToken = crypto.randomBytes(32).toString('hex');
 
+      // Split name into first and last name
+      const nameParts = name.trim().split(' ');
+      const firstName = nameParts[0] || name;
+      const lastName = nameParts.slice(1).join(' ') || 'User';
+
+      // Generate API key
+      const generateApiKey = (): string => {
+        const prefix = 'am'; // API Messaging
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 15);
+        return `${prefix}_${timestamp}_${random}`;
+      };
+
       // Create new user
       const user = new User({
         email,
         password,
         name,
+        apiKey: generateApiKey(),
+        profile: {
+          firstName,
+          lastName,
+          timezone: 'UTC',
+          language: 'en'
+        },
+        subscription: {
+          plan: plan || 'free'
+        },
+        preferences: {
+          emailNotifications: true,
+          webhookNotifications: true,
+          marketingEmails: marketingEmails || false
+        },
         verificationToken,
         isVerified: false
       });
@@ -43,7 +71,7 @@ export class AuthController {
       await user.save();
 
       // Send verification email
-      const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+      const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${verificationToken}`;
 
       try {
         await sendEmail({
@@ -114,13 +142,7 @@ export class AuthController {
       const options: jwt.SignOptions = { expiresIn };
       const token = jwt.sign(payload, secret, options);
 
-      // Set session (extend session type to include user)
-      (req.session as any).user = {
-        id: user._id.toString(),
-        email: user.email,
-        name: user.name,
-        subscription: user.subscription
-      };
+      logger.info(`Login successful for user: ${email}`);
 
       res.json({
         success: true,
@@ -168,6 +190,49 @@ export class AuthController {
       });
     } catch (error) {
       logger.error('Email verification error:', error);
+      res.status(500).json({ error: 'Verification failed' });
+    }
+  }
+
+  /**
+   * Manual verification for testing (temporary)
+   */
+  async manualVerify(req: Request, res: Response): Promise<void> {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        res.status(400).json({ error: 'Email is required' });
+        return;
+      }
+
+      const user = await User.findOneAndUpdate(
+        { email },
+        { 
+          isVerified: true,
+          'subscription.isActive': true,
+          'subscription.plan': 'basic'
+        },
+        { new: true }
+      );
+
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      res.json({
+        success: true,
+        message: 'User verified and subscription activated',
+        user: {
+          email: user.email,
+          isVerified: user.isVerified,
+          apiKey: user.apiKey,
+          subscription: user.subscription
+        }
+      });
+    } catch (error) {
+      logger.error('Manual verification error:', error);
       res.status(500).json({ error: 'Verification failed' });
     }
   }

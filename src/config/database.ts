@@ -45,10 +45,10 @@ class DatabaseManager {
       maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE || '20'),
       minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE || '5'),
       
-      // Timeout settings
-      serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_SELECTION_TIMEOUT || '30000'),
-      socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT || '45000'),
-      connectTimeoutMS: parseInt(process.env.DB_CONNECT_TIMEOUT || '30000'),
+      // Timeout settings (reduced for faster failure detection)
+      serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_SELECTION_TIMEOUT || '5000'),
+      socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT || '10000'),
+      connectTimeoutMS: parseInt(process.env.DB_CONNECT_TIMEOUT || '5000'),
       
       // Buffering settings
       bufferCommands: false,

@@ -379,16 +379,25 @@
             // Auto-refresh dashboard stats every 30 seconds
             setInterval(async function() {
                 try {
-                    const response = await fetch('/api/dashboard/stats');
+                    const response = await fetch('/api/analytics/dashboard?period=30d', {
+                        headers: {
+                            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
+                        }
+                    });
                     if (response.ok) {
-                        const stats = await response.json();
+                        const result = await response.json();
+                        const stats = result.data;
                         
                         // Update stats cards
                         const messagesElement = document.getElementById('messages-sent');
                         const sessionsElement = document.getElementById('active-sessions');
+                        const deliveryElement = document.getElementById('delivery-rate');
+                        const totalSessionsElement = document.getElementById('total-sessions');
                         
-                        if (messagesElement) messagesElement.textContent = stats.totalMessages.toLocaleString();
-                        if (sessionsElement) sessionsElement.textContent = stats.activeSessions;
+                        if (messagesElement) messagesElement.textContent = (stats.totalMessages || 0).toLocaleString();
+                        if (sessionsElement) sessionsElement.textContent = stats.activeSessions || 0;
+                        if (deliveryElement) deliveryElement.textContent = stats.deliveryRate || '0%';
+                        if (totalSessionsElement) totalSessionsElement.textContent = stats.totalSessions || 0;
                     }
                 } catch (error) {
                     console.log('Error refreshing stats:', error);

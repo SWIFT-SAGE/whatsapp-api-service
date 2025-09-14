@@ -24,6 +24,7 @@ import { securityMiddleware } from './config/security';
 import { compressionConfig } from './config/performance';
 import apiRoutes from './routes';
 import healthRoutes from './routes/health';
+import whatsappService from './services/whatsappService';
 
 // Load environment variables
 dotenv.config();
@@ -67,7 +68,7 @@ app.use(performanceMonitor);
 app.use(requestLogger);
 
 // Request timeout
-app.use(timeoutHandler(30000)); // Set a default 30 second timeout
+app.use(timeoutHandler(120000)); // Set a default 120 second timeout for WhatsApp operations
 
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' })); // Set a reasonable default body size limit
@@ -282,41 +283,26 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user!._id;
-    
-    // Get session stats
-    const sessions = await WhatsappSession.find({ userId });
-    const activeSessions = sessions.filter(s => s.isConnected).length;
-    
-    // Get message stats for today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayMessages = await MessageLog.countDocuments({
-      userId,
-      createdAt: { $gte: today }
-    });
-    
-    // Get weekly analytics
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const weeklyAnalytics = await Analytics.find({
-      userId,
-      date: { $gte: weekAgo }
-    }).sort({ date: 1 });
-    
-    res.json({
-      success: true,
-      stats: {
-        totalSessions: sessions.length,
-        activeSessions,
-        todayMessages,
-        weeklyAnalytics
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch stats' });
-  }
+// Dashboard stats endpoint removed - now using /api/analytics/dashboard
+
+// Mock billing endpoints for demo purposes
+app.post('/api/billing/subscribe', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    message: 'This is a demo - billing functionality not implemented',
+    checkoutUrl: null
+  });
+});
+
+app.get('/api/billing/subscription-status', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    subscription: {
+      planName: 'Free',
+      status: 'active',
+      nextBillingDate: null
+    }
+  });
 });
 
 // Health check routes (before other routes for quick access)
@@ -374,8 +360,19 @@ const startServer = async () => {
     
     // Connect to database
     logger.info('🔌 Connecting to database...');
-    await connectDatabase();
-    logger.info('✅ Database connected successfully');
+    try {
+      await connectDatabase();
+      logger.info('✅ Database connected successfully');
+      
+      // Initialize WhatsApp service after database connection
+      logger.info('📱 Initializing WhatsApp service...');
+      await whatsappService.initialize();
+      logger.info('✅ WhatsApp service initialized successfully');
+    } catch (error) {
+      logger.error('❌ Database connection failed:', error);
+      logger.warn('⚠️  Server will start without database connectivity');
+      logger.warn('⚠️  Some features may not work properly');
+    }
     
     // Start monitoring services
     logger.info('📊 Starting monitoring services...');

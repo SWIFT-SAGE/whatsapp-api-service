@@ -485,5 +485,3 @@ pm2 restart whatsapp-api  # if using PM2
 ---
 
 **Note**: This service is for educational and legitimate business purposes only. Ensure compliance with WhatsApp's Terms of Service and local regulations.
-#   w h a t s a p p - a p i - m e s s i n g  
- 

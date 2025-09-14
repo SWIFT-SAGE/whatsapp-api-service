@@ -8,8 +8,11 @@ const router = express.Router();
 // Validation rules
 const registerValidation = [
   body('email').isEmail().withMessage('Please provide a valid email'),
-  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
-  body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters long')
+  body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+  body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters long'),
+  body('plan').optional().isIn(['free', 'basic', 'premium']).withMessage('Plan must be free, basic, or premium'),
+  body('marketingEmails').optional().isBoolean().withMessage('Marketing emails must be a boolean value')
 ];
 
 const loginValidation = [
@@ -35,6 +38,7 @@ const resetPasswordValidation = [
 router.post('/register', registerValidation, AuthController.register);
 router.post('/login', loginValidation, AuthController.login);
 router.post('/verify-email', AuthController.verifyEmail);
+router.post('/manual-verify', AuthController.manualVerify); // Temporary for testing
 router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/reset-password', resetPasswordValidation, AuthController.resetPassword);
 
