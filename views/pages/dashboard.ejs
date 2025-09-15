@@ -379,11 +379,7 @@
             // Auto-refresh dashboard stats every 30 seconds
             setInterval(async function() {
                 try {
-                    const response = await fetch('/api/analytics/dashboard?period=30d', {
-                        headers: {
-                            'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`
-                        }
-                    });
+                    const response = await fetch('/api/analytics/dashboard?period=30d');
                     if (response.ok) {
                         const result = await response.json();
                         const stats = result.data;

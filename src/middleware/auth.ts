@@ -129,7 +129,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as JwtPayload;
+      const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
       const user = await User.findById(decoded.userId).select('-password');
       if (user) {
         req.user = user;

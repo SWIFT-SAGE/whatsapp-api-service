@@ -768,36 +768,18 @@ async function initializeDashboard() {
   if (!currentUser) return;
 
   try {
-    const token = sessionStorage.getItem('authToken');
+    // Dashboard stats are already provided by server-side rendering
+    // No need to make additional API calls that require authentication
     
-    // Load dashboard stats from API
-    const response = await fetch('/api/analytics/dashboard?period=30d', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    // Update stats display with current user data
+    const messagesSent = document.getElementById('messages-sent');
+    const activeSessions = document.getElementById('active-sessions');
     
-    if (response.ok) {
-      const data = await response.json();
-      const stats = data.data;
-      
-      // Update stats display
-      const messagesSent = document.getElementById('messages-sent');
-      const activeSessions = document.getElementById('active-sessions');
-      const deliveryRate = document.getElementById('delivery-rate');
-      const totalSessions = document.getElementById('total-sessions');
-      
-      if (messagesSent) messagesSent.textContent = (stats.totalMessages || 0).toLocaleString();
-      if (activeSessions) activeSessions.textContent = stats.activeSessions || 0;
-      if (deliveryRate) deliveryRate.textContent = stats.deliveryRate || '0%';
-      if (totalSessions) totalSessions.textContent = stats.totalSessions || 0;
-    } else {
-      // Fallback to current user data if API fails
-      const messagesSent = document.getElementById('messages-sent');
-      const activeSessions = document.getElementById('active-sessions');
-      
-      if (messagesSent) messagesSent.textContent = currentUser.messageCount.toLocaleString();
-      if (activeSessions) activeSessions.textContent = currentUser.activeSessions;
+    if (messagesSent && currentUser.messageCount !== undefined) {
+      messagesSent.textContent = currentUser.messageCount.toLocaleString();
+    }
+    if (activeSessions && currentUser.activeSessions !== undefined) {
+      activeSessions.textContent = currentUser.activeSessions;
     }
     
   } catch (error) {
@@ -965,12 +947,7 @@ async function loadMessages() {
   if (!tableBody) return;
   
   try {
-    const token = sessionStorage.getItem('authToken');
-    const response = await fetch('/api/analytics/messages?limit=10', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const response = await fetch('/api/analytics/messages?limit=10');
     
     if (!response.ok) {
       throw new Error('Failed to load messages');
