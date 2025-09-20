@@ -748,7 +748,7 @@ async function handleRegister(e) {
 async function logout() {
   try {
     const token = sessionStorage.getItem('authToken');
-    if (token) {
+    if (token && token !== 'undefined' && token !== 'null') {
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -807,6 +807,12 @@ async function initializeDashboard() {
       activeSessions.textContent = currentUser.activeSessions;
     }
     
+    // Update API key field
+    const apiKeyInput = document.getElementById('api-key');
+    if (apiKeyInput && currentUser.apiKey) {
+      apiKeyInput.value = currentUser.apiKey;
+    }
+    
   } catch (error) {
     console.error('Error loading dashboard analytics:', error);
     // Fallback to current user data if API fails
@@ -859,9 +865,17 @@ async function loadSessions() {
   if (!container) return;
   
   try {
-    // Get API key for WhatsApp endpoints
-    const apiKeyInput = document.getElementById('api-key');
-    const apiKey = apiKeyInput ? apiKeyInput.value : '';
+    // Get API key for WhatsApp endpoints - prioritize currentUser
+    let apiKey = '';
+    if (window.currentUser && window.currentUser.apiKey) {
+      apiKey = window.currentUser.apiKey;
+      console.log('Using API key from currentUser:', apiKey);
+    } else {
+      // Fallback to input field
+      const apiKeyInput = document.getElementById('api-key');
+      apiKey = apiKeyInput ? apiKeyInput.value : '';
+      console.log('Using API key from input field:', apiKey);
+    }
     
     if (!apiKey || apiKey === 'Not generated') {
       console.log('API key not available for sessions');
@@ -986,8 +1000,8 @@ async function loadMessages() {
   
   try {
     const token = sessionStorage.getItem('authToken');
-    if (!token) {
-      console.log('No auth token available for messages');
+    if (!token || token === 'undefined' || token === 'null') {
+      console.log('No valid auth token available for messages');
       return;
     }
     
@@ -1099,6 +1113,9 @@ async function handleQuickMessage(e) {
   
   try {
     const token = sessionStorage.getItem('authToken');
+    if (!token || token === 'undefined' || token === 'null') {
+      throw new Error('No valid authentication token');
+    }
     const response = await fetch(`/api/whatsapp/sessions/${sessionId}/messages`, {
       method: 'POST',
       headers: {
@@ -1163,6 +1180,9 @@ async function createSession() {
   
   try {
     const token = sessionStorage.getItem('authToken');
+    if (!token || token === 'undefined' || token === 'null') {
+      throw new Error('No valid authentication token');
+    }
     
     // Create new session
     const response = await fetch('/api/whatsapp/sessions', {
@@ -1270,7 +1290,8 @@ async function getAndDisplayQRCode(sessionId, modal) {
 
     const qrResponse = await fetch(`/api/whatsapp/sessions/${sessionId}/qr`, {
       headers: {
-        'Authorization': `Bearer ${currentUser.apiKey}`
+        'x-api-key': currentUser.apiKey,
+        'Content-Type': 'application/json'
       }
     });
 
@@ -1310,7 +1331,8 @@ function pollSessionStatus(sessionId, modal) {
     try {
       const response = await fetch(`/api/whatsapp/sessions/${sessionId}`, {
         headers: {
-          'Authorization': `Bearer ${currentUser.apiKey}`
+          'x-api-key': currentUser.apiKey,
+          'Content-Type': 'application/json'
         }
       });
 
@@ -1356,10 +1378,14 @@ async function deleteSession(sessionId) {
   
   try {
     const token = sessionStorage.getItem('authToken');
+    if (!token || token === 'undefined' || token === 'null') {
+      throw new Error('No valid authentication token');
+    }
     const response = await fetch(`/api/whatsapp/sessions/${sessionId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'x-api-key': currentUser.apiKey,
+        'Content-Type': 'application/json'
       }
     });
     
@@ -1385,10 +1411,14 @@ async function disconnectSession(sessionId) {
   
   try {
     const token = sessionStorage.getItem('authToken');
+    if (!token || token === 'undefined' || token === 'null') {
+      throw new Error('No valid authentication token');
+    }
     const response = await fetch(`/api/whatsapp/sessions/${sessionId}/disconnect`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'x-api-key': currentUser.apiKey,
+        'Content-Type': 'application/json'
       }
     });
     
@@ -1412,10 +1442,14 @@ async function reconnectSession(sessionId) {
     showToast('Reconnecting session...', 'info');
     
     const token = sessionStorage.getItem('authToken');
+    if (!token || token === 'undefined' || token === 'null') {
+      throw new Error('No valid authentication token');
+    }
     const response = await fetch(`/api/whatsapp/sessions/${sessionId}/connect`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`
+        'x-api-key': currentUser.apiKey,
+        'Content-Type': 'application/json'
       }
     });
     

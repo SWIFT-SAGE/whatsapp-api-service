@@ -70,12 +70,16 @@ export class AuthController {
 
       await user.save();
 
-      // Send verification email
+      // Send verification email (only if SMTP is configured)
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
 
-      try {
-        await sendEmail({
+      // Check if SMTP is configured before attempting to send email
+      const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST;
+      
+      if (isSmtpConfigured) {
+        // Send email asynchronously without blocking registration
+        sendEmail({
           to: email,
           subject: 'Welcome to API Messaging - Verify Your Email',
           html: `
@@ -86,15 +90,20 @@ export class AuthController {
             <p>If you didn't create this account, please ignore this email.</p>
             <p>Best regards,<br>API Messaging Team</p>
           `
+        }).then(() => {
+          logger.info(`Verification email sent to ${email}`);
+        }).catch((emailError) => {
+          logger.error('Error sending verification email:', emailError);
         });
-      } catch (emailError) {
-        logger.error('Error sending verification email:', emailError);
-        // Continue with registration even if email fails
+      } else {
+        logger.warn('SMTP not configured, skipping verification email');
       }
 
       res.status(201).json({
         success: true,
-        message: 'User registered successfully. Please check your email for verification.',
+        message: isSmtpConfigured 
+          ? 'User registered successfully. Please check your email for verification.'
+          : 'User registered successfully. Email verification is not configured.',
         user: {
           id: user._id,
           email: user.email,
@@ -488,6 +497,26 @@ export class AuthController {
   }
 
   /**
+   * Check email configuration status
+   */
+  async checkEmailConfig(req: Request, res: Response): Promise<void> {
+    try {
+      const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST;
+      
+      res.json({
+        success: true,
+        emailConfigured: isSmtpConfigured,
+        message: isSmtpConfigured 
+          ? 'Email service is configured' 
+          : 'Email service is not configured. Please set SMTP environment variables.'
+      });
+    } catch (error) {
+      logger.error('Email config check error:', error);
+      res.status(500).json({ error: 'Failed to check email configuration' });
+    }
+  }
+
+  /**
    * Send verification email
    */
   async sendVerificationEmail(req: Request, res: Response): Promise<void> {
@@ -532,7 +561,7 @@ export class AuthController {
         // Check if SMTP is configured
         const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS;
         
-        if (!isSmtpConfigured || process.env.NODE_ENV === 'development') {
+        if (!isSmtpConfigured) {
           // Return success with verification token for manual verification
           res.json({
             success: true,

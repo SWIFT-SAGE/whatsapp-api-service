@@ -2165,3 +2165,52 @@ footer a:hover .fa-lg {
 .form-check-input.is-valid {
   border-color: var(--color-success);
 }
+
+/* QR Code Modal Styles */
+.qr-code-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.qr-code-wrapper img {
+  max-width: 300px;
+  max-height: 300px;
+  border: 2px solid #dee2e6;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#qrCodeModal .modal-body {
+  padding: 2rem;
+}
+
+#qrCodeModal .modal-header {
+  background: linear-gradient(135deg, #25D366, #128C7E);
+  color: white;
+  border-bottom: none;
+}
+
+#qrCodeModal .modal-header .btn-close {
+  filter: invert(1);
+}
+
+#qrCodeModal .modal-footer {
+  border-top: 1px solid #dee2e6;
+  background: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+  .qr-code-wrapper img {
+    max-width: 250px;
+    max-height: 250px;
+  }
+  
+  #qrCodeModal .modal-body {
+    padding: 1rem;
+  }
+}
