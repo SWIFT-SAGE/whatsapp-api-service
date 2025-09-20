@@ -13,7 +13,10 @@
     <%- include('pages/dashboard') %>
     <%- include('pages/pricing') %>
 
-    <%- include('partials/footer') %>
+    <!-- Footer - shown only on landing page -->
+    <div id="main-footer" style="display: none;">
+        <%- include('partials/footer') %>
+    </div>
     <%- include('partials/modals') %>
     <%- include('partials/toast') %>
     <%- include('partials/scripts') %>

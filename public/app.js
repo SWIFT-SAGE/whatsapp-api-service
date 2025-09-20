@@ -485,6 +485,17 @@ function showView(viewName) {
     console.error('View not found:', viewName + '-view');
   }
 
+  // Show/hide footer based on current view
+  const footer = document.getElementById('main-footer');
+  if (footer) {
+    // Show footer on landing and pricing pages
+    if (viewName === 'landing' || viewName === 'pricing') {
+      footer.style.display = 'block';
+    } else {
+      footer.style.display = 'none';
+    }
+  }
+
   // Special handling for dashboard
   if (viewName === 'dashboard' && currentUser) {
     initializeDashboard();
