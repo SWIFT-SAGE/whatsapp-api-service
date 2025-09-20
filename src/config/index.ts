@@ -136,8 +136,7 @@ export const config = {
     name: env.MONGODB_DB_NAME,
     options: {
       maxPoolSize: env.NODE_ENV === 'production' ? 20 : 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
+    
       bufferMaxEntries: 0,
       bufferCommands: false,
     },

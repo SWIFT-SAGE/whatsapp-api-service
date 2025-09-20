@@ -812,7 +812,7 @@ body {
   position: relative;
   overflow: hidden;
   padding-top: 20px;
-  padding-bottom: 20px;
+
 }
 
 .hero-section::before {
@@ -1066,7 +1066,8 @@ body {
   display: flex;
   align-items: center;
   padding: 100px 0;
- 
+  box-sizing: border-box;
+  
 }
 
 .auth-card {
@@ -1757,8 +1758,7 @@ pre {
 .view {
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
-  padding-top: 20px;
-  padding-bottom: 20px;
+
 }
 
 .view.active {
