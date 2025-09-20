@@ -813,20 +813,25 @@ async function initializeDashboard() {
     const messagesSent = document.getElementById('messages-sent');
     const activeSessions = document.getElementById('active-sessions');
     
-    if (messagesSent) messagesSent.textContent = currentUser.messageCount.toLocaleString();
-    if (activeSessions) activeSessions.textContent = currentUser.activeSessions;
+    if (messagesSent && currentUser.messageCount !== undefined) {
+      messagesSent.textContent = currentUser.messageCount.toLocaleString();
+    }
+    if (activeSessions && currentUser.activeSessions !== undefined) {
+      activeSessions.textContent = currentUser.activeSessions;
+    }
   }
   
   // Update plan badge
   const planBadge = document.getElementById('plan-badge');
   if (planBadge) {
-    planBadge.textContent = currentUser.plan.charAt(0).toUpperCase() + currentUser.plan.slice(1) + ' Plan';
+    const plan = currentUser.plan || 'free';
+    planBadge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
   }
   
   // Update API key
   const apiKeyInput = document.getElementById('api-key');
   if (apiKeyInput) {
-    apiKeyInput.value = currentUser.apiKey;
+    apiKeyInput.value = currentUser.apiKey || 'Not generated';
   }
 
   // Show chatbot nav for premium users
@@ -846,8 +851,7 @@ async function initializeDashboard() {
   // Show overview section by default
   showDashboardSection('overview');
   
-  // Load analytics data
-  loadAnalytics();
+  // Analytics data is loaded by the dashboard's own JavaScript
 }
 
 async function loadSessions() {
@@ -855,10 +859,19 @@ async function loadSessions() {
   if (!container) return;
   
   try {
-    const token = sessionStorage.getItem('authToken');
+    // Get API key for WhatsApp endpoints
+    const apiKeyInput = document.getElementById('api-key');
+    const apiKey = apiKeyInput ? apiKeyInput.value : '';
+    
+    if (!apiKey || apiKey === 'Not generated') {
+      console.log('API key not available for sessions');
+      return;
+    }
+    
     const response = await fetch('/api/whatsapp/sessions', {
       headers: {
-        'Authorization': `Bearer ${token}`
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json'
       }
     });
     
@@ -972,7 +985,18 @@ async function loadMessages() {
   if (!tableBody) return;
   
   try {
-    const response = await fetch('/api/analytics/messages?limit=10');
+    const token = sessionStorage.getItem('authToken');
+    if (!token) {
+      console.log('No auth token available for messages');
+      return;
+    }
+    
+    const response = await fetch('/api/analytics/messages?limit=10', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
       throw new Error('Failed to load messages');

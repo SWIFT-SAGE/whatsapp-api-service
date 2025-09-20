@@ -295,7 +295,44 @@ app.post('/auth/register', AuthController.register);
 app.post('/auth/logout', authenticateToken, AuthController.logout);
 app.post('/auth/forgot-password', AuthController.forgotPassword);
 app.post('/auth/reset-password', AuthController.resetPassword);
-app.get('/auth/verify-email/:token', AuthController.verifyEmail);
+app.get('/auth/verify-email/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.render('pages/email-verification', { 
+        success: false,
+        message: 'Verification token is required'
+      });
+    }
+
+    // Find user with verification token
+    const user = await User.findOne({ verificationToken: token });
+    if (!user) {
+      return res.render('pages/email-verification', { 
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    // Verify the user
+    user.isVerified = true;
+    user.isEmailVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    res.render('pages/email-verification', { 
+      success: true,
+      message: 'Email verified successfully!'
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.render('pages/email-verification', { 
+      success: false,
+      message: 'Email verification failed'
+    });
+  }
+});
 
 // API routes for AJAX calls from frontend
 app.get('/api/user/profile', authenticateToken, async (req, res) => {

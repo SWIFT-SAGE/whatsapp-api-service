@@ -71,7 +71,8 @@ export class AuthController {
       await user.save();
 
       // Send verification email
-      const verificationUrl = `${process.env.FRONTEND_URL}/auth/verify-email/${verificationToken}`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
 
       try {
         await sendEmail({
@@ -251,9 +252,14 @@ export class AuthController {
           email: user.email,
           name: user.name,
           isVerified: user.isVerified,
+          isEmailVerified: user.isEmailVerified,
           subscription: user.subscription,
           apiKey: user.apiKey,
-          createdAt: user.createdAt
+          profile: user.profile,
+          preferences: user.preferences,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          lastLoginAt: user.lastLoginAt
         }
       });
     } catch (error) {
@@ -273,12 +279,19 @@ export class AuthController {
         return;
       }
 
-      const { name } = req.body;
+      const { name, phone, company, bio } = req.body;
       const userId = req.user!._id;
+
+      // Prepare update object
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (phone !== undefined) updateData['profile.phone'] = phone;
+      if (company !== undefined) updateData['profile.company'] = company;
+      if (bio !== undefined) updateData['profile.bio'] = bio;
 
       const user = await User.findByIdAndUpdate(
         userId,
-        { name },
+        updateData,
         { new: true, runValidators: true }
       );
 
@@ -294,7 +307,13 @@ export class AuthController {
           email: user.email,
           name: user.name,
           isVerified: user.isVerified,
-          subscription: user.subscription
+          isEmailVerified: user.isEmailVerified,
+          subscription: user.subscription,
+          profile: user.profile,
+          preferences: user.preferences,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          lastLoginAt: user.lastLoginAt
         }
       });
     } catch (error) {
@@ -369,7 +388,8 @@ export class AuthController {
       await user.save();
 
       // Send reset email
-      const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
       try {
         await sendEmail({
@@ -464,6 +484,69 @@ export class AuthController {
     } catch (error) {
       logger.error('API key regeneration error:', error);
       res.status(500).json({ error: 'Failed to regenerate API key' });
+    }
+  }
+
+  /**
+   * Send verification email
+   */
+  async sendVerificationEmail(req: Request, res: Response): Promise<void> {
+    try {
+      const user = req.user!;
+
+      if (user.isVerified) {
+        res.status(400).json({ error: 'Email is already verified' });
+        return;
+      }
+
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      user.verificationToken = verificationToken;
+      await user.save();
+
+      // Send verification email
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
+
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Verify Your Email - API Messaging',
+          html: `
+            <h2>Verify Your Email Address</h2>
+            <p>Hello ${user.name},</p>
+            <p>Please verify your email address by clicking the link below:</p>
+            <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
+            <p>If you didn't request this, please ignore this email.</p>
+            <p>Best regards,<br>API Messaging Team</p>
+          `
+        });
+
+        res.json({
+          success: true,
+          message: 'Verification email sent successfully'
+        });
+      } catch (emailError) {
+        logger.error('Error sending verification email:', emailError);
+        
+        // Check if SMTP is configured
+        const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS;
+        
+        if (!isSmtpConfigured || process.env.NODE_ENV === 'development') {
+          // Return success with verification token for manual verification
+          res.json({
+            success: true,
+            message: 'Email service not configured. Use the verification token below to verify your email manually.',
+            verificationToken: verificationToken,
+            verificationUrl: verificationUrl
+          });
+        } else {
+          res.status(500).json({ error: 'Failed to send verification email' });
+        }
+      }
+    } catch (error) {
+      logger.error('Send verification email error:', error);
+      res.status(500).json({ error: 'Failed to send verification email' });
     }
   }
 

@@ -26,7 +26,10 @@ const changePasswordValidation = [
 ];
 
 const updateProfileValidation = [
-  body('name').isLength({ min: 2 }).withMessage('Name must be at least 2 characters long')
+  body('name').optional().isLength({ min: 2 }).withMessage('Name must be at least 2 characters long'),
+  body('phone').optional().matches(/^\+?[1-9]\d{1,14}$/).withMessage('Please provide a valid phone number'),
+  body('company').optional().isLength({ max: 100 }).withMessage('Company name cannot exceed 100 characters'),
+  body('bio').optional().isLength({ max: 500 }).withMessage('Bio cannot exceed 500 characters')
 ];
 
 const resetPasswordValidation = [
@@ -48,6 +51,7 @@ router.get('/profile', AuthController.getProfile);
 router.put('/profile', updateProfileValidation, AuthController.updateProfile);
 router.post('/change-password', changePasswordValidation, AuthController.changePassword);
 router.post('/regenerate-api-key', AuthController.regenerateApiKey);
+router.post('/send-verification-email', AuthController.sendVerificationEmail);
 router.post('/logout', AuthController.logout);
 
 export default router;
