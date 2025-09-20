@@ -146,7 +146,7 @@ export class AuthController {
       }
 
       // Generate JWT token
-      const secret = process.env.JWT_SECRET || 'default-secret';
+      const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-that-is-at-least-32-characters-long-for-security';
       const payload = { userId: user._id.toString() };
       const expiresIn: StringValue = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
       const options: jwt.SignOptions = { expiresIn };

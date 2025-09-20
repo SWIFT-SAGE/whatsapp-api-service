@@ -1496,7 +1496,7 @@
     function getJwtToken() {
         // Try to get JWT token from sessionStorage
         const token = sessionStorage.getItem('authToken');
-        if (!token) {
+        if (!token || token === 'undefined' || token === 'null') {
             throw new Error('Authentication token not found. Please log in again.');
         }
         return token;

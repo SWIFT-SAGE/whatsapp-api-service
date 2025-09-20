@@ -10,8 +10,15 @@ interface EmailOptions {
 
 // Create transporter
 const createTransporter = () => {
+  // Check if SMTP is configured
+  const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST;
+  
+  if (!isSmtpConfigured) {
+    throw new Error('SMTP not configured');
+  }
+
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: false, // true for 465, false for other ports
     auth: {
@@ -59,6 +66,13 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 // Test email configuration
 export const testEmailConfig = async (): Promise<boolean> => {
   try {
+    const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST;
+    
+    if (!isSmtpConfigured) {
+      logger.warn('Email configuration is not set');
+      return false;
+    }
+
     const transporter = createTransporter();
     await transporter.verify();
     logger.info('Email configuration is valid');

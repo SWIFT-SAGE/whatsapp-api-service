@@ -369,6 +369,11 @@ app.get('/api/billing/subscription-status', authenticateToken, (req, res) => {
 // Health check routes (before other routes for quick access)
 app.use('/health', healthRoutes);
 
+// Handle Chrome DevTools requests
+app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
+  res.status(404).json({ error: 'Chrome DevTools not supported' });
+});
+
 // API routes
 app.use('/api', apiRoutes);
 
