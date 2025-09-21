@@ -136,7 +136,7 @@ function initializeApp() {
   if (storedUser) {
     currentUser = JSON.parse(storedUser);
     updateAuthUI();
-    if (window.location.hash === '#dashboard') {
+    if (window.location.pathname === '/dashboard' || window.location.hash === '#dashboard') {
       showView('dashboard');
     }
   } else {
@@ -1712,8 +1712,18 @@ function processPlanUpgrade(plan) {
 
 // Handle browser back/forward buttons
 window.addEventListener('popstate', function(e) {
+  const pathname = window.location.pathname;
   const hash = window.location.hash.substring(1);
-  if (hash && document.getElementById(hash + '-view')) {
+  
+  if (pathname === '/dashboard') {
+    showView('dashboard');
+  } else if (pathname === '/login') {
+    showView('login');
+  } else if (pathname === '/register') {
+    showView('register');
+  } else if (pathname === '/pricing') {
+    showView('pricing');
+  } else if (hash && document.getElementById(hash + '-view')) {
     showView(hash);
   } else {
     showView('landing');
@@ -1722,8 +1732,18 @@ window.addEventListener('popstate', function(e) {
 
 // Handle initial hash on page load
 window.addEventListener('load', function() {
+  const pathname = window.location.pathname;
   const hash = window.location.hash.substring(1);
-  if (hash && document.getElementById(hash + '-view')) {
+  
+  if (pathname === '/dashboard') {
+    showView('dashboard');
+  } else if (pathname === '/login') {
+    showView('login');
+  } else if (pathname === '/register') {
+    showView('register');
+  } else if (pathname === '/pricing') {
+    showView('pricing');
+  } else if (hash && document.getElementById(hash + '-view')) {
     showView(hash);
   }
 });

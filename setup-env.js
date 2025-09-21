@@ -34,7 +34,7 @@ FROM_EMAIL=
 FROM_NAME=WhatsApp API Service
 
 # Frontend URL
-FRONTEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3000
 
 # WhatsApp Configuration
 WHATSAPP_SESSION_PATH=./sessions

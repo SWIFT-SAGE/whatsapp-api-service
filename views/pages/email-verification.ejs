@@ -21,9 +21,9 @@
                             <h2 class="text-success mb-3">Email Verified Successfully!</h2>
                             <p class="text-muted mb-4"><%= message %></p>
                             <div class="d-grid gap-2">
-                                <a href="/dashboard" class="btn btn-primary btn-lg">
+                                <button id="goToDashboard" class="btn btn-primary btn-lg">
                                     <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
-                                </a>
+                                </button>
                                 <a href="/" class="btn btn-outline-secondary">
                                     <i class="fas fa-home me-2"></i>Back to Home
                                 </a>
@@ -50,5 +50,39 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        <% if (success && authToken) { %>
+        // Store the auth token in localStorage for immediate use
+        localStorage.setItem('authToken', '<%= authToken %>');
+        
+        // Handle dashboard redirect
+        document.getElementById('goToDashboard').addEventListener('click', function() {
+            // Set the Authorization header for the redirect
+            fetch('/dashboard', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + '<%= authToken %>',
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    // If the request fails, try redirecting anyway (cookie should work)
+                    window.location.href = '/dashboard';
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                // Fallback: redirect anyway
+                window.location.href = '/dashboard';
+            });
+        });
+        <% } else { %>
+        // Handle dashboard redirect for failed verification
+        document.getElementById('goToDashboard').addEventListener('click', function() {
+            window.location.href = '/login';
+        });
+        <% } %>
+    </script>
 </body>
 </html>

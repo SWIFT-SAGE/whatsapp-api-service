@@ -17,25 +17,26 @@ const createTransporter = () => {
     throw new Error('SMTP not configured');
   }
 
+  const port = parseInt(process.env.SMTP_PORT || '587');
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false, // true for 465, false for other ports
+    port: port,
+    secure: secure, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
     },
-    tls: {
-      rejectUnauthorized: false
-    },
-    connectionTimeout: 5000, // 5 seconds
-    greetingTimeout: 3000, // 3 seconds
-    socketTimeout: 5000 // 5 seconds
+  
+  
+    debug: process.env.NODE_ENV === 'development', // Enable debug logging in development
+    logger: process.env.NODE_ENV === 'development' // Enable logger in development
   });
 };
 
-// Send email function
-export const sendEmail = async (options: EmailOptions): Promise<void> => {
+// Send email function with retry logic
+export const sendEmail = async (options: EmailOptions, retries: number = 3): Promise<void> => {
   try {
     // Check if SMTP is configured
     const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST;
@@ -47,8 +48,11 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
 
     const transporter = createTransporter();
     
+    // Verify connection before sending
+    await transporter.verify();
+    
     const mailOptions = {
-      from: `"${process.env.FROM_NAME || 'WhatsApp API Service'}" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
+      from: `"${process.env.FROM_NAME || 'WhatsApp API Service'}" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -59,6 +63,14 @@ export const sendEmail = async (options: EmailOptions): Promise<void> => {
     logger.info(`Email sent successfully to ${options.to}`, { messageId: result.messageId });
   } catch (error) {
     logger.error('Failed to send email:', error);
+    
+    // Retry logic for connection errors
+    if (retries > 0 && (error as any).code === 'ETIMEDOUT') {
+      logger.info(`Retrying email send (${retries} attempts left)...`);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      return sendEmail(options, retries - 1);
+    }
+    
     throw new Error('Email sending failed');
   }
 };

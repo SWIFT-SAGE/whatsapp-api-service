@@ -108,9 +108,16 @@
                         <h6>Check Your Email</h6>
                         <p class="text-muted">We've sent a verification link to <strong id="verification-email"></strong></p>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Enter Verification Code</label>
-                        <input type="text" class="form-control text-center" id="verification-code" placeholder="Enter 6-digit code" maxlength="6">
+                    <div class="mb-4">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Please check your email and click the verification link</strong><br>
+                            <small class="text-muted">The verification link will take you directly to your dashboard</small>
+                        </div>
+                        <p class="text-muted small">
+                            <i class="fas fa-clock me-1"></i>
+                            Didn't receive the email? Check your spam folder or click "Resend Email" below
+                        </p>
                     </div>
                     <div class="alert alert-success d-none" id="verification-success">
                         <i class="fas fa-check-circle me-2"></i>
@@ -122,11 +129,11 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" id="resend-code">
-                        <i class="fas fa-redo me-2"></i>Resend Code
+                    <button type="button" class="btn btn-outline-secondary" id="resend-email">
+                        <i class="fas fa-redo me-2"></i>Resend Email
                     </button>
-                    <button type="button" class="btn btn-primary" id="verify-email">
-                        <i class="fas fa-check me-2"></i>Verify Email
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        <i class="fas fa-check me-2"></i>Got It
                     </button>
                 </div>
             </div>
@@ -425,47 +432,18 @@
             text.textContent = strength.text;
         });
         
-        // Email verification
-        document.getElementById('verify-email').addEventListener('click', function() {
-            const code = document.getElementById('verification-code').value;
-            const successAlert = document.getElementById('verification-success');
-            const errorAlert = document.getElementById('verification-error');
-            
-            // Hide alerts
-            successAlert.classList.add('d-none');
-            errorAlert.classList.add('d-none');
-            
-            if (!code || code.length !== 6) {
-                errorAlert.classList.remove('d-none');
-                document.getElementById('verification-error-message').textContent = 'Please enter a valid 6-digit code';
-                return;
-            }
-            
-            // Simulate verification
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verifying...';
-            this.disabled = true;
-            
-            setTimeout(() => {
-                this.innerHTML = '<i class="fas fa-check me-2"></i>Verify Email';
-                this.disabled = false;
-                successAlert.classList.remove('d-none');
-                
-                setTimeout(() => {
-                    bootstrap.Modal.getInstance(document.getElementById('emailVerificationModal')).hide();
-                    new bootstrap.Modal(document.getElementById('welcomeModal')).show();
-                }, 1500);
-            }, 1500);
-        });
+        // Email verification - now handled by clicking the link in email
+        // No code verification needed - users click the verification link in their email
         
-        // Resend verification code
-        document.getElementById('resend-code').addEventListener('click', function() {
+        // Resend verification email
+        document.getElementById('resend-email').addEventListener('click', function() {
             this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
             this.disabled = true;
             
             setTimeout(() => {
-                this.innerHTML = '<i class="fas fa-redo me-2"></i>Resend Code';
+                this.innerHTML = '<i class="fas fa-redo me-2"></i>Resend Email';
                 this.disabled = false;
-                alert('Verification code sent!');
+                alert('Verification email sent! Please check your inbox.');
             }, 1000);
         });
         

@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { config } from './config';
 import { connectDatabase } from './config/database';
 import { logger, requestLogger } from './utils/logger';
@@ -73,6 +74,9 @@ app.use(timeoutHandler(120000)); // Set a default 120 second timeout for WhatsAp
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' })); // Set a reasonable default body size limit
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -190,17 +194,69 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
         deliveryRate: `${deliveryRate}%`
       },
       sessions: sessions.slice(0, 5), // Show only first 5 sessions
-      recentAnalytics: analytics
+      recentAnalytics: analytics,
+      plans: [
+        {
+          name: 'Free',
+          price: 0,
+          features: ['1 WhatsApp Session', '100 Messages/day', 'Basic Support', 'API Access'],
+          popular: false
+        },
+        {
+          name: 'Basic',
+          price: 29,
+          features: ['5 WhatsApp Sessions', '10,000 Messages/day', 'Priority Support', 'Advanced API', 'Webhooks'],
+          popular: true
+        },
+        {
+          name: 'Pro',
+          price: 99,
+          features: ['25 WhatsApp Sessions', '100,000 Messages/day', '24/7 Support', 'Full API Access', 'Custom Webhooks', 'Analytics'],
+          popular: false
+        },
+        {
+          name: 'Enterprise',
+          price: 299,
+          features: ['Unlimited Sessions', 'Unlimited Messages', 'Dedicated Support', 'Custom Integration', 'SLA Guarantee'],
+          popular: false
+        }
+      ]
     };
     
-    res.render('pages/dashboard', dashboardData);
+    res.render('index', dashboardData);
   } catch (error) {
     logger.error('Dashboard error:', error);
-    res.render('pages/dashboard', {
+    res.render('index', {
       user: { name: 'User', email: '', subscription: { plan: 'free' }, apiKey: '' },
       stats: { totalSessions: 0, activeSessions: 0, totalMessages: 0, deliveryRate: '0%' },
       sessions: [],
-      recentAnalytics: []
+      recentAnalytics: [],
+      plans: [
+        {
+          name: 'Free',
+          price: 0,
+          features: ['1 WhatsApp Session', '100 Messages/day', 'Basic Support', 'API Access'],
+          popular: false
+        },
+        {
+          name: 'Basic',
+          price: 29,
+          features: ['5 WhatsApp Sessions', '10,000 Messages/day', 'Priority Support', 'Advanced API', 'Webhooks'],
+          popular: true
+        },
+        {
+          name: 'Pro',
+          price: 99,
+          features: ['25 WhatsApp Sessions', '100,000 Messages/day', '24/7 Support', 'Full API Access', 'Custom Webhooks', 'Analytics'],
+          popular: false
+        },
+        {
+          name: 'Enterprise',
+          price: 299,
+          features: ['Unlimited Sessions', 'Unlimited Messages', 'Dedicated Support', 'Custom Integration', 'SLA Guarantee'],
+          popular: false
+        }
+      ]
     });
   }
 });
@@ -321,9 +377,25 @@ app.get('/auth/verify-email/:token', async (req, res) => {
     user.verificationToken = undefined;
     await user.save();
 
+    // Generate JWT token for automatic login
+    const jwt = require('jsonwebtoken');
+    const payload = { userId: user._id.toString() };
+    const authToken = jwt.sign(payload, config.jwt.secret, { 
+      expiresIn: config.jwt.expiresIn 
+    });
+
+    // Set the token as an HTTP-only cookie
+    res.cookie('authToken', authToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.render('pages/email-verification', { 
       success: true,
-      message: 'Email verified successfully!'
+      message: 'Email verified successfully!',
+      authToken: authToken // Pass token to frontend for immediate use
     });
   } catch (error) {
     console.error('Email verification error:', error);
@@ -368,6 +440,15 @@ app.get('/api/billing/subscription-status', authenticateToken, (req, res) => {
 
 // Health check routes (before other routes for quick access)
 app.use('/health', healthRoutes);
+
+// Handle favicon requests
+app.get('/favicon.ico', (req, res) => {
+  // Return a simple 1x1 transparent pixel as favicon
+  const transparentPixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Content-Length', transparentPixel.length);
+  res.send(transparentPixel);
+});
 
 // Handle Chrome DevTools requests
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {

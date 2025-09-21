@@ -24,15 +24,19 @@ interface JwtPayload {
  */
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
+    let token: string | undefined;
     
-    if (!authHeader) {
-      res.status(401).json({ error: 'Access token required' });
-      return;
+    // Check Authorization header first
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      token = authHeader.split(' ')[1]; // Bearer TOKEN
     }
-
-    const token = authHeader.split(' ')[1]; // Bearer TOKEN
-
+    
+    // If no token in header, check cookies
+    if (!token) {
+      token = req.cookies?.authToken;
+    }
+    
     if (!token) {
       res.status(401).json({ error: 'Access token required' });
       return;
@@ -171,8 +175,18 @@ export const requireVerification = (req: Request, res: Response, next: NextFunct
  */
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    let token: string | undefined;
+    
+    // Check Authorization header first
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    if (authHeader) {
+      token = authHeader.split(' ')[1];
+    }
+    
+    // If no token in header, check cookies
+    if (!token) {
+      token = req.cookies?.authToken;
+    }
 
     if (token) {
       const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;

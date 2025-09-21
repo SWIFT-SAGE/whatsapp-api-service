@@ -332,7 +332,7 @@ class EmailService {
    * Send email verification
    */
   async sendEmailVerification(email: string, name: string, verificationToken: string): Promise<boolean> {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
     
     return this.sendEmail({
       to: email,
@@ -346,7 +346,7 @@ class EmailService {
    * Send password reset email
    */
   async sendPasswordReset(email: string, name: string, resetToken: string): Promise<boolean> {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
     
     return this.sendEmail({
       to: email,

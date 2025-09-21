@@ -71,7 +71,7 @@ export class AuthController {
       await user.save();
 
       // Send verification email (only if SMTP is configured)
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
 
       // Check if SMTP is configured before attempting to send email
@@ -90,8 +90,6 @@ export class AuthController {
             <p>If you didn't create this account, please ignore this email.</p>
             <p>Best regards,<br>API Messaging Team</p>
           `
-        }).then(() => {
-          logger.info(`Verification email sent to ${email}`);
         }).catch((emailError) => {
           logger.error('Error sending verification email:', emailError);
         });
@@ -397,7 +395,7 @@ export class AuthController {
       await user.save();
 
       // Send reset email
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
       try {
@@ -534,7 +532,7 @@ export class AuthController {
       await user.save();
 
       // Send verification email
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const verificationUrl = `${frontendUrl}/auth/verify-email/${verificationToken}`;
 
       try {

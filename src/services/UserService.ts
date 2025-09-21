@@ -529,7 +529,7 @@ class UserService {
    * Send verification email
    */
   private async sendVerificationEmail(email: string, token: string): Promise<void> {
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
     
     await sendEmail({
       to: email,
@@ -547,7 +547,7 @@ class UserService {
    * Send password reset email
    */
   private async sendPasswordResetEmail(email: string, token: string): Promise<void> {
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${token}`;
     
     await sendEmail({
       to: email,
