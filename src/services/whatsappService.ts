@@ -69,7 +69,14 @@ class WhatsAppService {
     try {
       // Check if client already exists
       if (this.clients[sessionId]) {
-        return { success: false, message: 'Session already exists' };
+        // If client exists but is not ready, wait for QR code
+        const client = this.clients[sessionId];
+        if (client.info && client.info.wid) {
+          return { success: true, message: 'Session already connected' };
+        } else {
+          // Client exists but not connected, return existing QR if available
+          return { success: true, message: 'Session exists, waiting for connection' };
+        }
       }
 
       const sessionPath = path.join(process.env.WHATSAPP_SESSION_PATH || './whatsapp-sessions', sessionId);
@@ -101,7 +108,9 @@ class WhatsAppService {
       await this.setupEventHandlers(client, sessionId, userId);
 
       // Initialize client
+      logger.info(`Initializing WhatsApp client for session: ${sessionId}`);
       await client.initialize();
+      logger.info(`WhatsApp client initialized for session: ${sessionId}`);
 
       return { success: true, message: 'Client initialization started' };
     } catch (error) {
@@ -117,18 +126,19 @@ class WhatsAppService {
     // QR Code generation
     client.on('qr', async (qr) => {
       try {
+        logger.info(`QR code received for session: ${sessionId}, generating data URL...`);
         const qrCode = await QRCode.toDataURL(qr);
 
         // Update session with QR code
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
-          { qrCode, isConnected: false }
+          { qrCode, isConnected: false, lastQRGenerated: new Date() }
         );
 
         // Emit QR code to user (will be implemented when socket.io is available)
         // io.to(userId).emit('qr-code', { sessionId, qrCode });
 
-        logger.info(`QR code generated for session: ${sessionId}`);
+        logger.info(`QR code generated and stored for session: ${sessionId}`);
       } catch (error) {
         logger.error(`Error generating QR code for session ${sessionId}:`, error);
       }
@@ -389,6 +399,33 @@ class WhatsAppService {
   }
 
   /**
+   * Get existing QR code for a session
+   */
+  async getExistingQRCode(sessionId: string): Promise<string | null> {
+    try {
+      const session = await WhatsappSession.findOne({ sessionId });
+      if (session && session.qrCode) {
+        // Check if QR code is not too old (less than 5 minutes)
+        const now = new Date();
+        const qrAge = session.lastQRGenerated ? now.getTime() - session.lastQRGenerated.getTime() : 0;
+        if (qrAge < 5 * 60 * 1000) { // 5 minutes
+          return session.qrCode;
+        } else {
+          // Clean up old QR code
+          await WhatsappSession.findOneAndUpdate(
+            { sessionId },
+            { qrCode: undefined, lastQRGenerated: undefined }
+          );
+        }
+      }
+      return null;
+    } catch (error) {
+      logger.error(`Error getting existing QR code for session ${sessionId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Initialize a new WhatsApp session and return QR code
    */
   async initializeSession(sessionId: string, userId: string): Promise<string> {
@@ -396,6 +433,20 @@ class WhatsAppService {
       const result = await this.createClient(sessionId, userId);
       if (!result.success) {
         throw new Error(result.message);
+      }
+
+      // If session already exists and is connected, return a message
+      if (result.message === 'Session already connected') {
+        throw new Error('Session is already connected');
+      }
+
+      // If session exists but is waiting for connection, check if QR code is already available
+      if (result.message === 'Session exists, waiting for connection') {
+        const existingQR = await this.getExistingQRCode(sessionId);
+        if (existingQR) {
+          logger.info(`Returning existing QR code for session: ${sessionId}`);
+          return existingQR;
+        }
       }
 
       // Wait for QR code to be generated
@@ -406,17 +457,54 @@ class WhatsAppService {
           return;
         }
 
+        // Increase timeout to 60 seconds for better reliability
         const timeout = setTimeout(() => {
           reject(new Error('QR code generation timeout'));
-        }, 30000); // 30 second timeout
+        }, 60000); // 60 second timeout
 
-        client.once('qr', async (qr) => {
-          clearTimeout(timeout);
+        // Check if QR code is already available in database
+        const checkExistingQR = async () => {
           try {
-            const qrCode = await QRCode.toDataURL(qr);
-            resolve(qrCode);
+            const existingQR = await this.getExistingQRCode(sessionId);
+            if (existingQR) {
+              clearTimeout(timeout);
+              resolve(existingQR);
+              return true;
+            }
           } catch (error) {
-            reject(error);
+            // Ignore database errors, continue with event listener
+          }
+          return false;
+        };
+
+        // Check immediately
+        checkExistingQR().then(found => {
+          if (!found) {
+            // Set up periodic check every 2 seconds
+            const checkInterval = setInterval(async () => {
+              const found = await checkExistingQR();
+              if (found) {
+                clearInterval(checkInterval);
+              }
+            }, 2000);
+
+            // Also listen for QR event as backup
+            client.once('qr', async (qr) => {
+              clearTimeout(timeout);
+              clearInterval(checkInterval);
+              try {
+                const qrCode = await QRCode.toDataURL(qr);
+                resolve(qrCode);
+              } catch (error) {
+                reject(error);
+              }
+            });
+
+            // Clean up interval on timeout
+            timeout.refresh();
+            setTimeout(() => {
+              clearInterval(checkInterval);
+            }, 60000);
           }
         });
 

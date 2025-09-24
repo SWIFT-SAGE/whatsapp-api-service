@@ -438,12 +438,29 @@ export class WhatsAppController {
       let qrCode = session.qrCode;
       if (!qrCode) {
         try {
-          qrCode = await WhatsAppService.initializeSession(sessionId, userId.toString());
-          session.qrCode = qrCode;
-          await session.save();
+          // Start QR code generation in background
+          WhatsAppService.initializeSession(sessionId, userId.toString()).then(async (generatedQR) => {
+            // Update session with QR code when ready
+            await WhatsappSession.findOneAndUpdate(
+              { sessionId },
+              { qrCode: generatedQR, lastQRGenerated: new Date() }
+            );
+            logger.info(`QR code generated and stored for session: ${sessionId}`);
+          }).catch((error) => {
+            logger.error(`Error generating QR code for session ${sessionId}:`, error);
+          });
+
+          // Return response indicating QR code generation is in progress
+          res.json({
+            success: true,
+            qrCode: null,
+            sessionId,
+            message: 'QR code generation in progress'
+          });
+          return;
         } catch (error) {
-          logger.error(`Error generating QR code for session ${sessionId}:`, error);
-          res.status(500).json({ error: 'Failed to generate QR code' });
+          logger.error(`Error starting QR code generation for session ${sessionId}:`, error);
+          res.status(500).json({ error: 'Failed to start QR code generation' });
           return;
         }
       }
@@ -467,14 +484,20 @@ export class WhatsAppController {
       const { sessionId } = req.params;
       const userId = req.user!._id;
 
-      const session = await WhatsappSession.findOne({ sessionId, userId });
+      // Try to find session by sessionId first, then by _id
+      let session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        // Try finding by _id if sessionId didn't work
+        session = await WhatsappSession.findOne({ _id: sessionId, userId });
+      }
+      
       if (!session) {
         res.status(404).json({ error: 'Session not found' });
         return;
       }
 
       // Destroy WhatsApp client
-      await WhatsAppService.destroySession(sessionId);
+      await WhatsAppService.destroySession(session.sessionId);
 
       // Remove from database
       await WhatsappSession.findByIdAndDelete(session._id);

@@ -9,6 +9,7 @@ export interface IWhatsappSession extends Document {
   status: 'pending' | 'connected' | 'disconnected' | 'error' | 'expired';
   qrCode?: string;
   qrCodeExpiry?: Date;
+  lastQRGenerated?: Date;
   lastActivity: Date;
   connectionAttempts: number;
   lastConnectionAttempt?: Date;
@@ -80,6 +81,7 @@ const whatsappSessionSchema = new Schema<IWhatsappSession>({
     select: false
   },
   qrCodeExpiry: Date,
+  lastQRGenerated: Date,
   lastActivity: {
     type: Date,
     default: Date.now,

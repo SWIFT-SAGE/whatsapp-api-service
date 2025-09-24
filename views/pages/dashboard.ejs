@@ -1,5 +1,36 @@
 <!-- Dashboard View -->
 <div id="dashboard-view" class="view" style="display: none;">
+    <style>
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 8px;
+            backdrop-filter: blur(2px);
+        }
+        
+        .loading-content {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading-content .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .dashboard-section {
+            position: relative;
+            min-height: 200px;
+        }
+    </style>
     <div class="dashboard-container">
         <div class="container-fluid">
             <div class="row">
@@ -217,19 +248,27 @@
                                                     <p><strong>Created:</strong>
                                                         <%= new Date(session.createdAt).toLocaleDateString() %>
                                                     </p>
-                                                    <% if (session.status==='connected' ) { %>
-                                                        <button class="btn btn-outline-danger btn-sm"
-                                                            data-action="disconnect-session"
-                                                            data-session="<%= session.sessionId %>">
-                                                            <i class="fas fa-unlink me-1"></i>Disconnect
-                                                        </button>
-                                                        <% } else if (session.status==='disconnected' ) { %>
-                                                            <button class="btn btn-outline-primary btn-sm"
-                                                                data-action="connect-session"
+                                                    <div class="btn-group" role="group">
+                                                        <% if (session.status==='connected' ) { %>
+                                                            <button class="btn btn-outline-danger btn-sm"
+                                                                data-action="disconnect-session"
                                                                 data-session="<%= session.sessionId %>">
-                                                                <i class="fas fa-link me-1"></i>Connect
+                                                                <i class="fas fa-unlink me-1"></i>Disconnect
                                                             </button>
-                                                            <% } %>
+                                                            <% } else if (session.status==='disconnected' ) { %>
+                                                                <button class="btn btn-outline-primary btn-sm"
+                                                                    data-action="connect-session"
+                                                                    data-session="<%= session.sessionId %>">
+                                                                    <i class="fas fa-link me-1"></i>Connect
+                                                                </button>
+                                                                <% } %>
+                                                        <button class="btn btn-outline-danger btn-sm"
+                                                            data-action="delete-session"
+                                                            data-session="<%= session.sessionId %>"
+                                                            title="Delete Session">
+                                                            <i class="fas fa-trash me-1"></i>Delete
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -851,6 +890,47 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Modal cleanup script -->
+                <script>
+                    // Clean up modal backdrop when QR code modal is closed
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const qrModal = document.getElementById('qrCodeModal');
+                        if (qrModal) {
+                            qrModal.addEventListener('hidden.bs.modal', function() {
+                                // Remove any lingering backdrop
+                                const backdrops = document.querySelectorAll('.modal-backdrop');
+                                backdrops.forEach(backdrop => backdrop.remove());
+                                
+                                // Remove modal-open class from body
+                                document.body.classList.remove('modal-open');
+                                
+                                // Reset body style
+                                document.body.style.overflow = '';
+                                document.body.style.paddingRight = '';
+                                
+                                console.log('QR modal closed, backdrop cleaned up');
+                            });
+                        }
+                    });
+                </script>
+
+                <!-- Session button group styling -->
+                <style>
+                    .btn-group .btn {
+                        margin-right: 2px;
+                    }
+                    .btn-group .btn:last-child {
+                        margin-right: 0;
+                    }
+                    .btn-group .btn-sm {
+                        font-size: 0.75rem;
+                        padding: 0.25rem 0.5rem;
+                    }
+                    .session-card .btn-group {
+                        margin-top: 0.5rem;
+                    }
+                </style>
             </div>
         </div>
     </div>
@@ -859,6 +939,9 @@
 <script>
     // Dashboard functionality
     document.addEventListener('DOMContentLoaded', function () {
+        // Clean up any existing modal backdrops first
+        cleanupModalBackdrops();
+        
         // Initialize tooltips
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -903,10 +986,10 @@
         setTimeout(async () => {
             await loadDashboardData();
             await loadSectionData('overview');
-        }, 100);
 
-        // Initialize API key buttons
+            // Initialize API key buttons after data is loaded
         initializeApiKeyButtons();
+        }, 100);
 
         // Generate API key functionality
         const generateBtn = document.getElementById('generate-api-key');
@@ -917,8 +1000,6 @@
                         method: 'POST'
                     });
 
-                    // Debug: Log the response to see the actual structure
-                    console.log('API Key generation response:', data);
 
                     // Get reference to the API key input field
                     const apiKeyInputField = document.getElementById('api-key');
@@ -931,7 +1012,6 @@
                         // Update currentUser object with new API key
                         if (window.currentUser) {
                             window.currentUser.apiKey = apiKey;
-                            console.log('Updated currentUser.apiKey:', apiKey);
                         }
                     } else if (!apiKey) {
                         throw new Error('API key not found in response');
@@ -950,153 +1030,188 @@
                             </button>
                         `;
 
-                    // Add event listeners directly to the new buttons
-                    const newToggleBtn = document.getElementById('toggle-api-key');
-                    const newCopyBtn = document.getElementById('copy-api-key');
-                    const apiKeyInput = document.getElementById('api-key');
-                    const apiKeyIcon = document.getElementById('api-key-icon');
+                    // Re-initialize API key buttons after generating new key
+                    setTimeout(() => {
+                        initializeApiKeyButtons();
+                    }, 100);
 
-                    if (newToggleBtn && apiKeyInput && apiKeyIcon) {
-                        let isVisible = false;
-
-                        newToggleBtn.addEventListener('click', function () {
-                            console.log('Toggle button clicked!');
-
-                            if (!isVisible) {
-                                // Show the API key by replacing the input temporarily
-                                const apiKeyValue = apiKeyInput.value;
-                                const inputGroup = apiKeyInput.parentElement;
-
-                                // Create a visible text input
-                                const visibleInput = document.createElement('input');
-                                visibleInput.type = 'text';
-                                visibleInput.className = 'form-control';
-                                visibleInput.id = 'api-key-visible';
-                                visibleInput.value = apiKeyValue;
-                                visibleInput.readOnly = true;
-
-                                // Replace the password input with visible input
-                                inputGroup.replaceChild(visibleInput, apiKeyInput);
-
-                                // Update icon
-                                apiKeyIcon.className = 'fas fa-eye-slash';
-                                isVisible = true;
-                                console.log('API key shown');
-                            } else {
-                                // Hide the API key by restoring the password input
-                                const visibleInput = document.getElementById('api-key-visible');
-                                const inputGroup = visibleInput.parentElement;
-
-                                // Create password input
-                                const passwordInput = document.createElement('input');
-                                passwordInput.type = 'password';
-                                passwordInput.className = 'form-control';
-                                passwordInput.id = 'api-key';
-                                passwordInput.value = visibleInput.value;
-                                passwordInput.readOnly = true;
-
-                                // Replace the visible input with password input
-                                inputGroup.replaceChild(passwordInput, visibleInput);
-
-                                // Update icon
-                                apiKeyIcon.className = 'fas fa-eye';
-                                isVisible = false;
-                                console.log('API key hidden');
-                            }
-                        });
-                    } else {
-                        console.log('Toggle button or elements not found:', {
-                            newToggleBtn: !!newToggleBtn,
-                            apiKeyInput: !!apiKeyInput,
-                            apiKeyIcon: !!apiKeyIcon
-                        });
-                    }
-
-                    if (newCopyBtn && apiKeyInput) {
-                        newCopyBtn.addEventListener('click', function () {
-                            const apiKey = apiKeyInput.value;
-                            if (apiKey && apiKey !== 'Not generated') {
-                                navigator.clipboard.writeText(apiKey).then(function () {
-                                    // Show success message
-                                    const originalHTML = newCopyBtn.innerHTML;
-                                    newCopyBtn.innerHTML = '<i class="fas fa-check"></i>';
-                                    newCopyBtn.classList.remove('btn-outline-secondary');
-                                    newCopyBtn.classList.add('btn-success');
-
-                                    setTimeout(function () {
-                                        newCopyBtn.innerHTML = originalHTML;
-                                        newCopyBtn.classList.remove('btn-success');
-                                        newCopyBtn.classList.add('btn-outline-secondary');
-                                    }, 2000);
-                                }).catch(function () {
-                                    alert('Failed to copy API key to clipboard');
-                                });
-                            } else {
-                                alert('No API key to copy');
-                            }
-                        });
-                    }
                 } catch (error) {
                     alert('Error generating API key: ' + error.message);
                 }
             });
         }
 
-        // Session management
-        document.querySelectorAll('[data-action="disconnect-session"]').forEach(button => {
-            button.addEventListener('click', async function () {
-                const sessionId = this.getAttribute('data-session');
+        // Session management - use event delegation for dynamic content
+        document.addEventListener('click', async function (e) {
+            if (e.target.closest('[data-action="disconnect-session"]')) {
+                const button = e.target.closest('[data-action="disconnect-session"]');
+                const sessionId = button.getAttribute('data-session');
+                
                 if (confirm('Are you sure you want to disconnect this session?')) {
                     try {
+                        // Show loading state immediately
+                        const originalContent = button.innerHTML;
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Disconnecting...';
+                        button.disabled = true;
+                        button.classList.add('disabled');
+
+                        // Find session card for visual feedback
+                        const sessionCard = button.closest('.session-card') || button.closest('.col-md-6');
+                        if (sessionCard) {
+                            sessionCard.style.opacity = '0.6';
+                            sessionCard.style.transition = 'opacity 0.3s ease';
+                        }
+
+                        // Make API call
                         await makeApiCall(`/api/whatsapp/sessions/${sessionId}`, {
                             method: 'DELETE'
                         });
 
-                        const sessionCard = this.closest('.session-card');
-                        sessionCard.style.opacity = '0.5';
-                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Disconnecting...';
-                        this.disabled = true;
+                        // Show success state
+                        button.innerHTML = '<i class="fas fa-check me-1"></i>Disconnected';
+                        button.classList.remove('btn-outline-danger');
+                        button.classList.add('btn-success');
 
+                        // Refresh sessions data after a short delay
                         setTimeout(() => {
-                            // Refresh sessions data instead of reloading page
                             loadSessionsData();
                             // Also refresh overview stats
                             if (typeof loadSessions === 'function') {
                                 loadSessions();
                             }
-                        }, 2000);
+                        }, 1500);
+
                     } catch (error) {
+                        console.error('Error disconnecting session:', error);
+                        
+                        // Reset button state on error
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                        button.classList.remove('disabled');
+                        
+                        if (sessionCard) {
+                            sessionCard.style.opacity = '1';
+                        }
+
                         alert('Error disconnecting session: ' + error.message);
                     }
                 }
-            });
+            }
         });
 
-        document.querySelectorAll('[data-action="connect-session"]').forEach(button => {
-            button.addEventListener('click', async function () {
-                const sessionId = this.getAttribute('data-session');
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
-                this.disabled = true;
-
+        // Connect session functionality - use event delegation
+        document.addEventListener('click', async function (e) {
+            if (e.target.closest('[data-action="connect-session"]')) {
+                const button = e.target.closest('[data-action="connect-session"]');
+                const sessionId = button.getAttribute('data-session');
+                
                 try {
-                    // Show QR code modal
+                    // Show loading state immediately
+                    const originalContent = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Connecting...';
+                    button.disabled = true;
+                    button.classList.add('disabled');
+
+                    // Show QR code modal first
                     showQRCodeModal(sessionId);
 
+                    // Start QR code generation and poll for it
+                    console.log('Starting QR code generation...');
+                    await startQRCodeGeneration(sessionId);
+
                     // Reset button state
-                    this.innerHTML = '<i class="fas fa-link me-1"></i>Connect';
-                    this.disabled = false;
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                    button.classList.remove('disabled');
+
                 } catch (error) {
-                    this.innerHTML = '<i class="fas fa-link me-1"></i>Connect';
-                    this.disabled = false;
+                    console.error('Error connecting session:', error);
+                    
+                    // Reset button state on error
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                    button.classList.remove('disabled');
+
+                    // Show error in QR modal
+                    const container = document.getElementById('qr-code-container');
+                    if (container) {
+                        container.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading QR code: ${error.message}
+                            </div>
+                        `;
+                    }
+
                     alert('Error connecting session: ' + error.message);
                 }
-            });
+            }
+        });
+
+        // Delete session functionality - use event delegation
+        document.addEventListener('click', async function (e) {
+            if (e.target.closest('[data-action="delete-session"]')) {
+                const button = e.target.closest('[data-action="delete-session"]');
+                const sessionId = button.getAttribute('data-session');
+                
+                if (confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+                    try {
+                        // Show loading state immediately
+                        const originalContent = button.innerHTML;
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+                        button.disabled = true;
+                        button.classList.add('disabled');
+
+                        const sessionCard = button.closest('.session-card') || button.closest('.col-md-6');
+                        if (sessionCard) {
+                            sessionCard.style.opacity = '0.6';
+                            sessionCard.style.transition = 'opacity 0.3s ease';
+                        }
+
+                        await makeApiCall(`/api/whatsapp/sessions/${sessionId}`, {
+                            method: 'DELETE'
+                        });
+
+                        button.innerHTML = '<i class="fas fa-check me-1"></i>Deleted';
+                        button.classList.remove('btn-outline-danger');
+                        button.classList.add('btn-success');
+
+                        // Remove the session card after a short delay
+                        setTimeout(() => {
+                            if (sessionCard) {
+                                sessionCard.remove();
+                            }
+                            // Reload sessions data
+                            loadSessionsData();
+                            if (typeof loadSessions === 'function') {
+                                loadSessions();
+                            }
+                        }, 1500);
+
+                    } catch (error) {
+                        console.error('Error deleting session:', error);
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                        button.classList.remove('disabled');
+                        
+                        if (sessionCard) {
+                            sessionCard.style.opacity = '1';
+                        }
+                        alert('Error deleting session: ' + error.message);
+                    }
+                }
+            }
         });
 
         // Create new session
         document.getElementById('create-session-btn')?.addEventListener('click', async function () {
             try {
-                console.log('Creating session...');
+                // Show loading state
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
+                this.disabled = true;
+                this.classList.add('disabled');
+
                 const response = await makeApiCall('/api/whatsapp/sessions', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1109,11 +1224,14 @@
                     })
                 });
 
-                console.log('Session created successfully:', response);
+                // Reset button state
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                this.classList.remove('disabled');
 
-                    // Show QR code modal for the new session
-                    if (response.session && response.session.sessionId) {
-                        showQRCodeModal(response.session.sessionId);
+                // Show QR code modal for the new session
+                if (response.session && response.session.sessionId) {
+                    showQRCodeModal(response.session.sessionId);
                         // Refresh sessions data after showing QR code
                         setTimeout(() => {
                             loadSessionsData();
@@ -1133,12 +1251,24 @@
                     }
             } catch (error) {
                 console.error('Error creating session:', error);
+                
+                // Reset button state on error
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                this.classList.remove('disabled');
+                
                 alert('Error creating session: ' + error.message);
             }
         });
 
         document.getElementById('create-first-session-btn')?.addEventListener('click', async function () {
             try {
+                // Show loading state
+                const originalContent = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
+                this.disabled = true;
+                this.classList.add('disabled');
+
                 const response = await makeApiCall('/api/whatsapp/sessions', {
                     method: 'POST',
                     body: JSON.stringify({
@@ -1151,6 +1281,11 @@
                     })
                 });
 
+                // Reset button state
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                this.classList.remove('disabled');
+
                 alert('Session created successfully!');
                 // Refresh sessions data instead of reloading page
                 loadSessionsData();
@@ -1159,6 +1294,11 @@
                     loadSessions();
                 }
             } catch (error) {
+                // Reset button state on error
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                this.classList.remove('disabled');
+                
                 alert('Error creating session: ' + error.message);
             }
         });
@@ -1201,6 +1341,15 @@
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
             if (isLoggedIn) {
                 await loadDashboardData();
+                // Restore API key visibility state after refresh
+                if (isApiKeyVisible) {
+                    const apiKeyInput = document.getElementById('api-key');
+                    const apiKeyIcon = document.getElementById('api-key-icon');
+                    if (apiKeyInput && apiKeyIcon) {
+                        apiKeyInput.type = 'text';
+                        apiKeyIcon.className = 'fas fa-eye-slash';
+                    }
+                }
             }
         }, 30000);
 
@@ -1347,6 +1496,9 @@
         });
     });
 
+    // Global variable to track API key visibility state
+    let isApiKeyVisible = false;
+
     // Initialize API key buttons function
     function initializeApiKeyButtons() {
         // Toggle API key visibility
@@ -1359,13 +1511,27 @@
             const newToggleBtn = toggleBtn.cloneNode(true);
             toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
 
-            newToggleBtn.addEventListener('click', function () {
-                if (apiKeyInput.type === 'password') {
+            // Restore previous state if any
+            if (isApiKeyVisible) {
                     apiKeyInput.type = 'text';
                     apiKeyIcon.className = 'fas fa-eye-slash';
+            }
+
+            newToggleBtn.addEventListener('click', function () {
+                // Get fresh references to the input and icon elements
+                const currentApiKeyInput = document.getElementById('api-key');
+                const currentApiKeyIcon = document.getElementById('api-key-icon');
+                
+                if (isApiKeyVisible) {
+                    // Hide the API key
+                    currentApiKeyInput.type = 'password';
+                    currentApiKeyIcon.className = 'fas fa-eye';
+                    isApiKeyVisible = false;
                 } else {
-                    apiKeyInput.type = 'password';
-                    apiKeyIcon.className = 'fas fa-eye';
+                    // Show the API key
+                    currentApiKeyInput.type = 'text';
+                    currentApiKeyIcon.className = 'fas fa-eye-slash';
+                    isApiKeyVisible = true;
                 }
             });
         }
@@ -1378,7 +1544,9 @@
             copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
 
             newCopyBtn.addEventListener('click', function () {
-                const apiKey = apiKeyInput.value;
+                // Get fresh reference to the input element
+                const currentApiKeyInput = document.getElementById('api-key');
+                const apiKey = currentApiKeyInput.value;
                 if (apiKey && apiKey !== 'Not generated') {
                     navigator.clipboard.writeText(apiKey).then(function () {
                         // Show success message
@@ -1406,11 +1574,20 @@
     let currentSessionId = null;
 
     function showQRCodeModal(sessionId) {
+        console.log('showQRCodeModal called with sessionId:', sessionId);
         currentSessionId = sessionId;
-        const modal = new bootstrap.Modal(document.getElementById('qrCodeModal'));
+        
+        // Clean up any existing backdrops before showing modal
+        cleanupModalBackdrops();
+        
+        const modalElement = document.getElementById('qrCodeModal');
+        console.log('Modal element found:', !!modalElement);
+        
+        const modal = new bootstrap.Modal(modalElement);
 
         // Reset modal content
         const container = document.getElementById('qr-code-container');
+        console.log('QR container found:', !!container);
         container.innerHTML = `
                 <div class="spinner-border text-primary mb-3" role="status">
                     <span class="visually-hidden">Loading QR Code...</span>
@@ -1420,20 +1597,178 @@
 
         // Show modal
         modal.show();
+        console.log('Modal shown, loading QR code...');
 
         // Load QR code
         loadQRCode(sessionId);
     }
 
-    async function loadQRCode(sessionId) {
+    async function startQRCodeGeneration(sessionId) {
+        console.log('Starting QR code generation for session:', sessionId);
+        
+        // Update modal to show generation in progress
+        const container = document.getElementById('qr-code-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Generating QR Code...</span>
+                    </div>
+                    <p class="text-muted">Generating QR code, please wait...</p>
+                    <p class="text-muted small">This may take up to 60 seconds</p>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: 0%" 
+                             id="qr-progress-bar"></div>
+                    </div>
+                    <p class="text-muted small mt-2" id="qr-progress-text">Starting generation...</p>
+                </div>
+            `;
+            
+            // Ensure elements are available after DOM update
+            setTimeout(() => {
+                const progressBar = document.getElementById('qr-progress-bar');
+                const progressText = document.getElementById('qr-progress-text');
+                console.log('Progress elements found:', !!progressBar, !!progressText);
+            }, 100);
+        }
+
+        // Start polling for QR code
+        const maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds max
+        let attempts = 0;
+
+        const pollForQRCode = async () => {
+            try {
+                attempts++;
+                console.log(`Polling for QR code, attempt ${attempts}/${maxAttempts}`);
+
+                // Update progress display
+                const progress = Math.min((attempts / maxAttempts) * 100, 100);
+                console.log(`Progress: ${Math.round(progress)}% - QR generation in progress...`);
+                
+                // Always update the container directly to ensure progress is shown
+                if (container) {
+                    const progressBarColor = progress < 30 ? 'bg-danger' : progress < 70 ? 'bg-warning' : 'bg-success';
+                    container.innerHTML = `
+                        <div class="text-center">
+                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                <span class="visually-hidden">Generating QR Code...</span>
+                            </div>
+                            <p class="text-muted">Generating QR code, please wait...</p>
+                            <p class="text-muted small">This may take up to 60 seconds</p>
+                            <div class="progress mt-3" style="height: 8px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated ${progressBarColor}" 
+                                     role="progressbar" 
+                                     style="width: ${progress}%"
+                                     aria-valuenow="${progress}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <p class="text-muted small mt-2">
+                                <i class="fas fa-clock me-1"></i>
+                                Attempt ${attempts}/${maxAttempts} - ${Math.round(progress)}% complete
+                            </p>
+                            <p class="text-info small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                ${progress < 30 ? 'Starting generation...' : progress < 70 ? 'Generating QR code...' : 'Almost ready...'}
+                            </p>
+                        </div>
+                    `;
+                    console.log(`Progress updated: ${progress}% - ${attempts}/${maxAttempts} attempts`);
+                    
+                    // Update browser tab title to show progress
+                    const originalTitle = document.title;
+                    document.title = `[${Math.round(progress)}%] ${originalTitle}`;
+                } else {
+                    console.error('Container not found for progress update');
+                }
+
+                const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr`);
+                console.log('QR code poll response:', response);
+
+                if (response.success && response.qrCode) {
+                    console.log('QR code found, displaying...');
+                    
+                    // Reset browser tab title
+                    document.title = document.title.replace(/^\[\d+%\]\s*/, '');
+                    
+                    await loadQRCode(sessionId, response);
+                    return; // Success, stop polling
+                } else if (response.success && !response.qrCode) {
+                    // QR code generation in progress, continue polling
+                    console.log('QR code generation in progress, continuing to poll...');
+                    
+                    // Update modal title to show progress
+                    const modalTitle = document.querySelector('#qrCodeModal .modal-title');
+                    if (modalTitle) {
+                        modalTitle.innerHTML = `
+                            <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Session
+                            <span class="badge bg-warning ms-2">Generating... ${Math.round(progress)}%</span>
+                        `;
+                    }
+                    
+                    if (attempts < maxAttempts) {
+                        setTimeout(pollForQRCode, 2000); // Poll every 2 seconds
+                    } else {
+                        throw new Error('QR code generation timeout after 60 seconds');
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to generate QR code');
+                }
+            } catch (error) {
+                console.error('Error polling for QR code:', error);
+                
+                // Reset browser tab title
+                document.title = document.title.replace(/^\[\d+%\]\s*/, '');
+                
+                // Show error in modal
+                if (container) {
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error generating QR code: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        };
+
+        // Start polling
+        pollForQRCode();
+    }
+
+    async function loadQRCode(sessionId, qrCodeData = null) {
         try {
-            const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr`);
+            console.log('Loading QR code for session:', sessionId);
+            
+            let response;
+            if (qrCodeData) {
+                // Use provided QR code data
+                response = qrCodeData;
+                console.log('Using provided QR code data:', response);
+            } else {
+                // Make API call
+                response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr`);
+                console.log('QR code response:', response);
+            }
 
             if (response.success && response.qrCode) {
                 const container = document.getElementById('qr-code-container');
+                if (!container) {
+                    console.error('QR code container not found');
+                    return;
+                }
+                
+                // Check if qrCode already has data:image prefix
+                const qrCodeSrc = response.qrCode.startsWith('data:image') 
+                    ? response.qrCode 
+                    : `data:image/png;base64,${response.qrCode}`;
+                
                 container.innerHTML = `
                         <div class="qr-code-wrapper">
-                            <img src="data:image/png;base64,${response.qrCode}" 
+                            <img src="${qrCodeSrc}" 
                                  alt="WhatsApp QR Code" 
                                  class="img-fluid border rounded shadow-sm"
                                  style="max-width: 300px;">
@@ -1443,18 +1778,21 @@
                             QR Code generated successfully
                         </p>
                     `;
+                console.log('QR code displayed successfully');
             } else {
                 throw new Error(response.message || 'Failed to generate QR code');
             }
         } catch (error) {
             console.error('Error loading QR code:', error);
             const container = document.getElementById('qr-code-container');
-            container.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Error loading QR code: ${error.message}
-                    </div>
-                `;
+            if (container) {
+                container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error loading QR code: ${error.message}
+                        </div>
+                    `;
+            }
         }
     }
 
@@ -1472,18 +1810,35 @@
         }
     }, 120000); // 2 minutes
 
+    // Global cleanup function for modal backdrops
+    function cleanupModalBackdrops() {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => backdrop.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        console.log('Modal backdrops cleaned up manually');
+    }
+
+    // Add keyboard shortcut to clean up backdrops (Ctrl+Shift+B)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'B') {
+            e.preventDefault();
+            cleanupModalBackdrops();
+            alert('Modal backdrops cleaned up!');
+        }
+    });
+
     // Global API functions
     function getApiKey() {
         // First try to get API key from currentUser (most reliable)
         let apiKey = '';
         if (window.currentUser && window.currentUser.apiKey) {
             apiKey = window.currentUser.apiKey;
-            console.log('Getting API key from currentUser:', apiKey);
         } else {
             // Fallback to input field
             const apiKeyInput = document.getElementById('api-key');
             apiKey = apiKeyInput ? apiKeyInput.value : '';
-            console.log('Getting API key from input field:', apiKey);
         }
 
         if (!apiKey || apiKey === 'Not generated') {
@@ -1538,14 +1893,11 @@
             let headers;
             if (endpoint.includes('/api/whatsapp/')) {
                 headers = getApiKeyHeaders();
-                console.log('Using API key headers for:', endpoint, headers);
             } else if (endpoint.includes('/api/analytics/') || endpoint.includes('/api/user/') || endpoint.includes('/api/auth/')) {
                 headers = getJwtHeaders();
-                console.log('Using JWT headers for:', endpoint, headers);
             } else {
                 // Default to JWT for other endpoints
                 headers = getJwtHeaders();
-                console.log('Using default JWT headers for:', endpoint, headers);
             }
 
             const response = await fetch(endpoint, {
@@ -1692,7 +2044,23 @@
             }
 
             const response = await makeApiCall('/api/whatsapp/sessions');
-            const sessions = response.data.sessions;
+            console.log('Sessions API response:', response);
+            
+            // Handle different response structures
+            const sessions = response.data?.sessions || response.sessions || response.data || [];
+            
+            // Debug: Log the first session to see its structure
+            if (sessions.length > 0) {
+                console.log('First session structure:', sessions[0]);
+            }
+            
+            // Ensure sessions is an array
+            if (!Array.isArray(sessions)) {
+                console.error('Sessions data is not an array:', sessions);
+                showError('sessions', 'Invalid sessions data format');
+                hideLoading('sessions');
+                return;
+            }
 
             const container = document.getElementById('sessions-container');
             if (sessions.length === 0) {
@@ -1709,33 +2077,72 @@
                         </div>
                     `;
             } else {
-                container.innerHTML = sessions.map((session, index) => `
-                        <div class="col-md-6">
-                            <div class="card session-card">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                        <h5>Session #${index + 1}</h5>
-                                        <span class="badge bg-${session.isConnected ? 'success' : 'secondary'}">
-                                            ${session.isConnected ? 'Connected' : 'Disconnected'}
-                                        </span>
+                // Render sessions with error handling
+                try {
+                    container.innerHTML = sessions.map((session, index) => {
+                        try {
+                            return `
+                                <div class="col-md-6">
+                                    <div class="card session-card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <h5>Session #${index + 1}</h5>
+                                                <span class="badge bg-${session.isConnected ? 'success' : 'secondary'}">
+                                                    ${session.isConnected ? 'Connected' : 'Disconnected'}
+                                                </span>
+                                            </div>
+                                            <p><strong>Session ID:</strong> ${session.sessionId || 'Unknown'}</p>
+                                            <p><strong>Phone:</strong> ${session.phoneNumber || 'Not connected'}</p>
+                                            <p><strong>Status:</strong> ${session.isConnected ? 'Connected' : 'Disconnected'}</p>
+                                            <p><strong>Created:</strong> ${session.createdAt ? new Date(session.createdAt).toLocaleDateString() : 'Unknown'}</p>
+                                            <p><strong>Messages:</strong> ${session.messageStats ? session.messageStats.total || 0 : 0} total (${session.messageStats ? session.messageStats.sent || 0 : 0} sent, ${session.messageStats ? session.messageStats.received || 0 : 0} received)</p>
+                                            <div class="btn-group" role="group">
+                                                ${session.isConnected ?
+                                    `<button class="btn btn-outline-danger btn-sm" data-action="disconnect-session" data-session="${session.sessionId}">
+                                                        <i class="fas fa-unlink me-1"></i>Disconnect
+                                                    </button>` :
+                                    `<button class="btn btn-outline-primary btn-sm" data-action="connect-session" data-session="${session.sessionId}">
+                                                        <i class="fas fa-link me-1"></i>Connect
+                                                    </button>`
+                                }
+                                                <button class="btn btn-outline-danger btn-sm" 
+                                                        data-action="delete-session" 
+                                                        data-session="${session.sessionId}"
+                                                        title="Delete Session">
+                                                    <i class="fas fa-trash me-1"></i>Delete
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <p><strong>Session ID:</strong> ${session.sessionId}</p>
-                                    <p><strong>Phone:</strong> ${session.phoneNumber || 'Not connected'}</p>
-                                    <p><strong>Status:</strong> ${session.isConnected ? 'Connected' : 'Disconnected'}</p>
-                                    <p><strong>Created:</strong> ${new Date(session.createdAt).toLocaleDateString()}</p>
-                                    <p><strong>Messages:</strong> ${session.messageStats.total} total (${session.messageStats.sent} sent, ${session.messageStats.received} received)</p>
-                                    ${session.isConnected ?
-                        `<button class="btn btn-outline-danger btn-sm" data-action="disconnect-session" data-session="${session.sessionId}">
-                                            <i class="fas fa-unlink me-1"></i>Disconnect
-                                        </button>` :
-                        `<button class="btn btn-outline-primary btn-sm" data-action="connect-session" data-session="${session.sessionId}">
-                                            <i class="fas fa-link me-1"></i>Connect
-                                        </button>`
-                    }
                                 </div>
+                            `;
+                        } catch (sessionError) {
+                            console.error('Error rendering session:', sessionError, session);
+                            return `
+                                <div class="col-md-6">
+                                    <div class="card session-card">
+                                        <div class="card-body">
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                                Error loading session data
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }).join('');
+                } catch (renderError) {
+                    console.error('Error rendering sessions:', renderError);
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error rendering sessions data
                             </div>
                         </div>
-                    `).join('');
+                    `;
+                }
             }
 
             hideLoading('sessions');
@@ -1759,7 +2166,18 @@
             showLoading('messages');
             // Get messages from all sessions
             const response = await makeApiCall('/api/analytics/messages?period=7d');
-            const timeSeries = response.data.timeSeries;
+            console.log('Messages API response:', response);
+            
+            // Handle different response structures
+            const timeSeries = response.data?.timeSeries || response.timeSeries || [];
+            
+            // Ensure timeSeries is an array
+            if (!Array.isArray(timeSeries)) {
+                console.error('TimeSeries data is not an array:', timeSeries);
+                showError('messages', 'Invalid messages data format');
+                hideLoading('messages');
+                return;
+            }
 
             // Update messages table with recent data
             const messagesTable = document.getElementById('messages-table');
@@ -1959,14 +2377,31 @@
     function showLoading(section) {
         const sectionElement = document.getElementById(`dashboard-${section}`);
         if (sectionElement) {
-            sectionElement.classList.add('loading');
+            // Create loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = `loading-${section}`;
+            loadingOverlay.className = 'loading-overlay';
+            loadingOverlay.innerHTML = `
+                <div class="loading-content">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted">Loading ${section} data...</p>
+                </div>
+            `;
+            
+            // Add loading overlay
+            sectionElement.appendChild(loadingOverlay);
         }
     }
 
     function hideLoading(section) {
         const sectionElement = document.getElementById(`dashboard-${section}`);
         if (sectionElement) {
-            sectionElement.classList.remove('loading');
+            const loadingOverlay = document.getElementById(`loading-${section}`);
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+            }
         }
     }
 
