@@ -856,10 +856,7 @@
                                         </div>
                                         <div class="modal-body text-center">
                                             <div id="qr-code-container">
-                                                <div class="spinner-border text-primary mb-3" role="status">
-                                                    <span class="visually-hidden">Loading QR Code...</span>
-                                                </div>
-                                                <p class="text-muted">Generating QR code...</p>
+                                                <!-- Progress state will be inserted here by JavaScript -->
                                             </div>
                                             <div class="mt-3">
                                                 <h6>How to connect:</h6>
@@ -1102,8 +1099,10 @@
         // Connect session functionality - use event delegation
         document.addEventListener('click', async function (e) {
             if (e.target.closest('[data-action="connect-session"]')) {
+                console.log('Connect session button clicked!');
                 const button = e.target.closest('[data-action="connect-session"]');
                 const sessionId = button.getAttribute('data-session');
+                console.log('Session ID:', sessionId);
                 
                 try {
                     // Show loading state immediately
@@ -1113,11 +1112,15 @@
                     button.classList.add('disabled');
 
                     // Show QR code modal first
+                    console.log('Calling showQRCodeModal...');
                     showQRCodeModal(sessionId);
 
-                    // Start QR code generation and poll for it
+                    // Wait a moment for modal to fully render, then start QR code generation
                     console.log('Starting QR code generation...');
-                    await startQRCodeGeneration(sessionId);
+                    setTimeout(async () => {
+                        console.log('Starting QR code generation after timeout...');
+                        await startQRCodeGeneration(sessionId);
+                    }, 500); // Increased timeout to 500ms
 
                     // Reset button state
                     button.innerHTML = originalContent;
@@ -1205,9 +1208,11 @@
 
         // Create new session
         document.getElementById('create-session-btn')?.addEventListener('click', async function () {
+            let originalContent = this.innerHTML; // Declare at function scope
+            
             try {
                 // Show loading state
-                const originalContent = this.innerHTML;
+                originalContent = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
                 this.disabled = true;
                 this.classList.add('disabled');
@@ -1232,6 +1237,10 @@
                 // Show QR code modal for the new session
                 if (response.session && response.session.sessionId) {
                     showQRCodeModal(response.session.sessionId);
+                    // Wait a moment for modal to fully render, then start QR code generation
+                    setTimeout(async () => {
+                        await startQRCodeGeneration(response.session.sessionId);
+                    }, 100);
                         // Refresh sessions data after showing QR code
                         setTimeout(() => {
                             loadSessionsData();
@@ -1257,14 +1266,21 @@
                 this.disabled = false;
                 this.classList.remove('disabled');
                 
-                alert('Error creating session: ' + error.message);
+                // Show user-friendly error message
+                if (error.message.includes('Maximum sessions reached')) {
+                    alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
+                } else {
+                    alert('Error creating session: ' + error.message);
+                }
             }
         });
 
         document.getElementById('create-first-session-btn')?.addEventListener('click', async function () {
+            let originalContent = this.innerHTML; // Declare at function scope
+            
             try {
                 // Show loading state
-                const originalContent = this.innerHTML;
+                originalContent = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
                 this.disabled = true;
                 this.classList.add('disabled');
@@ -1286,20 +1302,44 @@
                 this.disabled = false;
                 this.classList.remove('disabled');
 
-                alert('Session created successfully!');
-                // Refresh sessions data instead of reloading page
-                loadSessionsData();
-                // Also refresh overview stats
-                if (typeof loadSessions === 'function') {
-                    loadSessions();
+                // Show QR code modal for the new session
+                if (response.session && response.session.sessionId) {
+                    showQRCodeModal(response.session.sessionId);
+                    // Wait a moment for modal to fully render, then start QR code generation
+                    setTimeout(async () => {
+                        await startQRCodeGeneration(response.session.sessionId);
+                    }, 100);
+                    // Refresh sessions data after showing QR code
+                    setTimeout(() => {
+                        loadSessionsData();
+                        // Also refresh overview stats
+                        if (typeof loadSessions === 'function') {
+                            loadSessions();
+                        }
+                    }, 1000);
+                } else {
+                    alert('Session created successfully!');
+                    // Refresh sessions data instead of reloading page
+                    loadSessionsData();
+                    // Also refresh overview stats
+                    if (typeof loadSessions === 'function') {
+                        loadSessions();
+                    }
                 }
             } catch (error) {
+                console.error('Error creating session:', error);
+                
                 // Reset button state on error
                 this.innerHTML = originalContent;
                 this.disabled = false;
                 this.classList.remove('disabled');
                 
-                alert('Error creating session: ' + error.message);
+                // Show user-friendly error message
+                if (error.message.includes('Maximum sessions reached')) {
+                    alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
+                } else {
+                    alert('Error creating session: ' + error.message);
+                }
             }
         });
 
@@ -1575,6 +1615,7 @@
 
     function showQRCodeModal(sessionId) {
         console.log('showQRCodeModal called with sessionId:', sessionId);
+        console.log('Current time:', new Date().toISOString());
         currentSessionId = sessionId;
         
         // Clean up any existing backdrops before showing modal
@@ -1583,30 +1624,96 @@
         const modalElement = document.getElementById('qrCodeModal');
         console.log('Modal element found:', !!modalElement);
         
-        const modal = new bootstrap.Modal(modalElement);
+        // Reset modal title to show connecting state
+        const modalTitle = document.querySelector('#qrCodeModal .modal-title');
+        if (modalTitle) {
+            modalTitle.innerHTML = `
+                <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Session
+                <span class="badge bg-warning ms-2">Connecting...</span>
+            `;
+            console.log('Modal title updated');
+        }
 
-        // Reset modal content
+        // Reset modal content to show initial loading state with progress
         const container = document.getElementById('qr-code-container');
         console.log('QR container found:', !!container);
-        container.innerHTML = `
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading QR Code...</span>
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Connecting...</span>
+                    </div>
+                    <p class="text-muted">Connecting to WhatsApp...</p>
+                    <p class="text-muted small">This may take up to 60 seconds</p>
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                             role="progressbar" 
+                             style="width: 0%" 
+                             id="qr-progress-bar"></div>
+                    </div>
+                    <p class="text-muted small mt-2" id="qr-progress-text">Initializing connection...</p>
+                    <p class="text-info small" id="qr-status-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Starting WhatsApp session...
+                    </p>
                 </div>
-                <p class="text-muted">Generating QR code...</p>
             `;
+            console.log('QR container updated with progress state');
+        } else {
+            console.error('QR container not found!');
+        }
 
         // Show modal
+        const modal = new bootstrap.Modal(modalElement);
         modal.show();
-        console.log('Modal shown, loading QR code...');
-
-        // Load QR code
-        loadQRCode(sessionId);
+        console.log('Modal shown, ready for QR code generation...');
+        
+        // Force a re-render by updating the container again after modal is shown
+        setTimeout(() => {
+            const container = document.getElementById('qr-code-container');
+            if (container) {
+                console.log('Force updating QR container after modal show...');
+                container.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Connecting...</span>
+                        </div>
+                        <p class="text-muted">Connecting to WhatsApp...</p>
+                        <p class="text-muted small">This may take up to 60 seconds</p>
+                        <div class="progress mt-3" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
+                                 role="progressbar" 
+                                 style="width: 0%" 
+                                 id="qr-progress-bar"></div>
+                        </div>
+                        <p class="text-muted small mt-2" id="qr-progress-text">Initializing connection...</p>
+                        <p class="text-info small" id="qr-status-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Starting WhatsApp session...
+                        </p>
+                    </div>
+                `;
+                console.log('QR container force updated');
+            }
+        }, 50);
+        
+        // Note: QR code generation will be handled by startQRCodeGeneration()
+        // which will be called after this function returns
     }
 
     async function startQRCodeGeneration(sessionId) {
         console.log('Starting QR code generation for session:', sessionId);
         
-        // Update modal to show generation in progress
+        // Update modal title to show generation in progress
+        const modalTitle = document.querySelector('#qrCodeModal .modal-title');
+        if (modalTitle) {
+            modalTitle.innerHTML = `
+                <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Session
+                <span class="badge bg-warning ms-2">Generating QR...</span>
+            `;
+        }
+        
+        // Update modal content to show generation in progress
         const container = document.getElementById('qr-code-container');
         if (container) {
             container.innerHTML = `
@@ -1616,22 +1723,19 @@
                     </div>
                     <p class="text-muted">Generating QR code, please wait...</p>
                     <p class="text-muted small">This may take up to 60 seconds</p>
-                    <div class="progress mt-3" style="height: 6px;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                    <div class="progress mt-3" style="height: 8px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
                              role="progressbar" 
                              style="width: 0%" 
                              id="qr-progress-bar"></div>
                     </div>
                     <p class="text-muted small mt-2" id="qr-progress-text">Starting generation...</p>
+                    <p class="text-info small" id="qr-status-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Initializing...
+                    </p>
                 </div>
             `;
-            
-            // Ensure elements are available after DOM update
-            setTimeout(() => {
-                const progressBar = document.getElementById('qr-progress-bar');
-                const progressText = document.getElementById('qr-progress-text');
-                console.log('Progress elements found:', !!progressBar, !!progressText);
-            }, 100);
         }
 
         // Start polling for QR code
@@ -1647,43 +1751,105 @@
                 const progress = Math.min((attempts / maxAttempts) * 100, 100);
                 console.log(`Progress: ${Math.round(progress)}% - QR generation in progress...`);
                 
-                // Always update the container directly to ensure progress is shown
-                if (container) {
+                // Update progress elements directly instead of replacing entire container
+                const progressBar = document.getElementById('qr-progress-bar');
+                const progressText = document.getElementById('qr-progress-text');
+                const statusText = document.getElementById('qr-status-text');
+                
+                console.log('Progress elements found:', {
+                    progressBar: !!progressBar,
+                    progressText: !!progressText,
+                    statusText: !!statusText
+                });
+                
+                if (progressBar) {
                     const progressBarColor = progress < 30 ? 'bg-danger' : progress < 70 ? 'bg-warning' : 'bg-success';
-                    container.innerHTML = `
-                        <div class="text-center">
-                            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                                <span class="visually-hidden">Generating QR Code...</span>
-                            </div>
-                            <p class="text-muted">Generating QR code, please wait...</p>
-                            <p class="text-muted small">This may take up to 60 seconds</p>
-                            <div class="progress mt-3" style="height: 8px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated ${progressBarColor}" 
-                                     role="progressbar" 
-                                     style="width: ${progress}%"
-                                     aria-valuenow="${progress}" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
-                                </div>
-                            </div>
-                            <p class="text-muted small mt-2">
-                                <i class="fas fa-clock me-1"></i>
-                                Attempt ${attempts}/${maxAttempts} - ${Math.round(progress)}% complete
-                            </p>
-                            <p class="text-info small">
-                                <i class="fas fa-info-circle me-1"></i>
-                                ${progress < 30 ? 'Starting generation...' : progress < 70 ? 'Generating QR code...' : 'Almost ready...'}
-                            </p>
-                        </div>
-                    `;
-                    console.log(`Progress updated: ${progress}% - ${attempts}/${maxAttempts} attempts`);
-                    
-                    // Update browser tab title to show progress
-                    const originalTitle = document.title;
-                    document.title = `[${Math.round(progress)}%] ${originalTitle}`;
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.setAttribute('aria-valuenow', progress);
+                    progressBar.className = `progress-bar progress-bar-striped progress-bar-animated ${progressBarColor}`;
+                    console.log('Progress bar updated to:', progress + '%');
                 } else {
-                    console.error('Container not found for progress update');
+                    console.error('Progress bar element not found!');
                 }
+                
+                if (progressText) {
+                    progressText.innerHTML = `
+                        <i class="fas fa-clock me-1"></i>
+                        Attempt ${attempts}/${maxAttempts} - ${Math.round(progress)}% complete
+                    `;
+                    console.log('Progress text updated');
+                } else {
+                    console.error('Progress text element not found!');
+                }
+                
+                if (statusText) {
+                    let statusMessage = '';
+                    if (progress < 30) {
+                        statusMessage = 'Starting generation...';
+                    } else if (progress < 70) {
+                        statusMessage = 'Generating QR code...';
+                    } else {
+                        statusMessage = 'Almost ready...';
+                    }
+                    statusText.innerHTML = `
+                        <i class="fas fa-info-circle me-1"></i>
+                        ${statusMessage}
+                    `;
+                    console.log('Status text updated');
+                } else {
+                    console.error('Status text element not found!');
+                }
+                
+                console.log(`Progress updated: ${progress}% - ${attempts}/${maxAttempts} attempts`);
+                
+                // If elements are not found, fallback to replacing entire container
+                if (!progressBar || !progressText || !statusText) {
+                    console.log('Elements not found, using fallback container replacement...');
+                    const container = document.getElementById('qr-code-container');
+                    if (container) {
+                        const progressBarColor = progress < 30 ? 'bg-danger' : progress < 70 ? 'bg-warning' : 'bg-success';
+                        let statusMessage = '';
+                        if (progress < 30) {
+                            statusMessage = 'Starting generation...';
+                        } else if (progress < 70) {
+                            statusMessage = 'Generating QR code...';
+                        } else {
+                            statusMessage = 'Almost ready...';
+                        }
+                        
+                        container.innerHTML = `
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                    <span class="visually-hidden">Generating QR Code...</span>
+                                </div>
+                                <p class="text-muted">Generating QR code, please wait...</p>
+                                <p class="text-muted small">This may take up to 60 seconds</p>
+                                <div class="progress mt-3" style="height: 8px;">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated ${progressBarColor}" 
+                                         role="progressbar" 
+                                         style="width: ${progress}%"
+                                         aria-valuenow="${progress}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <p class="text-muted small mt-2">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Attempt ${attempts}/${maxAttempts} - ${Math.round(progress)}% complete
+                                </p>
+                                <p class="text-info small">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    ${statusMessage}
+                                </p>
+                            </div>
+                        `;
+                        console.log('Container replaced with fallback content');
+                    }
+                }
+                
+                // Update browser tab title to show progress
+                const originalTitle = document.title;
+                document.title = `[${Math.round(progress)}%] ${originalTitle}`;
 
                 const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr`);
                 console.log('QR code poll response:', response);
@@ -1761,6 +1927,14 @@
                     return;
                 }
                 
+                // Reset modal title to normal
+                const modalTitle = document.querySelector('#qrCodeModal .modal-title');
+                if (modalTitle) {
+                    modalTitle.innerHTML = `
+                        <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Session
+                    `;
+                }
+                
                 // Check if qrCode already has data:image prefix
                 const qrCodeSrc = response.qrCode.startsWith('data:image') 
                     ? response.qrCode 
@@ -1826,6 +2000,31 @@
             e.preventDefault();
             cleanupModalBackdrops();
             alert('Modal backdrops cleaned up!');
+        }
+    });
+
+    // Add keyboard shortcut to test modal update (Ctrl+Shift+M)
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'M') {
+            e.preventDefault();
+            console.log('Testing modal update...');
+            const container = document.getElementById('qr-code-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">Testing...</span>
+                        </div>
+                        <p class="text-muted">Test Modal Update</p>
+                        <p class="text-success">Modal content updated successfully!</p>
+                    </div>
+                `;
+                console.log('Modal test update applied');
+                alert('Modal test update applied!');
+            } else {
+                console.error('QR container not found for test');
+                alert('QR container not found!');
+            }
         }
     });
 

@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-console.log('🔧 Setting up environment variables...\n');
 
 // Generate secure JWT secrets
 const jwtSecret = crypto.randomBytes(32).toString('hex');
@@ -93,16 +92,5 @@ MOCK_WHATSAPP=false
 
 try {
   fs.writeFileSync('.env', envContent);
-  console.log('✅ .env file created successfully!');
-  console.log('🔑 Generated secure JWT secrets');
-  console.log('📧 Email is disabled by default (SMTP not configured)');
-  console.log('🗄️  MongoDB URI set to: mongodb://localhost:27017/whatsapp_api');
-  console.log('\n📋 Next steps:');
-  console.log('1. Make sure MongoDB is running on localhost:27017');
-  console.log('2. To enable email, configure SMTP settings in .env');
-  console.log('3. Run: npm start');
 } catch (error) {
-  console.error('❌ Error creating .env file:', error.message);
-  console.log('\n📝 Please create .env file manually with the following content:');
-  console.log(envContent);
 }

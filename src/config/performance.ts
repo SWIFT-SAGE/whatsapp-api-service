@@ -209,7 +209,6 @@ export const memoryOptimization = {
     
     // Log warning if memory usage is high
     if (memoryUsagePercent > memoryOptimization.gc.memoryWarningThreshold) {
-      console.warn(`High memory usage: ${Math.round(memoryUsagePercent * 100)}%`);
     }
     
     next();
@@ -346,7 +345,6 @@ export const performanceMonitoring = {
       
       // Log slow requests
       if (duration > 1000) { // Slower than 1 second
-        console.warn(`Slow request: ${req.method} ${req.originalUrl} - ${duration}ms`);
       }
       
       // Store metrics (would integrate with monitoring service)

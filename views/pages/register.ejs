@@ -399,7 +399,6 @@
                         showRegisterError(data.message || 'Registration failed. Please try again.');
                     }
                 } catch (error) {
-                    console.error('Registration error:', error);
                     showRegisterError('Network error. Please check your connection and try again.');
                 } finally {
                     // Reset button state

@@ -242,7 +242,6 @@ function checkAuthState() {
 
 // Navigation Functions
 function showView(viewName) {
-  console.log('Showing view:', viewName);
   
   // Hide all views
   const views = document.querySelectorAll('.view');
@@ -269,7 +268,6 @@ function showView(viewName) {
     // Update URL hash
     window.history.pushState({}, '', `#${viewName}`);
   } else {
-    console.error('View not found:', viewName + '-view');
   }
 
   // Special handling for dashboard
@@ -287,7 +285,6 @@ function showView(viewName) {
 }
 
 function showDashboardSection(sectionName) {
-  console.log('Showing dashboard section:', sectionName);
   
   // Hide all dashboard sections
   const sections = document.querySelectorAll('.dashboard-section');

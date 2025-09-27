@@ -441,7 +441,6 @@ app.get('/auth/verify-email/:token', async (req, res) => {
       authToken: authToken // Pass token to frontend for immediate use
     });
   } catch (error) {
-    console.error('Email verification error:', error);
     res.render('pages/email-verification', { 
       success: false,
       message: 'Email verification failed'

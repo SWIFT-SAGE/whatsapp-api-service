@@ -116,14 +116,12 @@ const client = new WhatsAppClient({
     }
     
     const sessionId = sessionResponse.data.sessionId;
-    console.log(`Session created with ID: ${sessionId}`);
     
     // 2. Check session status until ready
     let sessionStatus;
     do {
       const statusResponse = await client.sessions.getStatus(sessionId);
       sessionStatus = statusResponse.data.status;
-      console.log(`Session status: ${sessionStatus}`);
       
       if (sessionStatus === 'failed') {
         throw new Error('Session initialization failed');
@@ -142,7 +140,6 @@ const client = new WhatsAppClient({
       text: 'Hello from the WhatsApp API!'
     });
     
-    console.log(`Text message sent with ID: ${textMessageResponse.data.messageId}`);
     
     // 4. Send a media message
     const mediaMessageResponse = await client.messages.sendMedia({
@@ -153,7 +150,6 @@ const client = new WhatsAppClient({
       caption: 'Check out this image!'
     });
     
-    console.log(`Media message sent with ID: ${mediaMessageResponse.data.messageId}`);
     
     // 5. Send a button message
     const buttonMessageResponse = await client.messages.sendButtons({
@@ -167,17 +163,14 @@ const client = new WhatsAppClient({
       ]
     });
     
-    console.log(`Button message sent with ID: ${buttonMessageResponse.data.messageId}`);
     
     // Wait for some time to allow messages to be delivered
     await new Promise(resolve => setTimeout(resolve, 5000));
     
     // 6. Delete the session when done
     const deleteResponse = await client.sessions.delete(sessionId);
-    console.log(`Session deleted: ${deleteResponse.success}`);
     
   } catch (error) {
-    console.error('Error in workflow:', error);
   }
 }
 
@@ -215,14 +208,12 @@ app.post('/webhooks/whatsapp', (req, res) => {
   try {
     // Verify the webhook signature
     if (!verifySignature(req)) {
-      console.error('Invalid webhook signature');
       return res.status(401).send('Invalid signature');
     }
     
     const event = req.body.event;
     const data = req.body.data;
     
-    console.log(`Received webhook event: ${event}`);
     
     // Handle different event types
     switch (event) {
@@ -239,14 +230,12 @@ app.post('/webhooks/whatsapp', (req, res) => {
         break;
       
       default:
-        console.log(`Unhandled event type: ${event}`);
     }
     
     // Always respond with 200 OK to acknowledge receipt
     res.status(200).send('Webhook received');
     
   } catch (error) {
-    console.error('Error processing webhook:', error);
     res.status(500).send('Error processing webhook');
   }
 });
@@ -255,10 +244,8 @@ app.post('/webhooks/whatsapp', (req, res) => {
 function handleIncomingMessage(data) {
   const { messageId, sessionId, from, type, text } = data;
   
-  console.log(`Received ${type} message from ${from} in session ${sessionId}`);
   
   if (type === 'text') {
-    console.log(`Message content: ${text.body}`);
     // Process the message based on content
     // For example, implement a chatbot logic here
   }
@@ -267,18 +254,15 @@ function handleIncomingMessage(data) {
 // Handle message status updates
 function handleMessageStatusUpdate(data) {
   const { messageId, status } = data;
-  console.log(`Message ${messageId} status updated to: ${status}`);
 }
 
 // Handle session status updates
 function handleSessionStatusUpdate(data) {
   const { sessionId, status } = data;
-  console.log(`Session ${sessionId} status updated to: ${status}`);
 }
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Webhook server listening on port ${PORT}`);
 });</code></pre>
                             
                             <h3>Error Handling with Retry Logic</h3>
@@ -302,7 +286,6 @@ app.listen(PORT, () => {
         retries++;
         
         if (retries <= maxRetries) {
-          console.log(`Rate limited. Retrying after ${retryAfter} seconds (Attempt ${retries}/${maxRetries})`);
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
           continue;
         }
@@ -1267,14 +1250,12 @@ app.post('/webhooks/whatsapp', async (req, res) => {
   try {
     // Verify the webhook signature
     if (!verifySignature(req)) {
-      console.error('Invalid webhook signature');
       return res.status(401).send('Invalid signature');
     }
     
     const event = req.body.event;
     const data = req.body.data;
     
-    console.log(`Received webhook event: ${event}`);
     
     // Handle incoming messages
     if (event === 'message.received' && data.type === 'text') {
@@ -1285,7 +1266,6 @@ app.post('/webhooks/whatsapp', async (req, res) => {
     res.status(200).send('Webhook received');
     
   } catch (error) {
-    console.error('Error processing webhook:', error);
     res.status(500).send('Error processing webhook');
   }
 });
@@ -1295,7 +1275,6 @@ async function handleIncomingMessage(data) {
   const { sessionId, from, text } = data;
   const message = text.body.toLowerCase();
   
-  console.log(`Received message from ${from}: ${message}`);
   
   let response;
   
@@ -1320,15 +1299,12 @@ async function handleIncomingMessage(data) {
       text: response
     });
     
-    console.log(`Response sent to ${from}`);
   } catch (error) {
-    console.error('Error sending response:', error);
   }
 }
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Chatbot server listening on port ${PORT}`);
 });</code></pre>
                                         </div>
                                         <div class="tab-pane fade" id="chatbot-py" role="tabpanel" aria-labelledby="chatbot-py-tab">
@@ -1503,7 +1479,6 @@ async function sendNotification(phoneNumber, notificationType, data) {
     return response;
     
   } catch (error) {
-    console.error(`Failed to send ${notificationType} notification:`, error);
     throw error;
   }
 }

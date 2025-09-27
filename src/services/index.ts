@@ -250,14 +250,12 @@ export class ServiceManager {
       if (typeof service.close === 'function') {
         shutdownPromises.push(
           service.close().catch((error: Error) => {
-            console.error(`Error shutting down ${name} service:`, error);
           })
         );
       }
     }
 
     await Promise.all(shutdownPromises);
-    console.log('All services shut down gracefully');
   }
 }
 
@@ -286,7 +284,6 @@ export const areAllServicesHealthy = (): boolean => {
 
 // Service initialization
 export const initializeServices = async (): Promise<void> => {
-  console.log('Initializing services...');
   
   try {
     // Initialize services that need setup
@@ -296,22 +293,18 @@ export const initializeServices = async (): Promise<void> => {
     // Example: if (isServiceEnabled('email')) initPromises.push(EmailService.initialize());
     
     await Promise.all(initPromises);
-    console.log('All services initialized successfully');
   } catch (error) {
-    console.error('Error initializing services:', error);
     throw error;
   }
 };
 
 // Graceful shutdown handler
 process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM, shutting down services gracefully...');
   await serviceManager.shutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('Received SIGINT, shutting down services gracefully...');
   await serviceManager.shutdown();
   process.exit(0);
 });

@@ -327,7 +327,6 @@ const getMiddlewareFunction = (name: string, params?: string): any => {
   const middlewareFunction = middlewareFunctions[name as keyof typeof middlewareFunctions];
   
   if (!middlewareFunction) {
-    console.warn(`Middleware function '${name}' not found`);
     return null;
   }
   
@@ -341,7 +340,6 @@ const getMiddlewareFunction = (name: string, params?: string): any => {
       
       return middlewareFunction(parsedParams);
     } catch (error) {
-      console.warn(`Failed to parse parameters for middleware '${name}':`, params);
       return middlewareFunction;
     }
   }

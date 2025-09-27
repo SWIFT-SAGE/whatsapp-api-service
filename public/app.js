@@ -471,11 +471,12 @@ function setupEventListeners() {
       return;
     }
     
-    if (e.target.id === 'create-session-btn' || e.target.closest('#create-session-btn')) {
-      e.preventDefault();
-      createSession();
-      return;
-    }
+    // create-session-btn is handled in dashboard.ejs
+    // if (e.target.id === 'create-session-btn' || e.target.closest('#create-session-btn')) {
+    //   e.preventDefault();
+    //   createSession();
+    //   return;
+    // }
     
     if (e.target.id === 'add-chatbot-rule-btn' || e.target.closest('#add-chatbot-rule-btn')) {
       e.preventDefault();

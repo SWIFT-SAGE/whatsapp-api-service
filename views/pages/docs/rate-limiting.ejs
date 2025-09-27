@@ -252,12 +252,10 @@ Retry-After: 60
       const response = await fetch(url, options);
       
       // Check rate limit headers
-      console.log(`Rate limit: ${response.headers.get('X-RateLimit-Remaining')}/${response.headers.get('X-RateLimit-Limit')}`);
       
       if (response.status === 429) {
         // Rate limited - get retry time from header
         const retryAfter = parseInt(response.headers.get('Retry-After') || '60');
-        console.log(`Rate limited. Retrying after ${retryAfter} seconds`);
         
         // Wait for the specified time
         await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
@@ -267,7 +265,6 @@ Retry-After: 60
       
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
       retries++;
       
       if (retries >= maxRetries) {

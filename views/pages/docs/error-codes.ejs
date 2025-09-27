@@ -464,24 +464,20 @@
       // Handle specific error codes
       switch (data.error.code) {
         case 'session_not_connected':
-          console.error('WhatsApp session is not connected. Please scan the QR code.');
           // Prompt user to reconnect
           break;
           
         case 'invalid_phone_number':
-          console.error('Invalid phone number format. Use international format.');
           // Show validation error to user
           break;
           
         case 'rate_limit_exceeded':
           const retryAfter = response.headers.get('Retry-After') || 60;
-          console.error(`Rate limit exceeded. Retrying after ${retryAfter} seconds.`);
           // Implement retry logic
           setTimeout(() => sendWhatsAppMessage(sessionId, to, text), retryAfter * 1000);
           break;
           
         default:
-          console.error(`WhatsApp API error: ${data.error.message}`);
           // Show generic error to user
       }
       
@@ -490,7 +486,6 @@
     
     return data;
   } catch (error) {
-    console.error('Failed to send WhatsApp message:', error);
     return { 
       success: false, 
       error: { 

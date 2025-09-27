@@ -209,7 +209,6 @@
                         showLoginError(data.message || 'Login failed. Please try again.');
                     }
                 } catch (error) {
-                    console.error('Login error:', error);
                     showLoginError('Network error. Please check your connection and try again.');
                 } finally {
                     // Reset button state
@@ -274,7 +273,6 @@
                     document.getElementById('forgot-error-message').textContent = data.message || 'Error sending reset email. Please try again.';
                 }
             } catch (error) {
-                console.error('Forgot password error:', error);
                 errorAlert.classList.remove('d-none');
                 document.getElementById('forgot-error-message').textContent = 'Network error. Please check your connection and try again.';
             } finally {
@@ -294,7 +292,6 @@
                 }).then(() => {
                     window.location.href = '/login';
                 }).catch(error => {
-                    console.error('Logout error:', error);
                     window.location.href = '/login';
                 });
             }
