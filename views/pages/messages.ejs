@@ -1,0 +1,50 @@
+<!-- Messages Section -->
+<div id="dashboard-messages" class="dashboard-section">
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+        <h2 class="m-0">Recent Messages</h2>
+        <div class="d-flex flex-wrap gap-2">
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary active">All</button>
+                <button class="btn btn-outline-secondary">Sent</button>
+                <button class="btn btn-outline-secondary">Failed</button>
+            </div>
+            <input type="search" class="form-control" placeholder="Search messages"
+                style="max-width: 220px;">
+            <button class="btn btn-outline-primary"><i
+                    class="fas fa-file-export me-2"></i>Export CSV</button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Message ID</th>
+                        <th>To</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody id="messages-table">
+                    <tr>
+                        <td><code>msg_001</code></td>
+                        <td>+1234567890</td>
+                        <td>Hello! This is a test message.</td>
+                        <td><span class="badge bg-success">Delivered</span></td>
+                        <td>2:30 PM</td>
+                    </tr>
+                    <tr>
+                        <td><code>msg_002</code></td>
+                        <td>+0987654321</td>
+                        <td>Welcome to our service!</td>
+                        <td><span class="badge bg-warning">Sent</span></td>
+                        <td>1:15 PM</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p id="messages-empty" class="text-muted p-3 mb-0" style="display: none;">No messages
+            yet. Send your first message from the dashboard.</p>
+    </div>
+</div>

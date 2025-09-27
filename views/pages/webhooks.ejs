@@ -1,0 +1,68 @@
+<!-- Webhooks Section -->
+<div id="dashboard-webhooks" class="dashboard-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Webhook Configuration</h2>
+        <button class="btn btn-primary" id="add-webhook-btn">
+            <i class="fas fa-plus me-2"></i>Add Webhook
+        </button>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Active Webhooks</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>URL</th>
+                                    <th>Events</th>
+                                    <th>Status</th>
+                                    <th>Last Delivery</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>https://api.example.com/webhook</code></td>
+                                    <td><span
+                                            class="badge bg-primary me-1">message.sent</span><span
+                                            class="badge bg-success">message.delivered</span>
+                                    </td>
+                                    <td><span class="badge bg-success">Active</span></td>
+                                    <td>2 minutes ago</td>
+                                    <td>
+                                        <button
+                                            class="btn btn-sm btn-outline-primary me-1">Test</button>
+                                        <button
+                                            class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Webhook Events</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Available webhook events:</p>
+                    <ul class="list-unstyled">
+                        <li><code>message.sent</code> - Message sent successfully</li>
+                        <li><code>message.delivered</code> - Message delivered</li>
+                        <li><code>message.failed</code> - Message delivery failed</li>
+                        <li><code>session.connected</code> - WhatsApp session connected</li>
+                        <li><code>session.disconnected</code> - WhatsApp session disconnected
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

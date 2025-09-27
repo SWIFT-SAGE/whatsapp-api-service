@@ -1,0 +1,133 @@
+<!-- Sessions Section -->
+<div id="dashboard-sessions" class="dashboard-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>WhatsApp Sessions</h2>
+        <button class="btn btn-primary" id="create-session-btn">
+            <i class="fas fa-plus me-2"></i>New Session
+        </button>
+    </div>
+    <div class="row g-4" id="sessions-container">
+        <% if (sessions && sessions.length> 0) { %>
+            <% sessions.forEach((session, index)=> { %>
+                <div class="col-md-6">
+                    <div class="card session-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5>Session #<%= index + 1 %>
+                                </h5>
+                                <span
+                                    class="badge bg-<%= session.status === 'connected' ? 'success' : session.status === 'connecting' ? 'warning' : 'secondary' %>">
+                                    <%= session.status.charAt(0).toUpperCase() +
+                                        session.status.slice(1) %>
+                                </span>
+                            </div>
+                            <p><strong>Session ID:</strong>
+                                <%= session.sessionId %>
+                            </p>
+                            <p><strong>Phone:</strong>
+                                <%= session.phoneNumber || 'Not connected' %>
+                            </p>
+                            <p><strong>Status:</strong>
+                                <%= session.status %>
+                            </p>
+                            <p><strong>Created:</strong>
+                                <%= new Date(session.createdAt).toLocaleDateString() %>
+                            </p>
+                            <div class="btn-group" role="group">
+                                <% if (session.status==='connected' ) { %>
+                                    <button class="btn btn-outline-danger btn-sm"
+                                        data-action="disconnect-session"
+                                        data-session="<%= session.sessionId %>">
+                                        <i class="fas fa-unlink me-1"></i>Disconnect
+                                    </button>
+                                    <% } else if (session.status==='disconnected' ) { %>
+                                        <button class="btn btn-outline-primary btn-sm"
+                                            data-action="connect-session"
+                                            data-session="<%= session.sessionId %>">
+                                            <i class="fas fa-link me-1"></i>Connect
+                                        </button>
+                                        <% } %>
+                                <button class="btn btn-outline-danger btn-sm"
+                                    data-action="delete-session"
+                                    data-session="<%= session.sessionId %>"
+                                    title="Delete Session">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <% }); %>
+                    <% } else { %>
+                        <div class="col-12">
+                            <div class="text-center py-5">
+                                <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No sessions yet</h5>
+                                <p class="text-muted">Create your first WhatsApp session to get
+                                    started</p>
+                                <button class="btn btn-primary" id="create-first-session-btn">
+                                    <i class="fas fa-plus me-2"></i>Create Session
+                                </button>
+                            </div>
+                        </div>
+                        <% } %>
+    </div>
+</div>
+
+<!-- QR Code Modal -->
+<div class="modal fade" id="qrCodeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Session
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="qr-code-container">
+                    <!-- Progress state will be inserted here by JavaScript -->
+                </div>
+                <div class="mt-3">
+                    <h6>How to connect:</h6>
+                    <ol class="text-start">
+                        <li>Open WhatsApp on your phone</li>
+                        <li>Tap <strong>Settings</strong> → <strong>Linked Devices</strong>
+                        </li>
+                        <li>Tap <strong>Link a Device</strong></li>
+                        <li>Scan the QR code above</li>
+                    </ol>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Note:</strong> The QR code will expire in 2 minutes. If it
+                    expires, click "Refresh QR Code" to generate a new one.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                    data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="refresh-qr-btn">
+                    <i class="fas fa-sync me-2"></i>Refresh QR Code
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session button group styling -->
+<style>
+    .btn-group .btn {
+        margin-right: 2px;
+    }
+    .btn-group .btn:last-child {
+        margin-right: 0;
+    }
+    .btn-group .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .session-card .btn-group {
+        margin-top: 0.5rem;
+    }
+</style>

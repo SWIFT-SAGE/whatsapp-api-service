@@ -75,816 +75,13 @@
                 <!-- Main Content -->
                 <div class="col-lg-9 col-xl-10">
                     <div class="dashboard-content">
-                        <!-- Overview Section -->
-                        <div id="dashboard-overview" class="dashboard-section">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>Dashboard Overview</h2>
-                                <div class="badge bg-success fs-6" id="plan-badge">Basic Plan</div>
-                            </div>
-
-                            <!-- Stats Cards -->
-                            <div class="row g-4 mb-5">
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="stat-card">
-                                        <div class="stat-icon text-primary">
-                                            <i class="fas fa-paper-plane"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <h3 id="messages-sent" data-stat="totalMessages">
-                                                <%= stats.totalMessages.toLocaleString() %>
-                                            </h3>
-                                            <p>Messages Sent</p>
-                                            <small class="text-muted">of 10,000 this month</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="stat-card">
-                                        <div class="stat-icon text-success">
-                                            <i class="fas fa-mobile-alt"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <h3 id="active-sessions" data-stat="activeSessions">
-                                                <%= stats.activeSessions %>
-                                            </h3>
-                                            <p>Active Sessions</p>
-                                            <small class="text-muted">WhatsApp connected</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="stat-card">
-                                        <div class="stat-icon text-warning">
-                                            <i class="fas fa-chart-bar"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <h3 id="delivery-rate" data-stat="deliveryRate">
-                                                <%= stats.deliveryRate %>%
-                                            </h3>
-                                            <p>Delivery Rate</p>
-                                            <small class="text-muted">Last 30 days</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="stat-card">
-                                        <div class="stat-icon text-info">
-                                            <i class="fas fa-key"></i>
-                                        </div>
-                                        <div class="stat-info">
-                                            <h3 id="total-sessions">
-                                                <%= stats.totalSessions %>
-                                            </h3>
-                                            <p>Total Sessions</p>
-                                            <small class="text-muted">All systems operational</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Usage Analytics -->
-                            <div class="card mb-5">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="card-title m-0"><i class="fas fa-chart-line me-2"></i>Usage Analytics
-                                        </h5>
-                                        <span class="text-muted small">Last 30 days</span>
-                                    </div>
-                                    <canvas id="messagesChart" height="100"></canvas>
-                                </div>
-                            </div>
-
-                            <!-- Quick Actions -->
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">
-                                                <i class="fas fa-paper-plane me-2"></i>Quick Send Message
-                                            </h5>
-                                            <form id="quick-message-form">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Phone Number</label>
-                                                    <input type="tel" class="form-control" placeholder="+1234567890"
-                                                        required>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Message</label>
-                                                    <textarea class="form-control" rows="3"
-                                                        placeholder="Enter your message here..." required></textarea>
-                                                </div>
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="fas fa-send me-2"></i>Send Message
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h5 class="card-title">
-                                                <i class="fas fa-key me-2"></i>API Key
-                                            </h5>
-                                            <p class="text-muted">Use this key to authenticate your API requests</p>
-                                            <div class="input-group">
-                                                <input type="password" class="form-control" id="api-key"
-                                                    value="<%= (user && user.apiKey) ? user.apiKey : 'Not generated' %>"
-                                                    readonly>
-                                                <% if (user && user.apiKey) { %>
-                                                    <button class="btn btn-outline-secondary" type="button"
-                                                        id="toggle-api-key">
-                                                        <i class="fas fa-eye" id="api-key-icon"></i>
-                                                    </button>
-                                                    <button class="btn btn-outline-secondary" type="button"
-                                                        id="copy-api-key">
-                                                        <i class="fas fa-copy"></i>
-                                                    </button>
-                                                    <% } else { %>
-                                                        <button class="btn btn-primary" type="button"
-                                                            id="generate-api-key">
-                                                            <i class="fas fa-plus me-2"></i>Generate Key
-                                                        </button>
-                                                        <% } %>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Dynamic Content Container -->
+                        <div id="dashboard-content-container">
+                            <!-- Content will be loaded dynamically here -->
                         </div>
 
-                        <!-- Sessions Section -->
-                        <div id="dashboard-sessions" class="dashboard-section" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>WhatsApp Sessions</h2>
-                                <button class="btn btn-primary" id="create-session-btn">
-                                    <i class="fas fa-plus me-2"></i>New Session
-                                </button>
-                            </div>
-                            <div class="row g-4" id="sessions-container">
-                                <% if (sessions && sessions.length> 0) { %>
-                                    <% sessions.forEach((session, index)=> { %>
-                                        <div class="col-md-6">
-                                            <div class="card session-card">
-                                                <div class="card-body">
-                                                    <div class="d-flex justify-content-between align-items-start mb-3">
-                                                        <h5>Session #<%= index + 1 %>
-                                                        </h5>
-                                                        <span
-                                                            class="badge bg-<%= session.status === 'connected' ? 'success' : session.status === 'connecting' ? 'warning' : 'secondary' %>">
-                                                            <%= session.status.charAt(0).toUpperCase() +
-                                                                session.status.slice(1) %>
-                                                        </span>
-                                                    </div>
-                                                    <p><strong>Session ID:</strong>
-                                                        <%= session.sessionId %>
-                                                    </p>
-                                                    <p><strong>Phone:</strong>
-                                                        <%= session.phoneNumber || 'Not connected' %>
-                                                    </p>
-                                                    <p><strong>Status:</strong>
-                                                        <%= session.status %>
-                                                    </p>
-                                                    <p><strong>Created:</strong>
-                                                        <%= new Date(session.createdAt).toLocaleDateString() %>
-                                                    </p>
-                                                    <div class="btn-group" role="group">
-                                                        <% if (session.status==='connected' ) { %>
-                                                            <button class="btn btn-outline-danger btn-sm"
-                                                                data-action="disconnect-session"
-                                                                data-session="<%= session.sessionId %>">
-                                                                <i class="fas fa-unlink me-1"></i>Disconnect
-                                                            </button>
-                                                            <% } else if (session.status==='disconnected' ) { %>
-                                                                <button class="btn btn-outline-primary btn-sm"
-                                                                    data-action="connect-session"
-                                                                    data-session="<%= session.sessionId %>">
-                                                                    <i class="fas fa-link me-1"></i>Connect
-                                                                </button>
-                                                                <% } %>
-                                                        <button class="btn btn-outline-danger btn-sm"
-                                                            data-action="delete-session"
-                                                            data-session="<%= session.sessionId %>"
-                                                            title="Delete Session">
-                                                            <i class="fas fa-trash me-1"></i>Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <% }); %>
-                                            <% } else { %>
-                                                <div class="col-12">
-                                                    <div class="text-center py-5">
-                                                        <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
-                                                        <h5 class="text-muted">No sessions yet</h5>
-                                                        <p class="text-muted">Create your first WhatsApp session to get
-                                                            started</p>
-                                                        <button class="btn btn-primary" id="create-first-session-btn">
-                                                            <i class="fas fa-plus me-2"></i>Create Session
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <% } %>
-                            </div>
-                        </div>
 
-                        <!-- Messages Section -->
-                        <div id="dashboard-messages" class="dashboard-section" style="display: none;">
-                            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-                                <h2 class="m-0">Recent Messages</h2>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <div class="btn-group">
-                                        <button class="btn btn-outline-secondary active">All</button>
-                                        <button class="btn btn-outline-secondary">Sent</button>
-                                        <button class="btn btn-outline-secondary">Failed</button>
-                                    </div>
-                                    <input type="search" class="form-control" placeholder="Search messages"
-                                        style="max-width: 220px;">
-                                    <button class="btn btn-outline-primary"><i
-                                            class="fas fa-file-export me-2"></i>Export CSV</button>
-                                </div>
-                            </div>
-                            <div class="card">
-                                <div class="table-responsive">
-                                    <table class="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Message ID</th>
-                                                <th>To</th>
-                                                <th>Message</th>
-                                                <th>Status</th>
-                                                <th>Time</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="messages-table">
-                                            <tr>
-                                                <td><code>msg_001</code></td>
-                                                <td>+1234567890</td>
-                                                <td>Hello! This is a test message.</td>
-                                                <td><span class="badge bg-success">Delivered</span></td>
-                                                <td>2:30 PM</td>
-                                            </tr>
-                                            <tr>
-                                                <td><code>msg_002</code></td>
-                                                <td>+0987654321</td>
-                                                <td>Welcome to our service!</td>
-                                                <td><span class="badge bg-warning">Sent</span></td>
-                                                <td>1:15 PM</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <p id="messages-empty" class="text-muted p-3 mb-0" style="display: none;">No messages
-                                    yet. Send your first message from the dashboard.</p>
-                            </div>
-                        </div>
 
-                        <!-- Chatbot Section -->
-                        <div id="dashboard-chatbot" class="dashboard-section" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>Chatbot Management</h2>
-                                <button class="btn btn-primary" id="add-chatbot-rule-btn">
-                                    <i class="fas fa-plus me-2"></i>Add Rule
-                                </button>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Chatbot Rules</h5>
-                                        </div>
-                                        <div class="card-body" id="chatbot-rules">
-                                            <!-- Chatbot rules will be populated here -->
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Test Chatbot</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <input type="text" class="form-control" placeholder="Type a message..."
-                                                    id="test-message">
-                                            </div>
-                                            <button class="btn btn-primary w-100" id="test-chatbot-btn">Test
-                                                Response</button>
-                                            <div id="chatbot-response" class="mt-3"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Webhooks Section -->
-                        <div id="dashboard-webhooks" class="dashboard-section" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>Webhook Configuration</h2>
-                                <button class="btn btn-primary" id="add-webhook-btn">
-                                    <i class="fas fa-plus me-2"></i>Add Webhook
-                                </button>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-8">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Active Webhooks</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="table-responsive">
-                                                <table class="table table-hover">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>URL</th>
-                                                            <th>Events</th>
-                                                            <th>Status</th>
-                                                            <th>Last Delivery</th>
-                                                            <th>Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td><code>https://api.example.com/webhook</code></td>
-                                                            <td><span
-                                                                    class="badge bg-primary me-1">message.sent</span><span
-                                                                    class="badge bg-success">message.delivered</span>
-                                                            </td>
-                                                            <td><span class="badge bg-success">Active</span></td>
-                                                            <td>2 minutes ago</td>
-                                                            <td>
-                                                                <button
-                                                                    class="btn btn-sm btn-outline-primary me-1">Test</button>
-                                                                <button
-                                                                    class="btn btn-sm btn-outline-danger">Delete</button>
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Webhook Events</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p class="text-muted small">Available webhook events:</p>
-                                            <ul class="list-unstyled">
-                                                <li><code>message.sent</code> - Message sent successfully</li>
-                                                <li><code>message.delivered</code> - Message delivered</li>
-                                                <li><code>message.failed</code> - Message delivery failed</li>
-                                                <li><code>session.connected</code> - WhatsApp session connected</li>
-                                                <li><code>session.disconnected</code> - WhatsApp session disconnected
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Analytics Section -->
-                        <div id="dashboard-analytics" class="dashboard-section" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>Advanced Analytics</h2>
-                                <div class="btn-group">
-                                    <button class="btn btn-outline-secondary active">7 Days</button>
-                                    <button class="btn btn-outline-secondary">30 Days</button>
-                                    <button class="btn btn-outline-secondary">90 Days</button>
-                                </div>
-                            </div>
-
-                            <!-- Key Metrics -->
-                            <div class="row g-4 mb-4">
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="card text-center">
-                                        <div class="card-body">
-                                            <div class="display-6 text-primary mb-2">98.5%</div>
-                                            <h6>Delivery Rate</h6>
-                                            <small class="text-success"><i class="fas fa-arrow-up"></i> +2.3%</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="card text-center">
-                                        <div class="card-body">
-                                            <div class="display-6 text-success mb-2">1.2s</div>
-                                            <h6>Avg Response Time</h6>
-                                            <small class="text-success"><i class="fas fa-arrow-down"></i> -0.3s</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="card text-center">
-                                        <div class="card-body">
-                                            <div class="display-6 text-warning mb-2">15.2%</div>
-                                            <h6>Error Rate</h6>
-                                            <small class="text-danger"><i class="fas fa-arrow-up"></i> +1.1%</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6">
-                                    <div class="card text-center">
-                                        <div class="card-body">
-                                            <div class="display-6 text-info mb-2">4.8</div>
-                                            <h6>Avg Session Duration (hrs)</h6>
-                                            <small class="text-success"><i class="fas fa-arrow-up"></i> +0.5hrs</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Charts -->
-                            <div class="row g-4">
-                                <div class="col-lg-8">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Message Volume Trends</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <canvas id="volumeChart" height="100"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Message Status Distribution</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <canvas id="statusChart" height="200"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Geographic Distribution -->
-                            <div class="row g-4 mt-2">
-                                <div class="col-lg-6">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Top Countries</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span><i class="flag-icon flag-icon-us me-2"></i>United States</span>
-                                                <span class="fw-bold">2,450 messages</span>
-                                            </div>
-                                            <div class="progress mb-3" style="height: 8px;">
-                                                <div class="progress-bar" style="width: 85%"></div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span><i class="flag-icon flag-icon-gb me-2"></i>United Kingdom</span>
-                                                <span class="fw-bold">1,890 messages</span>
-                                            </div>
-                                            <div class="progress mb-3" style="height: 8px;">
-                                                <div class="progress-bar" style="width: 65%"></div>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span><i class="flag-icon flag-icon-ca me-2"></i>Canada</span>
-                                                <span class="fw-bold">1,234 messages</span>
-                                            </div>
-                                            <div class="progress mb-3" style="height: 8px;">
-                                                <div class="progress-bar" style="width: 42%"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Peak Usage Hours</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <canvas id="hourlyChart" height="200"></canvas>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Billing Section -->
-                        <div id="dashboard-billing" class="dashboard-section" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>Billing & Usage</h2>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-outline-primary">Download Invoice</button>
-                                    <button class="btn btn-primary" data-view="pricing">Upgrade Plan</button>
-                                </div>
-                            </div>
-
-                            <!-- Current Plan -->
-                            <div class="row g-4 mb-4">
-                                <div class="col-lg-8">
-                                    <div class="card">
-                                        <div class="card-header d-flex justify-content-between align-items-center">
-                                            <h5>Current Plan: Basic</h5>
-                                            <span class="badge bg-success fs-6">Active</span>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <h6>Plan Details</h6>
-                                                    <ul class="list-unstyled">
-                                                        <li><i class="fas fa-check text-success me-2"></i>10,000
-                                                            messages/month</li>
-                                                        <li><i class="fas fa-check text-success me-2"></i>Priority
-                                                            support</li>
-                                                        <li><i class="fas fa-check text-success me-2"></i>Advanced
-                                                            analytics</li>
-                                                        <li><i class="fas fa-check text-success me-2"></i>Webhook
-                                                            support</li>
-                                                    </ul>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <h6>Billing Cycle</h6>
-                                                    <p><strong>Next billing date:</strong> January 15, 2025</p>
-                                                    <p><strong>Amount:</strong> $29.00</p>
-                                                    <p><strong>Payment method:</strong> •••• 4242</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-4">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5>Usage This Month</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <div class="d-flex justify-content-between mb-1">
-                                                    <span>Messages</span>
-                                                    <span>1,250 / 10,000</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div class="progress-bar" style="width: 12.5%"></div>
-                                                </div>
-                                            </div>
-                                            <div class="mb-3">
-                                                <div class="d-flex justify-content-between mb-1">
-                                                    <span>API Calls</span>
-                                                    <span>3,420 / ∞</span>
-                                                </div>
-                                                <div class="progress">
-                                                    <div class="progress-bar bg-success" style="width: 100%"></div>
-                                                </div>
-                                            </div>
-                                            <small class="text-muted">Resets on January 15, 2025</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Billing History -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5>Billing History</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
-                                            <thead>
-                                                <tr>
-                                                    <th>Date</th>
-                                                    <th>Description</th>
-                                                    <th>Amount</th>
-                                                    <th>Status</th>
-                                                    <th>Invoice</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>Dec 15, 2024</td>
-                                                    <td>Basic Plan - Monthly</td>
-                                                    <td>$29.00</td>
-                                                    <td><span class="badge bg-success">Paid</span></td>
-                                                    <td><a href="#" class="btn btn-sm btn-outline-primary">Download</a>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Nov 15, 2024</td>
-                                                    <td>Basic Plan - Monthly</td>
-                                                    <td>$29.00</td>
-                                                    <td><span class="badge bg-success">Paid</span></td>
-                                                    <td><a href="#" class="btn btn-sm btn-outline-primary">Download</a>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Oct 15, 2024</td>
-                                                    <td>Basic Plan - Monthly</td>
-                                                    <td>$29.00</td>
-                                                    <td><span class="badge bg-success">Paid</span></td>
-                                                    <td><a href="#" class="btn btn-sm btn-outline-primary">Download</a>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Profile Section -->
-                        <div id="dashboard-profile" class="dashboard-section" style="display: none;">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2>Profile Settings</h2>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-outline-primary" id="refresh-profile-btn">
-                                        <i class="fas fa-sync me-2"></i>Refresh
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="row g-4">
-                                <!-- Profile Information -->
-                                <div class="col-lg-8">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5><i class="fas fa-user me-2"></i>Profile Information</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <form id="profile-form">
-                                                <div class="row g-3">
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Full Name</label>
-                                                        <input type="text" class="form-control" id="profile-name"
-                                                            name="name" required>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Email Address</label>
-                                                        <div class="input-group">
-                                                            <input type="email" class="form-control" id="profile-email"
-                                                                name="email" required>
-                                                            <button class="btn btn-outline-success" type="button"
-                                                                id="verify-email-btn" disabled>
-                                                                <i class="fas fa-check me-1"></i>Verified
-                                                            </button>
-                                                        </div>
-                                                        <div class="form-text" id="email-status-text">Email verification
-                                                            status</div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Phone Number</label>
-                                                        <input type="tel" class="form-control" id="profile-phone"
-                                                            name="phone">
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Company</label>
-                                                        <input type="text" class="form-control" id="profile-company"
-                                                            name="company">
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <label class="form-label">Bio</label>
-                                                        <textarea class="form-control" id="profile-bio" name="bio"
-                                                            rows="3" placeholder="Tell us about yourself..."></textarea>
-                                                    </div>
-                                                </div>
-                                                <div class="mt-4">
-                                                    <button type="submit" class="btn btn-primary">
-                                                        <i class="fas fa-save me-2"></i>Update Profile
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-secondary ms-2"
-                                                        id="reset-profile-btn">
-                                                        <i class="fas fa-undo me-2"></i>Reset
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Security Settings -->
-                                <div class="col-lg-4">
-                                    <div class="card mb-4">
-                                        <div class="card-header">
-                                            <h5><i class="fas fa-shield-alt me-2"></i>Security</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <form id="password-form">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Current Password</label>
-                                                    <input type="password" class="form-control" id="current-password"
-                                                        name="currentPassword" required>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">New Password</label>
-                                                    <input type="password" class="form-control" id="new-password"
-                                                        name="newPassword" required>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Confirm New Password</label>
-                                                    <input type="password" class="form-control" id="confirm-password"
-                                                        name="confirmPassword" required>
-                                                </div>
-                                                <button type="submit" class="btn btn-warning w-100">
-                                                    <i class="fas fa-key me-2"></i>Change Password
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-
-                                    <!-- Account Status -->
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h5><i class="fas fa-info-circle me-2"></i>Account Status</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span>Email Verified</span>
-                                                <span class="badge bg-success" id="email-verified-badge">Verified</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span>Account Created</span>
-                                                <span class="text-muted" id="account-created-date">-</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span>Last Login</span>
-                                                <span class="text-muted" id="last-login-date">-</span>
-                                            </div>
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span>Plan</span>
-                                                <span class="badge bg-primary" id="profile-plan-badge">Free</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Email Verification Modal -->
-                            <div class="modal fade" id="emailVerificationModal" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Email Verification</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>We've sent a verification email to <strong
-                                                    id="verification-email"></strong></p>
-                                            <p>Please check your inbox and click the verification link to verify your
-                                                email address.</p>
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                If you don't see the email, please check your spam folder.
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Close</button>
-                                            <button type="button" class="btn btn-primary" id="resend-verification-btn">
-                                                <i class="fas fa-paper-plane me-2"></i>Resend Email
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- QR Code Modal -->
-                            <div class="modal fade" id="qrCodeModal" tabindex="-1">
-                                <div class="modal-dialog modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">
-                                                <i class="fab fa-whatsapp me-2"></i>Connect WhatsApp Session
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body text-center">
-                                            <div id="qr-code-container">
-                                                <!-- Progress state will be inserted here by JavaScript -->
-                                            </div>
-                                            <div class="mt-3">
-                                                <h6>How to connect:</h6>
-                                                <ol class="text-start">
-                                                    <li>Open WhatsApp on your phone</li>
-                                                    <li>Tap <strong>Settings</strong> → <strong>Linked Devices</strong>
-                                                    </li>
-                                                    <li>Tap <strong>Link a Device</strong></li>
-                                                    <li>Scan the QR code above</li>
-                                                </ol>
-                                            </div>
-                                            <div class="alert alert-info mt-3">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                <strong>Note:</strong> The QR code will expire in 2 minutes. If it
-                                                expires, click "Refresh QR Code" to generate a new one.
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Close</button>
-                                            <button type="button" class="btn btn-primary" id="refresh-qr-btn">
-                                                <i class="fas fa-sync me-2"></i>Refresh QR Code
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -947,7 +144,7 @@
 
         // Dashboard tab navigation
         const sidebarLinks = document.querySelectorAll('.sidebar-nav .nav-link[data-section]');
-        const dashboardSections = document.querySelectorAll('.dashboard-section');
+        const contentContainer = document.getElementById('dashboard-content-container');
 
         sidebarLinks.forEach(link => {
             link.addEventListener('click', function (e) {
@@ -958,31 +155,19 @@
                 // Add active class to clicked link
                 this.classList.add('active');
 
-                // Hide all sections
-                dashboardSections.forEach(section => {
-                    section.style.display = 'none';
-                });
-
-                // Show selected section
+                // Get target section
                 const targetSection = this.getAttribute('data-section');
                 console.log('Switching to section:', targetSection);
-                const sectionElement = document.getElementById(`dashboard-${targetSection}`);
-                if (sectionElement) {
-                    sectionElement.style.display = 'block';
-                    console.log('Section element found, loading data...');
-
-                    // Load section-specific data
-                    loadSectionData(targetSection);
-                } else {
-                    console.error('Section element not found:', `dashboard-${targetSection}`);
-                }
+                
+                // Load the section page dynamically
+                loadSectionPage(targetSection);
             });
         });
 
         // Load initial data with a small delay to ensure authentication is ready
         setTimeout(async () => {
             await loadDashboardData();
-            await loadSectionData('overview');
+            await loadSectionPage('overview');
 
             // Initialize API key buttons after data is loaded
         initializeApiKeyButtons();
@@ -2188,6 +1373,57 @@
                 showError('overview', 'Please log in to view dashboard data');
             } else {
                 showError('overview', 'Failed to load dashboard data: ' + error.message);
+            }
+        }
+    }
+
+    // Load section page dynamically
+    async function loadSectionPage(section) {
+        console.log('loadSectionPage called with section:', section);
+        
+        try {
+            // Show loading state
+            const contentContainer = document.getElementById('dashboard-content-container');
+            if (contentContainer) {
+                contentContainer.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted">Loading ${section} page...</p>
+                    </div>
+                `;
+            }
+
+            // Load the section page content
+            const response = await fetch(`/api/dashboard/section/${section}`, {
+                headers: {
+                    'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to load ${section} page: ${response.statusText}`);
+            }
+            
+            const html = await response.text();
+            if (contentContainer) {
+                contentContainer.innerHTML = html;
+            }
+
+            // Load section-specific data after page is loaded
+            await loadSectionData(section);
+            
+        } catch (error) {
+            console.error('Error loading section page:', error);
+            const contentContainer = document.getElementById('dashboard-content-container');
+            if (contentContainer) {
+                contentContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading ${section} page: ${error.message}
+                    </div>
+                `;
             }
         }
     }

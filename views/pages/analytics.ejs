@@ -1,0 +1,119 @@
+<!-- Analytics Section -->
+<div id="dashboard-analytics" class="dashboard-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Advanced Analytics</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary active">7 Days</button>
+            <button class="btn btn-outline-secondary">30 Days</button>
+            <button class="btn btn-outline-secondary">90 Days</button>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-primary mb-2">98.5%</div>
+                    <h6>Delivery Rate</h6>
+                    <small class="text-success"><i class="fas fa-arrow-up"></i> +2.3%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-success mb-2">1.2s</div>
+                    <h6>Avg Response Time</h6>
+                    <small class="text-success"><i class="fas fa-arrow-down"></i> -0.3s</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-warning mb-2">15.2%</div>
+                    <h6>Error Rate</h6>
+                    <small class="text-danger"><i class="fas fa-arrow-up"></i> +1.1%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <div class="display-6 text-info mb-2">4.8</div>
+                    <h6>Avg Session Duration (hrs)</h6>
+                    <small class="text-success"><i class="fas fa-arrow-up"></i> +0.5hrs</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Message Volume Trends</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="volumeChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Message Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Geographic Distribution -->
+    <div class="row g-4 mt-2">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Top Countries</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><i class="flag-icon flag-icon-us me-2"></i>United States</span>
+                        <span class="fw-bold">2,450 messages</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" style="width: 85%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><i class="flag-icon flag-icon-gb me-2"></i>United Kingdom</span>
+                        <span class="fw-bold">1,890 messages</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" style="width: 65%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span><i class="flag-icon flag-icon-ca me-2"></i>Canada</span>
+                        <span class="fw-bold">1,234 messages</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 8px;">
+                        <div class="progress-bar" style="width: 42%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Peak Usage Hours</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="hourlyChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

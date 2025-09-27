@@ -1,0 +1,155 @@
+<!-- Profile Section -->
+<div id="dashboard-profile" class="dashboard-section">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Profile Settings</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" id="refresh-profile-btn">
+                <i class="fas fa-sync me-2"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Profile Information -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user me-2"></i>Profile Information</h5>
+                </div>
+                <div class="card-body">
+                    <form id="profile-form">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="profile-name"
+                                    name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email Address</label>
+                                <div class="input-group">
+                                    <input type="email" class="form-control" id="profile-email"
+                                        name="email" required>
+                                    <button class="btn btn-outline-success" type="button"
+                                        id="verify-email-btn" disabled>
+                                        <i class="fas fa-check me-1"></i>Verified
+                                    </button>
+                                </div>
+                                <div class="form-text" id="email-status-text">Email verification
+                                    status</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="profile-phone"
+                                    name="phone">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company</label>
+                                <input type="text" class="form-control" id="profile-company"
+                                    name="company">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Bio</label>
+                                <textarea class="form-control" id="profile-bio" name="bio"
+                                    rows="3" placeholder="Tell us about yourself..."></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update Profile
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary ms-2"
+                                id="reset-profile-btn">
+                                <i class="fas fa-undo me-2"></i>Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Settings -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-shield-alt me-2"></i>Security</h5>
+                </div>
+                <div class="card-body">
+                    <form id="password-form">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="current-password"
+                                name="currentPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new-password"
+                                name="newPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm-password"
+                                name="confirmPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="fas fa-key me-2"></i>Change Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Account Status -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-info-circle me-2"></i>Account Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Email Verified</span>
+                        <span class="badge bg-success" id="email-verified-badge">Verified</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Account Created</span>
+                        <span class="text-muted" id="account-created-date">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Last Login</span>
+                        <span class="text-muted" id="last-login-date">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Plan</span>
+                        <span class="badge bg-primary" id="profile-plan-badge">Free</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Verification Modal -->
+    <div class="modal fade" id="emailVerificationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Email Verification</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>We've sent a verification email to <strong
+                            id="verification-email"></strong></p>
+                    <p>Please check your inbox and click the verification link to verify your
+                        email address.</p>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        If you don't see the email, please check your spam folder.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="resend-verification-btn">
+                        <i class="fas fa-paper-plane me-2"></i>Resend Email
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
