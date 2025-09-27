@@ -33,7 +33,7 @@ router.get('/', (req, res) => {
 
 // Route handlers
 router.use('/auth', authRoutes);
-router.use('/whatsapp', whatsappRoutes);
+router.use('/whatsapp', authenticateToken, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
 
 // 404 handler for API routes

@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 import WhatsAppService from '../services/whatsappService';
 import RateLimitService from '../services/rateLimitService';
 import WhatsappSession from '../models/WhatsappSession';
@@ -13,14 +12,11 @@ export class WhatsAppController {
    */
   async createSession(req: Request, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array() });
-        return;
-      }
-
       const userId = req.user!._id.toString();
-      const { name, webhookUrl, settings } = req.body;
+      const { name, webhook, webhookUrl, settings } = req.body;
+      
+      // Use webhook or webhookUrl (frontend sends webhook)
+      const finalWebhookUrl = webhook || webhookUrl;
 
       // Check if user already has maximum sessions (based on plan)
       const existingSessions = await WhatsappSession.countDocuments({ userId });
@@ -49,7 +45,7 @@ export class WhatsAppController {
           allowGroups: settings?.allowGroups !== false,
           allowUnknown: settings?.allowUnknown !== false
         },
-        webhookUrl
+        webhookUrl: finalWebhookUrl
       });
 
       await session.save();
@@ -160,12 +156,6 @@ export class WhatsAppController {
    */
   async sendMessage(req: Request, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array() });
-        return;
-      }
-
       const { sessionId } = req.params;
       const { to, message, quotedMessageId } = req.body;
       const userId = req.user!._id.toString();
@@ -234,12 +224,6 @@ export class WhatsAppController {
    */
   async sendMedia(req: Request, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res.status(400).json({ errors: errors.array() });
-        return;
-      }
-
       const { sessionId } = req.params;
       const { to, caption } = req.body;
       const userId = req.user!._id.toString();
@@ -376,8 +360,11 @@ export class WhatsAppController {
   async updateSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const { settings, webhookUrl } = req.body;
+      const { settings, webhook, webhookUrl } = req.body;
       const userId = req.user!._id;
+      
+      // Use webhook or webhookUrl (frontend sends webhook)
+      const finalWebhookUrl = webhook || webhookUrl;
 
       const session = await WhatsappSession.findOneAndUpdate(
         { sessionId, userId },
@@ -389,7 +376,7 @@ export class WhatsAppController {
               allowGroups: settings?.allowGroups,
               allowUnknown: settings?.allowUnknown
             },
-            webhookUrl
+            webhookUrl: finalWebhookUrl
           }
         },
         { new: true }

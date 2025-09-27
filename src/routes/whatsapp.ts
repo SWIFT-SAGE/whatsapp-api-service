@@ -3,7 +3,8 @@ import { body, param, query } from 'express-validator';
 import multer from 'multer';
 import path from 'path';
 import WhatsAppController from '../controllers/whatsappController';
-import { authenticateToken, requireVerification } from '../middleware/auth';
+import { requireVerification } from '../middleware/auth';
+import { handleValidationErrors } from '../middleware/validation';
 
 const router = express.Router();
 
@@ -31,6 +32,7 @@ const upload = multer({
 // Validation rules
 const createSessionValidation = [
   body('name').isLength({ min: 1 }).withMessage('Session name is required'),
+  body('webhook').optional().isURL().withMessage('Webhook URL must be valid'),
   body('webhookUrl').optional().isURL().withMessage('Webhook URL must be valid'),
   body('settings.autoReplyMessage').optional().isLength({ max: 500 }).withMessage('Auto reply message too long')
 ];
@@ -56,26 +58,26 @@ const getMessagesValidation = [
 
 const updateSessionValidation = [
   param('sessionId').notEmpty().withMessage('Session ID is required'),
+  body('webhook').optional().isURL().withMessage('Webhook URL must be valid'),
   body('webhookUrl').optional().isURL().withMessage('Webhook URL must be valid'),
   body('settings.autoReplyMessage').optional().isLength({ max: 500 }).withMessage('Auto reply message too long')
 ];
 
-// Apply authentication middleware to all routes
-router.use(authenticateToken);
+// Authentication middleware is now applied at the main route level
 // Temporarily disable verification requirement for testing
 // router.use(requireVerification);
 
 // Session management routes
-router.post('/sessions', createSessionValidation, WhatsAppController.createSession);
+router.post('/sessions', createSessionValidation, handleValidationErrors, WhatsAppController.createSession);
 router.get('/sessions', WhatsAppController.getSessions);
 router.get('/sessions/:sessionId', WhatsAppController.getSession);
 router.get('/sessions/:sessionId/qr', WhatsAppController.getQRCode);
-router.put('/sessions/:sessionId', updateSessionValidation, WhatsAppController.updateSession);
+router.put('/sessions/:sessionId', updateSessionValidation, handleValidationErrors, WhatsAppController.updateSession);
 router.delete('/sessions/:sessionId', WhatsAppController.deleteSession);
 
 // Message routes
-router.post('/sessions/:sessionId/messages', sendMessageValidation, WhatsAppController.sendMessage);
-router.post('/sessions/:sessionId/media', upload.single('media'), sendMediaValidation, WhatsAppController.sendMedia);
-router.get('/sessions/:sessionId/messages', getMessagesValidation, WhatsAppController.getMessages);
+router.post('/sessions/:sessionId/messages', sendMessageValidation, handleValidationErrors, WhatsAppController.sendMessage);
+router.post('/sessions/:sessionId/media', upload.single('media'), sendMediaValidation, handleValidationErrors, WhatsAppController.sendMedia);
+router.get('/sessions/:sessionId/messages', getMessagesValidation, handleValidationErrors, WhatsAppController.getMessages);
 
 export default router;

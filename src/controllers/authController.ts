@@ -97,17 +97,34 @@ export class AuthController {
         logger.warn('SMTP not configured, skipping verification email');
       }
 
+      // Generate JWT token for automatic login
+      const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-that-is-at-least-32-characters-long-for-security';
+      const payload = { userId: user._id.toString() };
+      const expiresIn: StringValue = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
+      const options: jwt.SignOptions = { expiresIn };
+      const token = jwt.sign(payload, secret, options);
+
+      // Set token as HTTP-only cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+
       res.status(201).json({
         success: true,
         message: isSmtpConfigured 
           ? 'User registered successfully. Please check your email for verification.'
           : 'User registered successfully. Email verification is not configured.',
+        token,
         user: {
           id: user._id,
           email: user.email,
           name: user.name,
           isVerified: user.isVerified,
-          subscription: user.subscription
+          subscription: user.subscription,
+          apiKey: user.apiKey
         }
       });
     } catch (error) {
@@ -151,6 +168,14 @@ export class AuthController {
       const token = jwt.sign(payload, secret, options);
 
       logger.info(`Login successful for user: ${email}`);
+
+      // Set token as HTTP-only cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
 
       res.json({
         success: true,

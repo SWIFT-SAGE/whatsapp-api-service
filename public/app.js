@@ -5,17 +5,39 @@ let currentUser = null;
 let currentView = 'landing';
 let currentDashboardSection = 'overview';
 
+// Helper function to get cookie value
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+// Helper function to check if user is logged in
+function isUserLoggedIn() {
+  const sessionToken = sessionStorage.getItem('authToken');
+  const cookieToken = getCookie('authToken');
+  return (sessionToken && sessionToken !== 'undefined' && sessionToken !== 'null') || 
+         (cookieToken && cookieToken !== 'undefined' && cookieToken !== 'null');
+}
+
 // Helper function for making authenticated API calls
 async function authenticatedFetch(url, options = {}) {
-  const token = sessionStorage.getItem('authToken');
+  let token = sessionStorage.getItem('authToken');
+  
+  // If no token in sessionStorage, try to get it from cookies
+  if (!token || token === 'undefined' || token === 'null') {
+    token = getCookie('authToken');
+  }
   
   console.log('authenticatedFetch - Token check:', {
     token: token ? `${token.substring(0, 20)}...` : 'null',
     tokenLength: token ? token.length : 0,
-    url: url
+    url: url,
+    source: sessionStorage.getItem('authToken') ? 'sessionStorage' : 'cookie'
   });
   
-  if (!token || token === 'undefined' || token === 'null') {
+  if (!isUserLoggedIn()) {
     console.error('No valid authentication token found');
     throw new Error('No valid authentication token');
   }
@@ -166,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Debug: Log current authentication state
   console.log('App initialized - Current state:', {
     currentUser: !!currentUser,
-    isLoggedIn: sessionStorage.getItem('isLoggedIn'),
+    isLoggedIn: isUserLoggedIn(),
     hasToken: !!sessionStorage.getItem('authToken'),
     currentView: currentView
   });
@@ -487,7 +509,7 @@ function setupEventListeners() {
 
 function checkAuthState() {
   // Check authentication state from sessionStorage
-  const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+  const isLoggedIn = isUserLoggedIn();
   const storedUser = sessionStorage.getItem('currentUser');
   const storedToken = sessionStorage.getItem('authToken');
   
@@ -719,7 +741,11 @@ async function handleLogin(e) {
     currentUser = data.user;
     sessionStorage.setItem('isLoggedIn', 'true');
     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-    sessionStorage.setItem('authToken', data.token);
+    
+    // Store token if provided in response, otherwise it will be handled by cookies
+    if (data.token) {
+      sessionStorage.setItem('authToken', data.token);
+    }
     
     console.log('Login successful - Token stored:', {
       token: data.token ? `${data.token.substring(0, 20)}...` : 'null',
@@ -802,7 +828,11 @@ async function handleRegister(e) {
     currentUser = data.user;
     sessionStorage.setItem('isLoggedIn', 'true');
     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-    sessionStorage.setItem('authToken', data.token);
+    
+    // Store token if provided in response, otherwise it will be handled by cookies
+    if (data.token) {
+      sessionStorage.setItem('authToken', data.token);
+    }
     
     updateAuthUI();
     showView('dashboard');
@@ -837,6 +867,10 @@ async function logout() {
     sessionStorage.removeItem('isLoggedIn');
     sessionStorage.removeItem('currentUser');
     sessionStorage.removeItem('authToken');
+    
+    // Clear auth cookie
+    document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    
     updateAuthUI();
     showView('landing');
     showToast('Logged out successfully', 'success');
