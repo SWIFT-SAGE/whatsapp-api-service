@@ -5,6 +5,43 @@ let currentUser = null;
 let currentView = 'landing';
 let currentDashboardSection = 'overview';
 
+// Helper function for making authenticated API calls
+async function authenticatedFetch(url, options = {}) {
+  const token = sessionStorage.getItem('authToken');
+  
+  console.log('authenticatedFetch - Token check:', {
+    token: token ? `${token.substring(0, 20)}...` : 'null',
+    tokenLength: token ? token.length : 0,
+    url: url
+  });
+  
+  if (!token || token === 'undefined' || token === 'null') {
+    console.error('No valid authentication token found');
+    throw new Error('No valid authentication token');
+  }
+  
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+  
+  const config = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers
+    }
+  };
+  
+  console.log('authenticatedFetch - Making request:', {
+    url: url,
+    method: config.method || 'GET',
+    headers: config.headers
+  });
+  
+  return fetch(url, config);
+}
+
 // Sample Data
 const appData = {
   pricingTiers: [
@@ -126,22 +163,21 @@ document.addEventListener('DOMContentLoaded', function() {
   setCurrentYear();
   updateActiveNav();
   
+  // Debug: Log current authentication state
+  console.log('App initialized - Current state:', {
+    currentUser: !!currentUser,
+    isLoggedIn: sessionStorage.getItem('isLoggedIn'),
+    hasToken: !!sessionStorage.getItem('authToken'),
+    currentView: currentView
+  });
+  
   // Show landing page by default
   showView('landing');
 });
 
 function initializeApp() {
-  // Check if user is logged in from sessionStorage
-  const storedUser = sessionStorage.getItem('currentUser');
-  if (storedUser) {
-    currentUser = JSON.parse(storedUser);
-    updateAuthUI();
-    if (window.location.pathname === '/dashboard' || window.location.hash === '#dashboard') {
-      showView('dashboard');
-    }
-  } else {
-    updateAuthUI();
-  }
+  // Authentication state is handled by checkAuthState()
+  updateAuthUI();
   
   // Ensure landing page is visible initially
   const landingView = document.getElementById('landing-view');
@@ -450,10 +486,41 @@ function setupEventListeners() {
 }
 
 function checkAuthState() {
-  // Simulate checking authentication state
+  // Check authentication state from sessionStorage
   const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-  if (isLoggedIn && !currentUser) {
-    currentUser = appData.sampleUser;
+  const storedUser = sessionStorage.getItem('currentUser');
+  const storedToken = sessionStorage.getItem('authToken');
+  
+  console.log('checkAuthState - Session data:', {
+    isLoggedIn,
+    hasStoredUser: !!storedUser,
+    hasStoredToken: !!storedToken,
+    tokenLength: storedToken ? storedToken.length : 0,
+    currentUser: !!currentUser
+  });
+  
+  if (isLoggedIn && storedUser && !currentUser) {
+    try {
+      currentUser = JSON.parse(storedUser);
+      updateAuthUI();
+      
+      console.log('checkAuthState - User loaded from session:', currentUser);
+      
+      // If we're on dashboard page, show it
+      if (window.location.pathname === '/dashboard' || window.location.hash === '#dashboard') {
+        showView('dashboard');
+      }
+    } catch (error) {
+      console.error('Error parsing stored user data:', error);
+      // Clear invalid data
+      sessionStorage.removeItem('isLoggedIn');
+      sessionStorage.removeItem('currentUser');
+      sessionStorage.removeItem('authToken');
+      currentUser = null;
+      updateAuthUI();
+    }
+  } else if (!isLoggedIn) {
+    currentUser = null;
     updateAuthUI();
   }
 }
@@ -653,6 +720,12 @@ async function handleLogin(e) {
     sessionStorage.setItem('isLoggedIn', 'true');
     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
     sessionStorage.setItem('authToken', data.token);
+    
+    console.log('Login successful - Token stored:', {
+      token: data.token ? `${data.token.substring(0, 20)}...` : 'null',
+      tokenLength: data.token ? data.token.length : 0,
+      user: currentUser
+    });
     
     updateAuthUI();
     showView('dashboard');
@@ -865,29 +938,9 @@ async function loadSessions() {
   if (!container) return;
   
   try {
-    // Get API key for WhatsApp endpoints - prioritize currentUser
-    let apiKey = '';
-    if (window.currentUser && window.currentUser.apiKey) {
-      apiKey = window.currentUser.apiKey;
-      console.log('Using API key from currentUser:', apiKey);
-    } else {
-      // Fallback to input field
-      const apiKeyInput = document.getElementById('api-key');
-      apiKey = apiKeyInput ? apiKeyInput.value : '';
-      console.log('Using API key from input field:', apiKey);
-    }
+    // JWT authentication is handled by authenticatedFetch helper
     
-    if (!apiKey || apiKey === 'Not generated') {
-      console.log('API key not available for sessions');
-      return;
-    }
-    
-    const response = await fetch('/api/whatsapp/sessions', {
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await authenticatedFetch('/api/whatsapp/sessions');
     
     const data = await response.json();
     
@@ -1005,12 +1058,7 @@ async function loadMessages() {
       return;
     }
     
-    const response = await fetch('/api/analytics/messages?limit=10', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await authenticatedFetch('/api/analytics/messages?limit=10');
     
     if (!response.ok) {
       throw new Error('Failed to load messages');
@@ -1116,12 +1164,8 @@ async function handleQuickMessage(e) {
     if (!token || token === 'undefined' || token === 'null') {
       throw new Error('No valid authentication token');
     }
-    const response = await fetch(`/api/whatsapp/sessions/${sessionId}/messages`, {
+    const response = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify({
         to: phoneNumber,
         message: message
@@ -1185,12 +1229,8 @@ async function createSession() {
     }
     
     // Create new session
-    const response = await fetch('/api/whatsapp/sessions', {
+    const response = await authenticatedFetch('/api/whatsapp/sessions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
       body: JSON.stringify({
         name: `Session ${Date.now()}`,
         webhook: window.location.origin + '/webhook'
@@ -1207,11 +1247,7 @@ async function createSession() {
     statusText.textContent = 'Generating QR Code...';
     
     // Get QR code
-    const qrResponse = await fetch(`/api/whatsapp/sessions/${sessionId}/qr`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    const qrResponse = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}/qr`);
     
     const qrData = await qrResponse.json();
     
@@ -1235,11 +1271,7 @@ async function createSession() {
     // Poll for connection status
     const pollInterval = setInterval(async () => {
       try {
-        const statusResponse = await fetch(`/api/whatsapp/sessions/${sessionId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const statusResponse = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}`);
         
         const statusData = await statusResponse.json();
         
@@ -1288,12 +1320,7 @@ async function getAndDisplayQRCode(sessionId, modal) {
       `;
     }
 
-    const qrResponse = await fetch(`/api/whatsapp/sessions/${sessionId}/qr`, {
-      headers: {
-        'x-api-key': currentUser.apiKey,
-        'Content-Type': 'application/json'
-      }
-    });
+    const qrResponse = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}/qr`);
 
     if (!qrResponse.ok) {
       throw new Error(`Failed to get QR code: ${qrResponse.status}`);
@@ -1329,12 +1356,7 @@ async function getAndDisplayQRCode(sessionId, modal) {
 function pollSessionStatus(sessionId, modal) {
   const pollInterval = setInterval(async () => {
     try {
-      const response = await fetch(`/api/whatsapp/sessions/${sessionId}`, {
-        headers: {
-          'x-api-key': currentUser.apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -1381,12 +1403,8 @@ async function deleteSession(sessionId) {
     if (!token || token === 'undefined' || token === 'null') {
       throw new Error('No valid authentication token');
     }
-    const response = await fetch(`/api/whatsapp/sessions/${sessionId}`, {
-      method: 'DELETE',
-      headers: {
-        'x-api-key': currentUser.apiKey,
-        'Content-Type': 'application/json'
-      }
+    const response = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}`, {
+      method: 'DELETE'
     });
     
     const data = await response.json();
@@ -1414,12 +1432,8 @@ async function disconnectSession(sessionId) {
     if (!token || token === 'undefined' || token === 'null') {
       throw new Error('No valid authentication token');
     }
-    const response = await fetch(`/api/whatsapp/sessions/${sessionId}/disconnect`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': currentUser.apiKey,
-        'Content-Type': 'application/json'
-      }
+    const response = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}/disconnect`, {
+      method: 'POST'
     });
     
     const data = await response.json();
@@ -1445,12 +1459,8 @@ async function reconnectSession(sessionId) {
     if (!token || token === 'undefined' || token === 'null') {
       throw new Error('No valid authentication token');
     }
-    const response = await fetch(`/api/whatsapp/sessions/${sessionId}/connect`, {
-      method: 'POST',
-      headers: {
-        'x-api-key': currentUser.apiKey,
-        'Content-Type': 'application/json'
-      }
+    const response = await authenticatedFetch(`/api/whatsapp/sessions/${sessionId}/connect`, {
+      method: 'POST'
     });
     
     const data = await response.json();

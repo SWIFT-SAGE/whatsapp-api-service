@@ -138,10 +138,53 @@ app.get('/', optionalAuth, (req, res) => {
   res.render('index', defaultData);
 });
 
-// Dashboard route with authentication and real data
-app.get('/dashboard', authenticateToken, async (req, res) => {
+// Dashboard route with optional authentication
+app.get('/dashboard', optionalAuth, async (req, res) => {
   try {
-    const user = req.user!;
+    // If no user is authenticated, render with default data
+    if (!req.user) {
+      const defaultData = {
+        user: null,
+        stats: {
+          totalMessages: 0,
+          activeSessions: 0,
+          totalSessions: 0,
+          deliveryRate: '0'
+        },
+        sessions: [],
+        recentAnalytics: [],
+        plans: [
+          {
+            name: 'Free',
+            price: 0,
+            features: ['1 WhatsApp Session', '100 Messages/day', 'Basic Support', 'API Access'],
+            popular: false
+          },
+          {
+            name: 'Basic',
+            price: 29,
+            features: ['5 WhatsApp Sessions', '10,000 Messages/day', 'Priority Support', 'Advanced API', 'Webhooks'],
+            popular: true
+          },
+          {
+            name: 'Pro',
+            price: 99,
+            features: ['25 WhatsApp Sessions', '100,000 Messages/day', '24/7 Support', 'Full API Access', 'Custom Webhooks', 'Analytics'],
+            popular: false
+          },
+          {
+            name: 'Enterprise',
+            price: 299,
+            features: ['Unlimited Sessions', 'Unlimited Messages', 'Dedicated Support', 'Custom Integration', 'SLA Guarantee'],
+            popular: false
+          }
+        ],
+        baseUrl: `${req.protocol}://${req.get('host')}`
+      };
+      return res.render('index', defaultData);
+    }
+
+    const user = req.user;
     const userId = user._id;
     
     // Get user sessions

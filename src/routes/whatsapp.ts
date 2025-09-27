@@ -3,7 +3,7 @@ import { body, param, query } from 'express-validator';
 import multer from 'multer';
 import path from 'path';
 import WhatsAppController from '../controllers/whatsappController';
-import { authenticateApiKey, requireVerification } from '../middleware/auth';
+import { authenticateToken, requireVerification } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -61,7 +61,7 @@ const updateSessionValidation = [
 ];
 
 // Apply authentication middleware to all routes
-router.use(authenticateApiKey);
+router.use(authenticateToken);
 // Temporarily disable verification requirement for testing
 // router.use(requireVerification);
 

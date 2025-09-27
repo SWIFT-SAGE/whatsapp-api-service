@@ -6,8 +6,8 @@ import { handleValidationErrors } from '../middleware/validation';
 
 const router = express.Router();
 
-// Analytics routes are public for dashboard access
-// Authentication removed to prevent JWT malformed errors
+// Apply authentication middleware to all analytics routes
+router.use(authenticateToken);
 
 // Validation rules
 const periodValidation = [
