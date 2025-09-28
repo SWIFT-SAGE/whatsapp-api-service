@@ -200,24 +200,7 @@ class WhatsAppService {
       }
     });
 
-    // Authentication success - RemoteAuth with MongoStore handles auth data automatically
-    client.on('authenticated', async () => {
-      try {
-        // Update session status in our custom session model
-        await WhatsappSession.findOneAndUpdate(
-          { sessionId },
-          { 
-            status: 'connected',
-            lastActivity: new Date()
-          }
-        );
-        logger.info(`Session ${sessionId} authenticated successfully`);
-      } catch (error) {
-        logger.error(`Error updating session status for ${sessionId}:`, error);
-      }
-    });
-
-    // Client ready
+    // Client ready event
     client.on('ready', async () => {
       try {
         const info = client.info;
@@ -230,18 +213,18 @@ class WhatsAppService {
           { sessionId },
           {
             isConnected: true,
-            phoneNumber: info.wid.user,
+            phoneNumber: info.wid?.user || 'Unknown',
             qrCode: undefined,
             status: 'connected',
             deviceInfo: {
               name: info.pushname || 'Unknown',
-              version: info.phone.wa_version
+              version: info.phone?.wa_version || 'Unknown'
             }
           }
         );
 
         // Emit connection status to user (will be implemented when socket.io is available)
-        // io.to(userId).emit('whatsapp-connected', { sessionId, phoneNumber: info.wid.user });
+        // io.to(userId).emit('whatsapp-connected', { sessionId, phoneNumber: info.wid?.user || 'Unknown' });
 
         logger.info(`WhatsApp client ready for session: ${sessionId}`);
       } catch (error) {
@@ -371,15 +354,43 @@ class WhatsAppService {
         return { success: false, error: 'Session not found or not connected' };
       }
 
-      const sentMessage = await client.sendMessage(to, message, options);
+      // Additional validation: Check if client is actually ready
+      const state = await client.getState();
+      if (state !== 'CONNECTED') {
+        return { success: false, error: `Session is not ready. Current state: ${state}` };
+      }
 
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
-      };
-    } catch (error) {
+      // Validate phone number format
+      if (!to || !to.includes('@')) {
+        // Auto-format phone number if needed
+        const formattedTo = to.includes('@') ? to : `${to}@c.us`;
+        const sentMessage = await client.sendMessage(formattedTo, message, options);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      } else {
+        const sentMessage = await client.sendMessage(to, message, options);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      }
+    } catch (error: any) {
       logger.error(`Error sending message via session ${sessionId}:`, error);
-      return { success: false, error: 'Failed to send message' };
+      
+      // Provide more specific error messages
+      if (error.message?.includes('not registered')) {
+        return { success: false, error: 'Phone number is not registered on WhatsApp' };
+      } else if (error.message?.includes('Rate limit')) {
+        return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
+      } else if (error.message?.includes('Session closed')) {
+        return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
+      }
+      
+      return { success: false, error: error.message || 'Failed to send message' };
     }
   }
 
@@ -393,15 +404,36 @@ class WhatsAppService {
         return { success: false, error: 'Session not found or not connected' };
       }
 
-      const sentMessage = await client.sendMessage(to, media, { caption });
+      // Additional validation: Check if client is actually ready
+      const state = await client.getState();
+      if (state !== 'CONNECTED') {
+        return { success: false, error: `Session is not ready. Current state: ${state}` };
+      }
+
+      // Validate phone number format
+      const formattedTo = to.includes('@') ? to : `${to}@c.us`;
+      
+      const sentMessage = await client.sendMessage(formattedTo, media, { caption });
 
       return { 
         success: true, 
         messageId: sentMessage.id._serialized 
       };
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Error sending media via session ${sessionId}:`, error);
-      return { success: false, error: 'Failed to send media' };
+      
+      // Provide more specific error messages
+      if (error.message?.includes('not registered')) {
+        return { success: false, error: 'Phone number is not registered on WhatsApp' };
+      } else if (error.message?.includes('Rate limit')) {
+        return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
+      } else if (error.message?.includes('Session closed')) {
+        return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
+      } else if (error.message?.includes('Media too large')) {
+        return { success: false, error: 'Media file is too large. Please use a smaller file.' };
+      }
+      
+      return { success: false, error: error.message || 'Failed to send media' };
     }
   }
 

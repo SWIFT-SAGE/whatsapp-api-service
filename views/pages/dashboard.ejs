@@ -130,8 +130,615 @@
 </div>
 
 <script>
+    // Global API functions - defined before DOMContentLoaded
+    window.getApiKey = function getApiKey() {
+        // Use comprehensive API key checking (same as loadSessionsData)
+        let apiKey = '';
+        
+        // Check window.currentUser first (updated by dashboard)
+        if (window.currentUser && window.currentUser.apiKey) {
+            apiKey = window.currentUser.apiKey;
+        }
+        
+        // Also check sessionStorage for the most recent user data
+        const storedUser = sessionStorage.getItem('currentUser');
+        if (storedUser && !apiKey) {
+            try {
+                const userObj = JSON.parse(storedUser);
+                if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
+                    apiKey = userObj.apiKey;
+                }
+            } catch (e) {
+                console.error('Error parsing stored user:', e);
+            }
+        }
+        
+        // Fallback to input field if available (on overview page)
+        if (!apiKey) {
+            const apiKeyInput = document.getElementById('api-key');
+            if (apiKeyInput && apiKeyInput.value && apiKeyInput.value !== 'Not generated') {
+                apiKey = apiKeyInput.value;
+            }
+        }
+        
+        return apiKey;
+    }
+
+    function getJwtToken() {
+        const token = sessionStorage.getItem('authToken');
+        if (!token || token === 'undefined' || token === 'null') {
+            return null;
+        }
+        return token;
+    }
+
+    function getApiKeyHeaders() {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            throw new Error('API key not found. Please generate an API key first.');
+        }
+        return {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey
+        };
+    }
+
+    function getJwtHeaders() {
+        const token = getJwtToken();
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    // Make makeApiCall globally available
+    window.makeApiCall = async function makeApiCall(endpoint, options = {}) {
+        try {
+            // Check if user is logged in first
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+            if (!isLoggedIn) {
+                throw new Error('User not logged in');
+            }
+
+            // Determine authentication method based on endpoint
+            let headers;
+            if (endpoint.includes('/api/whatsapp/')) {
+                headers = getApiKeyHeaders();
+            } else if (endpoint.includes('/api/analytics/') || endpoint.includes('/api/user/') || endpoint.includes('/api/auth/')) {
+                headers = getJwtHeaders();
+            } else {
+                headers = getJwtHeaders();
+            }
+
+            const response = await fetch(endpoint, {
+                headers: {
+                    ...headers,
+                    ...options.headers
+                },
+                ...options
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                if (response.status === 401) {
+                    if (errorData.error === 'Access token required') {
+                        throw new Error('Please log in to access this feature.');
+                    } else if (errorData.error === 'API key required') {
+                        throw new Error('Please generate an API key first.');
+                    } else if (errorData.error === 'Invalid API key') {
+                        throw new Error('Invalid API key. Please generate a new one.');
+                    }
+                }
+                throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            if (!error.message.includes('not logged in') &&
+                !error.message.includes('log in') &&
+                !error.message.includes('API key')) {
+                console.error('API call failed:', error);
+            }
+            throw error;
+        }
+    }
+
     // Dashboard functionality
     document.addEventListener('DOMContentLoaded', function () {
+        // Global cleanup function for modal backdrops
+        window.cleanupModalBackdrops = function cleanupModalBackdrops() {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            console.log('Modal backdrops cleaned up manually');
+        };
+        
+        // Utility functions for loading states and errors
+        function showLoading(section) {
+            const sectionElement = document.getElementById(`dashboard-${section}`);
+            if (sectionElement) {
+                // Create loading overlay
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.id = `loading-${section}`;
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="loading-content">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted">Loading ${section} data...</p>
+                    </div>
+                `;
+                
+                // Add loading overlay
+                sectionElement.appendChild(loadingOverlay);
+            }
+        }
+
+        function hideLoading(section) {
+            const sectionElement = document.getElementById(`dashboard-${section}`);
+            if (sectionElement) {
+                const loadingOverlay = document.getElementById(`loading-${section}`);
+                if (loadingOverlay) {
+                    loadingOverlay.remove();
+                }
+            }
+        }
+
+        function showError(section, message) {
+            const sectionElement = document.getElementById(`dashboard-${section}`);
+            if (sectionElement) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'alert alert-danger';
+                errorDiv.textContent = message;
+                sectionElement.appendChild(errorDiv);
+            }
+        }
+        
+        // Additional utility functions
+        function calculateDeliveryRate(stats) {
+            if (!stats.sentMessages || stats.sentMessages === 0) return '0.0';
+            const delivered = stats.messageStatus?.delivered || 0;
+            return ((delivered / stats.sentMessages) * 100).toFixed(1);
+        }
+
+        function updateElement(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+                    element.value = value;
+                } else {
+                    element.textContent = value;
+                }
+                console.log(`Updated ${id}:`, value); // Debug log
+            } else {
+                console.log(`Element with id '${id}' not found (this is normal if not on overview page)`); // Debug log
+            }
+        }
+        
+        // makeApiCall is now globally available from above
+        
+        // Section data loading functions
+        async function loadSessionsData() {
+            try {
+                showLoading('sessions');
+
+                // Check if user is logged in
+                const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+                if (!isLoggedIn) {
+                    showError('sessions', 'Please log in to view sessions');
+                    hideLoading('sessions');
+                    return;
+                }
+
+                // Check if API key exists for WhatsApp endpoints
+                let apiKey = '';
+                
+                // Check window.currentUser first (updated by dashboard)
+                if (window.currentUser && window.currentUser.apiKey) {
+                    apiKey = window.currentUser.apiKey;
+                }
+                
+                // Also check sessionStorage for the most recent user data
+                const storedUser = sessionStorage.getItem('currentUser');
+                if (storedUser && !apiKey) {
+                    try {
+                        const userObj = JSON.parse(storedUser);
+                        if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
+                            apiKey = userObj.apiKey;
+                        }
+                    } catch (e) {
+                        console.error('Error parsing stored user:', e);
+                    }
+                }
+                
+                console.log('loadSessionsData - API key check:', {
+                    windowCurrentUserApiKey: window.currentUser?.apiKey,
+                    sessionStorageApiKey: storedUser ? JSON.parse(storedUser).apiKey : 'none',
+                    finalApiKey: apiKey
+                });
+
+                if (!apiKey || apiKey === 'Not generated') {
+                    showError('sessions', 'Please generate an API key first');
+                    hideLoading('sessions');
+                    return;
+                }
+
+                const response = await makeApiCall('/api/whatsapp/sessions');
+                console.log('Sessions API response:', response);
+                
+                // Handle different response structures
+                const sessions = response.data?.sessions || response.sessions || response.data || response;
+                
+                // Ensure sessions is an array
+                if (!Array.isArray(sessions)) {
+                    console.error('Sessions data is not an array:', sessions);
+                    showError('sessions', 'Invalid sessions data format');
+                    hideLoading('sessions');
+                    return;
+                }
+
+                // Update sessions container
+                const sessionsContainer = document.getElementById('sessions-container');
+                if (!sessionsContainer) {
+                    console.error('Sessions container not found');
+                    showError('sessions', 'Sessions container not found in DOM');
+                    hideLoading('sessions');
+                    return;
+                }
+
+                if (sessions && sessions.length > 0) {
+                    sessionsContainer.innerHTML = sessions.map((session, index) => `
+                        <div class="col-md-6">
+                            <div class="card session-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5>Session #${index + 1}</h5>
+                                        <span class="badge ${session.status === 'connected' ? 'bg-success' : session.status === 'connecting' ? 'bg-warning' : 'bg-secondary'}">
+                                            ${session.status ? session.status.charAt(0).toUpperCase() + session.status.slice(1) : 'Unknown'}
+                                        </span>
+                                    </div>
+                                    <p><strong>Session ID:</strong> ${session.sessionId}</p>
+                                    <p><strong>Phone:</strong> ${session.phoneNumber || 'Not connected'}</p>
+                                    <p><strong>Status:</strong> ${session.status || 'unknown'}</p>
+                                    <p><strong>Created:</strong> ${new Date(session.createdAt).toLocaleDateString()}</p>
+                                    <div class="btn-group" role="group">
+                                        ${session.status === 'connected' ? 
+                                            `<button class="btn btn-outline-danger btn-sm disconnect-session-btn" data-session-id="${session.sessionId}">
+                                                <i class="fas fa-unlink me-1"></i>Disconnect
+                                            </button>` : 
+                                            `<button class="btn btn-outline-primary btn-sm connect-session-btn" data-session-id="${session.sessionId}">
+                                                <i class="fas fa-link me-1"></i>Connect
+                                            </button>`
+                                        }
+                                        <button class="btn btn-outline-danger btn-sm delete-session-btn" data-session-id="${session.sessionId}" title="Delete Session">
+                                            <i class="fas fa-trash me-1"></i>Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    sessionsContainer.innerHTML = `
+                        <div class="col-12">
+                            <div class="text-center py-5">
+                                <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No sessions yet</h5>
+                                <p class="text-muted">Create your first WhatsApp session to get started</p>
+                                <button class="btn btn-primary" id="create-first-session-btn">
+                                    <i class="fas fa-plus me-2"></i>Create Session
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Re-initialize session buttons after updating the DOM
+                initializeSessionButtons();
+
+                hideLoading('sessions');
+            } catch (error) {
+                console.error('Error loading sessions data:', error);
+                hideLoading('sessions');
+
+                if (error.message.includes('log in')) {
+                    showError('sessions', 'Please log in to view sessions');
+                } else if (error.message.includes('API key')) {
+                    showError('sessions', 'Please generate an API key first');
+                } else {
+                    showError('sessions', 'Failed to load sessions data: ' + error.message);
+                }
+            }
+        }
+        
+        // Make loadSessionsData globally available
+        window.loadSessionsData = loadSessionsData;
+
+        // Load messages data
+        async function loadMessagesData() {
+            try {
+                showLoading('messages');
+                const response = await makeApiCall('/api/analytics/messages?period=7d');
+                
+                const timeSeries = response.data?.timeSeries || response.timeSeries || [];
+                
+                if (!Array.isArray(timeSeries)) {
+                    console.error('TimeSeries data is not an array:', timeSeries);
+                    showError('messages', 'Invalid messages data format');
+                    hideLoading('messages');
+                    return;
+                }
+
+                const messagesTable = document.getElementById('messages-table');
+                if (timeSeries && timeSeries.length > 0) {
+                    messagesTable.innerHTML = timeSeries.slice(0, 10).map((item, index) => `
+                        <tr>
+                            <td><code>msg_${index + 1}</code></td>
+                            <td>+1234567890</td>
+                            <td>Sample message from ${item._id}</td>
+                            <td><span class="badge bg-success">Delivered</span></td>
+                            <td>${new Date().toLocaleTimeString()}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    messagesTable.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No messages found</td>
+                        </tr>
+                    `;
+                }
+
+                hideLoading('messages');
+            } catch (error) {
+                console.error('Error loading messages data:', error);
+                hideLoading('messages');
+                showError('messages', 'Failed to load messages data');
+            }
+        }
+
+        async function loadWebhooksData() {
+            try {
+                showLoading('webhooks');
+                hideLoading('webhooks');
+            } catch (error) {
+                console.error('Error loading webhooks data:', error);
+                hideLoading('webhooks');
+                showError('webhooks', 'Failed to load webhooks data');
+            }
+        }
+
+        async function loadAnalyticsData() {
+            try {
+                showLoading('analytics');
+                const response = await makeApiCall('/api/analytics/dashboard?period=30d');
+                
+                const stats = response.data?.overview || response.overview || {};
+                
+                // Update analytics charts and data
+                updateElement('analytics-messages', (stats.totalMessages || 0).toLocaleString());
+                updateElement('analytics-sessions', stats.totalSessions || 0);
+                updateElement('analytics-delivery-rate', calculateDeliveryRate(stats) + '%');
+
+                hideLoading('analytics');
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+                hideLoading('analytics');
+                showError('analytics', 'Failed to load analytics data');
+            }
+        }
+
+        async function loadBillingData() {
+            try {
+                showLoading('billing');
+                const response = await makeApiCall('/api/auth/profile');
+                
+                const user = response.data?.user || response.user || response;
+                const subscription = user.subscription || {};
+                
+                // Update billing information
+                updateElement('current-plan', subscription.plan || 'Free');
+                updateElement('billing-status', subscription.status || 'Active');
+
+                hideLoading('billing');
+            } catch (error) {
+                console.error('Error loading billing data:', error);
+                hideLoading('billing');
+                showError('billing', 'Failed to load billing data');
+            }
+        }
+
+        async function loadProfileData() {
+            try {
+                console.log('loadProfileData called');
+                showLoading('profile');
+                const response = await makeApiCall('/api/auth/profile');
+                console.log('Profile API response:', response);
+                
+                const user = response.data?.user || response.user || response;
+                console.log('User data:', user);
+                
+                // Update profile form fields
+                updateElement('profile-name', user.name || '');
+                updateElement('profile-email', user.email || '');
+                updateElement('profile-phone', user.phone || '');
+                updateElement('profile-company', user.company || '');
+                
+                // Update verification status
+                const verificationBadge = document.getElementById('verification-status');
+                if (verificationBadge) {
+                    if (user.isVerified) {
+                        verificationBadge.innerHTML = '<span class="badge bg-success"><i class="fas fa-check-circle"></i> Verified</span>';
+                    } else {
+                        verificationBadge.innerHTML = '<span class="badge bg-warning"><i class="fas fa-exclamation-circle"></i> Unverified</span>';
+                    }
+                }
+
+                hideLoading('profile');
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+                hideLoading('profile');
+                showError('profile', 'Failed to load profile data');
+            }
+        }
+        
+        // Load section-specific data
+        async function loadSectionData(section) {
+            console.log('loadSectionData called with section:', section);
+            switch (section) {
+                case 'overview':
+                    await loadDashboardData();
+                    break;
+                case 'sessions':
+                    await loadSessionsData();
+                    break;
+                case 'messages':
+                    await loadMessagesData();
+                    break;
+                case 'webhooks':
+                    await loadWebhooksData();
+                    break;
+                case 'analytics':
+                    await loadAnalyticsData();
+                    break;
+                case 'billing':
+                    await loadBillingData();
+                    break;
+                case 'profile':
+                    console.log('Loading profile data...');
+                    await loadProfileData();
+                    break;
+            }
+        }
+        
+        // Load section page dynamically
+        async function loadSectionPage(section) {
+            console.log('loadSectionPage called with section:', section);
+            console.log('Auth token available:', !!sessionStorage.getItem('authToken'));
+            
+            try {
+                // Show loading state
+                const contentContainer = document.getElementById('dashboard-content-container');
+                if (contentContainer) {
+                    contentContainer.innerHTML = `
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted">Loading ${section} page...</p>
+                        </div>
+                    `;
+                }
+
+                // Load the section page content
+                console.log(`Fetching section: /api/dashboard/section/${section}`);
+                const response = await fetch(`/api/dashboard/section/${section}`, {
+                    headers: {
+                        'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                console.log(`Response status: ${response.status} ${response.statusText}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`Error response body:`, errorText);
+                    throw new Error(`Failed to load ${section} page: ${response.statusText} - ${errorText}`);
+                }
+                
+                const html = await response.text();
+                if (contentContainer) {
+                    contentContainer.innerHTML = html;
+                }
+
+                // Load section-specific data after page is loaded
+                await loadSectionData(section);
+                
+                // Re-initialize API key buttons if we're on the overview section
+                if (section === 'overview') {
+                    setTimeout(() => {
+                        initializeApiKeyButtons();
+                    }, 100);
+                }
+                
+                // Initialize session buttons if we're on the sessions section
+                if (section === 'sessions') {
+                    setTimeout(() => {
+                        initializeSessionButtons();
+                    }, 100);
+                }
+                
+            } catch (error) {
+                console.error('Error loading section page:', error);
+                const contentContainer = document.getElementById('dashboard-content-container');
+                if (contentContainer) {
+                    contentContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Error loading ${section} page: ${error.message}
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        // Load dashboard overview data
+        async function loadDashboardData() {
+            try {
+                showLoading('overview');
+
+                // Check if user is logged in
+                const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+                if (!isLoggedIn) {
+                    // Show default data for non-logged in users
+                    updateElement('messages-sent', '0');
+                    updateElement('active-sessions', '0');
+                    updateElement('delivery-rate', '0%');
+                    updateElement('total-sessions', '0');
+                    updateElement('plan-badge', 'Free Plan');
+                    hideLoading('overview');
+                    return;
+                }
+
+                // Check if JWT token exists
+                const token = sessionStorage.getItem('authToken');
+                if (!token) {
+                    updateElement('messages-sent', '0');
+                    updateElement('active-sessions', '0');
+                    updateElement('delivery-rate', '0%');
+                    updateElement('total-sessions', '0');
+                    updateElement('plan-badge', 'Free Plan');
+                    hideLoading('overview');
+                    return;
+                }
+
+                const response = await makeApiCall('/api/analytics/dashboard?period=30d');
+                const stats = response.data.overview;
+
+                // Update stats cards
+                updateElement('messages-sent', (stats.totalMessages || 0).toLocaleString());
+                updateElement('active-sessions', stats.activeSessions || 0);
+                updateElement('delivery-rate', calculateDeliveryRate(stats) + '%');
+                updateElement('total-sessions', stats.totalSessions || 0);
+
+                // Update plan badge
+                updateElement('plan-badge', stats.plan ? stats.plan.charAt(0).toUpperCase() + stats.plan.slice(1) + ' Plan' : 'Free Plan');
+
+                hideLoading('overview');
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                hideLoading('overview');
+
+                // Show user-friendly error message
+                if (error.message.includes('log in')) {
+                    showError('overview', 'Please log in to view dashboard data');
+                } else {
+                    showError('overview', 'Failed to load dashboard data: ' + error.message);
+                }
+            }
+        }
+        
         // Clean up any existing modal backdrops first
         cleanupModalBackdrops();
         
@@ -1105,16 +1712,139 @@
                 }
             });
         }
+
+        // Add event listeners for dynamically created session buttons
+        // Connect session buttons - Clone buttons to prevent duplicate event listeners
+        document.querySelectorAll('.connect-session-btn').forEach(btn => {
+            // Remove existing event listeners by cloning the button
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', async function() {
+                const sessionId = this.getAttribute('data-session-id');
+                const originalContent = this.innerHTML;
+                
+                try {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Connecting...';
+                    this.disabled = true;
+                    
+                    const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/connect`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.success) {
+                        // Show QR code modal
+                        showQRCodeModal(sessionId);
+                        setTimeout(async () => {
+                            await startQRCodeGeneration(sessionId);
+                        }, 100);
+                        
+                        // Refresh sessions data
+                        setTimeout(() => {
+                            loadSessionsData();
+                        }, 1000);
+                    } else {
+                        alert('Failed to connect session: ' + (response.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error connecting session:', error);
+                    alert('Error connecting session: ' + error.message);
+                } finally {
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                }
+            });
+        });
+
+        // Disconnect session buttons - Clone buttons to prevent duplicate event listeners
+        document.querySelectorAll('.disconnect-session-btn').forEach(btn => {
+            // Remove existing event listeners by cloning the button
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', async function() {
+                const sessionId = this.getAttribute('data-session-id');
+                const originalContent = this.innerHTML;
+                
+                if (!confirm('Are you sure you want to disconnect this session?')) {
+                    return;
+                }
+                
+                try {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Disconnecting...';
+                    this.disabled = true;
+                    
+                    const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/disconnect`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.success) {
+                        alert('Session disconnected successfully!');
+                        // Refresh sessions data
+                        loadSessionsData();
+                    } else {
+                        alert('Failed to disconnect session: ' + (response.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error disconnecting session:', error);
+                    alert('Error disconnecting session: ' + error.message);
+                } finally {
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                }
+            });
+        });
+
+        // Delete session buttons - Clone buttons to prevent duplicate event listeners
+        document.querySelectorAll('.delete-session-btn').forEach(btn => {
+            // Remove existing event listeners by cloning the button
+            const newBtn = btn.cloneNode(true);
+            btn.parentNode.replaceChild(newBtn, btn);
+            
+            newBtn.addEventListener('click', async function() {
+                const sessionId = this.getAttribute('data-session-id');
+                const originalContent = this.innerHTML;
+                
+                if (!confirm('Are you sure you want to delete this session? This action cannot be undone.')) {
+                    return;
+                }
+                
+                try {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Deleting...';
+                    this.disabled = true;
+                    
+                    const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.success) {
+                        alert('Session deleted successfully!');
+                        // Refresh sessions data
+                        loadSessionsData();
+                    } else {
+                        alert('Failed to delete session: ' + (response.error || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error deleting session:', error);
+                    alert('Error deleting session: ' + error.message);
+                } finally {
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                }
+            });
+        });
     }
 
-    // QR Code Modal Functions
+    // QR Code Modal Functions - Updated for better connection detection
     let currentSessionId = null;
 
     function showQRCodeModal(sessionId) {
         currentSessionId = sessionId;
         
         // Clean up any existing backdrops before showing modal
-        cleanupModalBackdrops();
+        if (window.cleanupModalBackdrops) {
+            window.cleanupModalBackdrops();
+        }
         
         const modalElement = document.getElementById('qrCodeModal');
         console.log('Modal element found:', !!modalElement);
@@ -1224,19 +1954,19 @@
                     </p>
                 </div>
             `;
-        }
+            
+            // Poll for QR code status - faster polling for better responsiveness
+            const maxAttempts = 120; // 2 minutes with 1-second intervals
+            const pollInterval = 1000; // 1 second for faster updates
+            let attempts = 0;
 
-        // Start new streamlined QR code process
-        const maxAttempts = 30; // 30 attempts * 3 seconds = 90 seconds max
-        let attempts = 0;
+            const pollForQRCode = async () => {
+                try {
+                    attempts++;
+                    console.log(`QR polling attempt ${attempts}/${maxAttempts} for session ${sessionId}`);
 
-        const pollForQRCode = async () => {
-            try {
-                attempts++;
-                console.log(`QR polling attempt ${attempts}/${maxAttempts} for session ${sessionId}`);
-
-                // Use new status endpoint for better real-time updates
-                const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr/status`);
+                    // Use new status endpoint for better real-time updates
+                    const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr/status`);
 
                 if (response.success) {
                     const { status, qrCode, message } = response;
@@ -1256,11 +1986,37 @@
                         case 'connected':
                             console.log('Session connected, closing modal...');
                             showSuccessMessage('WhatsApp session connected successfully!');
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('qrCodeModal'));
-                            if (modal) modal.hide();
-                            // Refresh sessions data
+                            
+                            // Update the modal content to show success
+                            const container = document.getElementById('qr-code-container');
+                            if (container) {
+                                container.innerHTML = `
+                                    <div class="text-center">
+                                        <div class="mb-3">
+                                            <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                                        </div>
+                                        <h4 class="text-success mb-3">Connected Successfully!</h4>
+                                        <p class="text-muted">Your WhatsApp session is now active and ready to use.</p>
+                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                                            <i class="fas fa-check me-2"></i>Continue
+                                        </button>
+                                    </div>
+                                `;
+                            }
+                            
+                            // Close modal after a short delay
+                            setTimeout(() => {
+                                const modal = bootstrap.Modal.getInstance(document.getElementById('qrCodeModal'));
+                                if (modal) modal.hide();
+                            }, 2000);
+                            
+                            // Refresh sessions data immediately and after a delay
                             if (typeof window.loadSessionsData === 'function') {
                                 window.loadSessionsData();
+                                // Refresh again after 3 seconds to ensure UI is updated
+                                setTimeout(() => {
+                                    window.loadSessionsData();
+                                }, 3000);
                             }
                             return;
                             
@@ -1489,22 +2245,15 @@
         }
     }, 120000); // 2 minutes
 
-    // Global cleanup function for modal backdrops
-    function cleanupModalBackdrops() {
-        const backdrops = document.querySelectorAll('.modal-backdrop');
-        backdrops.forEach(backdrop => backdrop.remove());
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-        console.log('Modal backdrops cleaned up manually');
-    }
 
     // Add keyboard shortcut to clean up backdrops (Ctrl+Shift+B)
     document.addEventListener('keydown', function(e) {
         if (e.ctrlKey && e.shiftKey && e.key === 'B') {
             e.preventDefault();
-            cleanupModalBackdrops();
-            alert('Modal backdrops cleaned up!');
+            if (window.cleanupModalBackdrops) {
+                window.cleanupModalBackdrops();
+                alert('Modal backdrops cleaned up!');
+            }
         }
     });
 
@@ -1533,736 +2282,384 @@
         }
     });
 
-    // Global API functions
-    // Make getApiKey globally available
-    window.getApiKey = function getApiKey() {
-        // Use comprehensive API key checking (same as loadSessionsData)
-        let apiKey = '';
-        
-        // Check window.currentUser first (updated by dashboard)
-        if (window.currentUser && window.currentUser.apiKey) {
-            apiKey = window.currentUser.apiKey;
-        }
-        
-        // Also check sessionStorage for the most recent user data
-        if (!apiKey) {
-            const storedUser = sessionStorage.getItem('currentUser');
-            if (storedUser) {
-                try {
-                    const userObj = JSON.parse(storedUser);
-                    if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
-                        apiKey = userObj.apiKey;
-                    }
-                } catch (e) {
-                    console.error('Error parsing stored user in getApiKey:', e);
-                }
-            }
-        }
-        
-        // Fallback to input field if available (on overview page)
-        if (!apiKey) {
-            const apiKeyInput = document.getElementById('api-key');
-            if (apiKeyInput && apiKeyInput.value && apiKeyInput.value !== 'Not generated') {
-                apiKey = apiKeyInput.value;
-            }
-        }
+    // Initialize enhanced dashboard functionality
+    initializeEnhancedDashboard();
 
-        console.log('getApiKey() result:', apiKey);
+    function initializeEnhancedDashboard() {
+        // Load connected sessions for dropdowns
+        loadConnectedSessions();
 
-        if (!apiKey || apiKey === 'Not generated') {
-            return null; // Return null instead of throwing error
-        }
+        // Initialize overview page functionality
+        initializeOverviewFunctionality();
 
-        return apiKey;
+        // Initialize messages page functionality
+        initializeMessagesFunctionality();
     }
 
-    function getJwtToken() {
-        // Try to get JWT token from sessionStorage
-        const token = sessionStorage.getItem('authToken');
-        if (!token || token === 'undefined' || token === 'null') {
-            throw new Error('Authentication token not found. Please log in again.');
-        }
-        return token;
-    }
-
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-
-    function getApiKeyHeaders() {
-        const apiKey = getApiKey();
-        if (!apiKey) {
-            throw new Error('API key not found. Please generate an API key first.');
-        }
-        return {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey
-        };
-    }
-
-    function getJwtHeaders() {
-        const token = getJwtToken();
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
-    }
-
-    // Make makeApiCall globally available
-    window.makeApiCall = async function makeApiCall(endpoint, options = {}) {
+    async function loadConnectedSessions() {
         try {
-            console.log('makeApiCall called with endpoint:', endpoint);
-            // Check if user is logged in first
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            if (!isLoggedIn) {
-                throw new Error('User not logged in');
-            }
-
-            // Determine authentication method based on endpoint
-            let headers;
-            if (endpoint.includes('/api/whatsapp/')) {
-                headers = getApiKeyHeaders();
-            } else if (endpoint.includes('/api/analytics/') || endpoint.includes('/api/user/') || endpoint.includes('/api/auth/')) {
-                headers = getJwtHeaders();
-            } else {
-                // Default to JWT for other endpoints
-                headers = getJwtHeaders();
-            }
-
-            const response = await fetch(endpoint, {
-                headers: {
-                    ...headers,
-                    ...options.headers
-                },
-                ...options
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-
-                // Handle specific authentication errors
-                if (response.status === 401) {
-                    if (errorData.error === 'Access token required') {
-                        throw new Error('Please log in to access this feature.');
-                    } else if (errorData.error === 'API key required') {
-                        throw new Error('Please generate an API key first.');
-                    } else if (errorData.error === 'Invalid API key') {
-                        throw new Error('Invalid API key. Please generate a new one.');
-                    }
-                }
-
-                throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            // Only log errors that aren't expected authentication issues
-            if (!error.message.includes('not logged in') &&
-                !error.message.includes('log in') &&
-                !error.message.includes('API key')) {
-                console.error('API call failed:', error);
-            }
-            throw error;
-        }
-    }
-
-    // Load dashboard overview data
-    async function loadDashboardData() {
-        try {
-            showLoading('overview');
-
-            // Check if user is logged in
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            if (!isLoggedIn) {
-                // Show default data for non-logged in users
-                updateElement('messages-sent', '0');
-                updateElement('active-sessions', '0');
-                updateElement('delivery-rate', '0%');
-                updateElement('total-sessions', '0');
-                updateElement('plan-badge', 'Free Plan');
-                hideLoading('overview');
-                return;
-            }
-
-            // Check if JWT token exists
-            const token = sessionStorage.getItem('authToken');
-            if (!token) {
-                updateElement('messages-sent', '0');
-                updateElement('active-sessions', '0');
-                updateElement('delivery-rate', '0%');
-                updateElement('total-sessions', '0');
-                updateElement('plan-badge', 'Free Plan');
-                hideLoading('overview');
-                return;
-            }
-
-            const response = await makeApiCall('/api/analytics/dashboard?period=30d');
-            const stats = response.data.overview;
-
-            // Update stats cards
-            updateElement('messages-sent', (stats.totalMessages || 0).toLocaleString());
-            updateElement('active-sessions', stats.activeSessions || 0);
-            updateElement('delivery-rate', calculateDeliveryRate(stats) + '%');
-            updateElement('total-sessions', stats.totalSessions || 0);
-
-            // Update plan badge
-            updateElement('plan-badge', stats.plan ? stats.plan.charAt(0).toUpperCase() + stats.plan.slice(1) + ' Plan' : 'Free Plan');
-
-            hideLoading('overview');
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            hideLoading('overview');
-
-            // Show user-friendly error message
-            if (error.message.includes('log in')) {
-                showError('overview', 'Please log in to view dashboard data');
-            } else {
-                showError('overview', 'Failed to load dashboard data: ' + error.message);
-            }
-        }
-    }
-
-    // Load section page dynamically
-    async function loadSectionPage(section) {
-        console.log('loadSectionPage called with section:', section);
-        console.log('Auth token available:', !!sessionStorage.getItem('authToken'));
-        
-        try {
-            // Show loading state
-            const contentContainer = document.getElementById('dashboard-content-container');
-            if (contentContainer) {
-                contentContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary mb-3" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-muted">Loading ${section} page...</p>
-                    </div>
-                `;
-            }
-
-            // Load the section page content
-            console.log(`Fetching section: /api/dashboard/section/${section}`);
-            const response = await fetch(`/api/dashboard/section/${section}`, {
-                headers: {
-                    'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            console.log(`Response status: ${response.status} ${response.statusText}`);
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`Error response body:`, errorText);
-                throw new Error(`Failed to load ${section} page: ${response.statusText} - ${errorText}`);
-            }
-            
-            const html = await response.text();
-            if (contentContainer) {
-                contentContainer.innerHTML = html;
-            }
-
-            // Load section-specific data after page is loaded
-            await loadSectionData(section);
-            
-            // Re-initialize API key buttons if we're on the overview section
-            if (section === 'overview') {
-                setTimeout(() => {
-                    initializeApiKeyButtons();
-                }, 100);
-            }
-            
-            // Initialize session buttons if we're on the sessions section
-            if (section === 'sessions') {
-                setTimeout(() => {
-                    initializeSessionButtons();
-                }, 100);
-            }
-            
-        } catch (error) {
-            console.error('Error loading section page:', error);
-            const contentContainer = document.getElementById('dashboard-content-container');
-            if (contentContainer) {
-                contentContainer.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Error loading ${section} page: ${error.message}
-                    </div>
-                `;
-            }
-        }
-    }
-
-    // Load section-specific data
-    async function loadSectionData(section) {
-        console.log('loadSectionData called with section:', section);
-        switch (section) {
-            case 'overview':
-                await loadDashboardData();
-                break;
-            case 'sessions':
-                await loadSessionsData();
-                break;
-            case 'messages':
-                await loadMessagesData();
-                break;
-            case 'webhooks':
-                await loadWebhooksData();
-                break;
-            case 'analytics':
-                await loadAnalyticsData();
-                break;
-            case 'billing':
-                await loadBillingData();
-                break;
-            case 'profile':
-                console.log('Loading profile data...');
-                await loadProfileData();
-                break;
-        }
-    }
-
-    // Load sessions data - make globally available
-    window.loadSessionsData = async function loadSessionsData() {
-        try {
-            showLoading('sessions');
-
-            // Check if user is logged in
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-            if (!isLoggedIn) {
-                showError('sessions', 'Please log in to view sessions');
-                hideLoading('sessions');
-                return;
-            }
-
-            // Check if API key exists for WhatsApp endpoints
-            // Use comprehensive API key checking (same as app.js loadSessions)
-            let apiKey = '';
-            
-            // Check window.currentUser first (updated by dashboard)
-            if (window.currentUser && window.currentUser.apiKey) {
-                apiKey = window.currentUser.apiKey;
-            }
-            
-            // Also check sessionStorage for the most recent user data
-            const storedUser = sessionStorage.getItem('currentUser');
-            if (storedUser && !apiKey) {
-                try {
-                    const userObj = JSON.parse(storedUser);
-                    if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
-                        apiKey = userObj.apiKey;
-                    }
-                } catch (e) {
-                    console.error('Error parsing stored user:', e);
-                }
-            }
-            
-            // Fallback to input field if available (on overview page)
-            if (!apiKey) {
-                const apiKeyInput = document.getElementById('api-key');
-                if (apiKeyInput && apiKeyInput.value && apiKeyInput.value !== 'Not generated') {
-                    apiKey = apiKeyInput.value;
-                }
-            }
-            
-            console.log('loadSessionsData - API key check:', {
-                windowCurrentUserApiKey: window.currentUser?.apiKey,
-                sessionStorageApiKey: storedUser ? JSON.parse(storedUser).apiKey : 'none',
-                finalApiKey: apiKey
-            });
-            
-            if (!apiKey || apiKey === 'Not generated') {
-                // Show a friendly message instead of an error for users without API keys
-                const container = document.getElementById('sessions-container');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="col-12">
-                            <div class="text-center py-5">
-                                <i class="fas fa-key fa-3x text-warning mb-3"></i>
-                                <h5 class="text-muted">API Key Required</h5>
-                                <p class="text-muted">Please generate an API key first to manage WhatsApp sessions</p>
-                                <a href="#" class="btn btn-primary" data-section="overview">
-                                    <i class="fas fa-key me-2"></i>Go to Overview to Generate API Key
-                                </a>
-                            </div>
-                        </div>
-                    `;
-                }
-                hideLoading('sessions');
-                return;
-            }
-
             const response = await makeApiCall('/api/whatsapp/sessions');
-            console.log('Sessions API response:', response);
-            
-            // Handle different response structures
-            const sessions = response.data?.sessions || response.sessions || response.data || [];
-            
-            // Debug: Log the first session to see its structure
-            if (sessions.length > 0) {
-                console.log('First session structure:', sessions[0]);
+            if (response.success && response.sessions) {
+                const connectedSessions = response.sessions.filter(session => session.status === 'connected');
+                updateSessionDropdowns(connectedSessions);
             }
-            
-            // Ensure sessions is an array
-            if (!Array.isArray(sessions)) {
-                console.error('Sessions data is not an array:', sessions);
-                showError('sessions', 'Invalid sessions data format');
-                hideLoading('sessions');
-                return;
-            }
+        } catch (error) {
+            console.error('Error loading sessions:', error);
+        }
+    }
 
-            const container = document.getElementById('sessions-container');
-            if (sessions.length === 0) {
-                container.innerHTML = `
-                        <div class="col-12">
-                            <div class="text-center py-5">
-                                <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">No sessions yet</h5>
-                                <p class="text-muted">Create your first WhatsApp session to get started</p>
-                                <button class="btn btn-primary" id="create-first-session-btn">
-                                    <i class="fas fa-plus me-2"></i>Create Session
-                                </button>
-                            </div>
-                        </div>
-                    `;
+    function updateSessionDropdowns(sessions) {
+        const dropdowns = [
+            'quick-session-select',
+            'bulk-session-select', 
+            'bot-default-session',
+            'compose-session',
+            'session-filter'
+        ];
+
+        dropdowns.forEach(dropdownId => {
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) {
+                // Clear existing options except first
+                dropdown.innerHTML = dropdown.firstElementChild.outerHTML;
+                
+                sessions.forEach(session => {
+                    const option = document.createElement('option');
+                    option.value = session.sessionId;
+                    option.textContent = `${session.phoneNumber || session.sessionId} (${session.status})`;
+                    dropdown.appendChild(option);
+                });
+            }
+        });
+    }
+
+    function initializeOverviewFunctionality() {
+        // Quick message form
+        const quickForm = document.getElementById('quick-message-form');
+        if (quickForm) {
+            quickForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await sendQuickMessage();
+            });
+        }
+
+        // Bot configuration save
+        const saveBotBtn = document.getElementById('save-bot-config');
+        if (saveBotBtn) {
+            saveBotBtn.addEventListener('click', saveBotConfiguration);
+        }
+
+        // Bulk upload form
+        const bulkForm = document.getElementById('bulk-upload-form');
+        if (bulkForm) {
+            bulkForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await handleBulkUpload();
+            });
+        }
+
+        // Download CSV template
+        const downloadTemplate = document.getElementById('download-template');
+        if (downloadTemplate) {
+            downloadTemplate.addEventListener('click', (e) => {
+                e.preventDefault();
+                downloadCSVTemplate();
+            });
+        }
+
+        // Quick action buttons
+        const connectNewBtn = document.getElementById('connect-new-session');
+        if (connectNewBtn) {
+            connectNewBtn.addEventListener('click', () => {
+                // Navigate to sessions page
+                const sessionsLink = document.querySelector('[data-section="sessions"]');
+                if (sessionsLink) sessionsLink.click();
+            });
+        }
+
+        const testWebhookBtn = document.getElementById('test-webhook');
+        if (testWebhookBtn) {
+            testWebhookBtn.addEventListener('click', testWebhook);
+        }
+
+        const exportContactsBtn = document.getElementById('export-contacts');
+        if (exportContactsBtn) {
+            exportContactsBtn.addEventListener('click', exportContacts);
+        }
+
+        const backupDataBtn = document.getElementById('backup-data');
+        if (backupDataBtn) {
+            backupDataBtn.addEventListener('click', backupData);
+        }
+    }
+
+    function initializeMessagesFunctionality() {
+        // Compose message button
+        const composeBtn = document.getElementById('compose-message');
+        if (composeBtn) {
+            composeBtn.addEventListener('click', () => {
+                loadConnectedSessions(); // Refresh sessions before opening modal
+            });
+        }
+
+        // Send composed message
+        const sendBtn = document.getElementById('send-composed-message');
+        if (sendBtn) {
+            sendBtn.addEventListener('click', sendComposedMessage);
+        }
+
+        // Character counter for compose message
+        const composeText = document.getElementById('compose-text');
+        if (composeText) {
+            composeText.addEventListener('input', updateCharCount);
+        }
+
+        // Message filters
+        const filterInputs = document.querySelectorAll('input[name="message-filter"]');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', filterMessages);
+        });
+
+        // Session filter
+        const sessionFilter = document.getElementById('session-filter');
+        if (sessionFilter) {
+            sessionFilter.addEventListener('change', filterMessages);
+        }
+
+        // Search messages
+        const searchInput = document.getElementById('message-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce(searchMessages, 300));
+        }
+
+        // Refresh messages
+        const refreshBtn = document.getElementById('refresh-messages');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', loadMessagesData);
+        }
+
+        // Export messages
+        const exportBtn = document.getElementById('export-messages');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', exportMessages);
+        }
+    }
+
+    async function sendQuickMessage() {
+        const sessionId = document.getElementById('quick-session-select').value;
+        const phone = document.getElementById('quick-phone').value;
+        const message = document.getElementById('quick-message').value;
+        const mediaFile = document.getElementById('quick-media').files[0];
+
+        if (!sessionId || !phone || !message) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        try {
+            let response;
+            
+            if (mediaFile) {
+                // Send media message
+                const formData = new FormData();
+                formData.append('to', phone);
+                formData.append('caption', message);
+                formData.append('media', mediaFile);
+
+                const headers = getApiKeyHeaders();
+                delete headers['Content-Type']; // Let browser set content-type for FormData
+                
+                response = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
             } else {
-                // Render sessions with error handling
-                try {
-                    container.innerHTML = sessions.map((session, index) => {
-                        try {
-                            return `
-                                <div class="col-md-6">
-                                    <div class="card session-card">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                                <h5>Session #${index + 1}</h5>
-                                                <span class="badge bg-${session.isConnected ? 'success' : 'secondary'}">
-                                                    ${session.isConnected ? 'Connected' : 'Disconnected'}
-                                                </span>
-                                            </div>
-                                            <p><strong>Session ID:</strong> ${session.sessionId || 'Unknown'}</p>
-                                            <p><strong>Phone:</strong> ${session.phoneNumber || 'Not connected'}</p>
-                                            <p><strong>Status:</strong> ${session.isConnected ? 'Connected' : 'Disconnected'}</p>
-                                            <p><strong>Created:</strong> ${session.createdAt ? new Date(session.createdAt).toLocaleDateString() : 'Unknown'}</p>
-                                            <p><strong>Messages:</strong> ${session.messageStats ? session.messageStats.total || 0 : 0} total (${session.messageStats ? session.messageStats.sent || 0 : 0} sent, ${session.messageStats ? session.messageStats.received || 0 : 0} received)</p>
-                                            <div class="btn-group" role="group">
-                                                ${session.isConnected ?
-                                    `<button class="btn btn-outline-danger btn-sm" data-action="disconnect-session" data-session="${session.sessionId}">
-                                                        <i class="fas fa-unlink me-1"></i>Disconnect
-                                                    </button>` :
-                                    `<button class="btn btn-outline-primary btn-sm" data-action="connect-session" data-session="${session.sessionId}">
-                                                        <i class="fas fa-link me-1"></i>Connect
-                                                    </button>`
-                                }
-                                                <button class="btn btn-outline-danger btn-sm" 
-                                                        data-action="delete-session" 
-                                                        data-session="${session.sessionId}"
-                                                        title="Delete Session">
-                                                    <i class="fas fa-trash me-1"></i>Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        } catch (sessionError) {
-                            console.error('Error rendering session:', sessionError, session);
-                            return `
-                                <div class="col-md-6">
-                                    <div class="card session-card">
-                                        <div class="card-body">
-                                            <div class="alert alert-warning">
-                                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                                Error loading session data
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }).join('');
-                } catch (renderError) {
-                    console.error('Error rendering sessions:', renderError);
-                    container.innerHTML = `
-                        <div class="col-12">
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Error rendering sessions data
-                            </div>
-                        </div>
-                    `;
-                }
+                // Send text message
+                response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        to: phone,
+                        message: message
+                    })
+                });
             }
 
-            hideLoading('sessions');
-        } catch (error) {
-            console.error('Error loading sessions data:', error);
-            hideLoading('sessions');
-
-            if (error.message.includes('log in')) {
-                showError('sessions', 'Please log in to view sessions');
-            } else if (error.message.includes('API key')) {
-                showError('sessions', 'Please generate an API key first');
+            if (response.success || response.ok) {
+                alert('Message sent successfully!');
+                document.getElementById('quick-message-form').reset();
+                loadMessagesData(); // Refresh messages if on messages page
             } else {
-                showError('sessions', 'Failed to load sessions data: ' + error.message);
+                throw new Error(response.error || 'Failed to send message');
             }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert('Error sending message: ' + error.message);
         }
     }
 
-    // Load messages data
-    async function loadMessagesData() {
-        try {
-            showLoading('messages');
-            // Get messages from all sessions
-            const response = await makeApiCall('/api/analytics/messages?period=7d');
-            console.log('Messages API response:', response);
-            
-            // Handle different response structures
-            const timeSeries = response.data?.timeSeries || response.timeSeries || [];
-            
-            // Ensure timeSeries is an array
-            if (!Array.isArray(timeSeries)) {
-                console.error('TimeSeries data is not an array:', timeSeries);
-                showError('messages', 'Invalid messages data format');
-                hideLoading('messages');
-                return;
-            }
+    async function sendComposedMessage() {
+        const sessionId = document.getElementById('compose-session').value;
+        const phone = document.getElementById('compose-phone').value;
+        const message = document.getElementById('compose-text').value;
+        const mediaFile = document.getElementById('compose-media').files[0];
 
-            // Update messages table with recent data
-            const messagesTable = document.getElementById('messages-table');
-            if (timeSeries && timeSeries.length > 0) {
-                // This would be populated with actual message data
-                // For now, we'll show the time series data
-                messagesTable.innerHTML = timeSeries.slice(0, 10).map((item, index) => `
-                        <tr>
-                            <td><code>msg_${index + 1}</code></td>
-                            <td>+1234567890</td>
-                            <td>Sample message from ${item._id}</td>
-                            <td><span class="badge bg-success">Delivered</span></td>
-                            <td>${new Date().toLocaleTimeString()}</td>
-                        </tr>
-                    `).join('');
+        if (!sessionId || !phone || !message) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const sendBtn = document.getElementById('send-composed-message');
+        const originalText = sendBtn.innerHTML;
+        
+        try {
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+            sendBtn.disabled = true;
+
+            let response;
+            
+            if (mediaFile) {
+                // Send media message
+                const formData = new FormData();
+                formData.append('to', phone);
+                formData.append('caption', message);
+                formData.append('media', mediaFile);
+
+                const headers = getApiKeyHeaders();
+                delete headers['Content-Type']; // Let browser set content-type for FormData
+                
+                response = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+                response = await response.json();
             } else {
-                messagesTable.innerHTML = `
-                        <tr>
-                            <td colspan="5" class="text-center text-muted">No messages found</td>
-                        </tr>
-                    `;
+                // Send text message
+                response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        to: phone,
+                        message: message
+                    })
+                });
             }
 
-            hideLoading('messages');
-        } catch (error) {
-            console.error('Error loading messages data:', error);
-            hideLoading('messages');
-            showError('messages', 'Failed to load messages data');
-        }
-    }
-
-    // Load webhooks data
-    async function loadWebhooksData() {
-        try {
-            showLoading('webhooks');
-            // Webhook data would come from a webhook management API
-            // For now, we'll show placeholder data
-            hideLoading('webhooks');
-        } catch (error) {
-            console.error('Error loading webhooks data:', error);
-            hideLoading('webhooks');
-            showError('webhooks', 'Failed to load webhooks data');
-        }
-    }
-
-    // Load analytics data
-    async function loadAnalyticsData() {
-        try {
-            showLoading('analytics');
-            const response = await makeApiCall('/api/analytics/dashboard?period=30d');
-            const stats = response.data;
-
-            // Update analytics metrics
-            updateElement('delivery-rate-analytics', calculateDeliveryRate(stats.overview) + '%');
-            updateElement('total-messages-analytics', (stats.overview.totalMessages || 0).toLocaleString());
-            updateElement('active-sessions-analytics', stats.overview.activeSessions || 0);
-
-            // Update message status distribution
-            if (stats.messageStatus) {
-                const statusData = stats.messageStatus;
-                const total = Object.values(statusData).reduce((sum, count) => sum + count, 0);
-
-                // Update status chart data (this would integrate with Chart.js)
-                console.log('Message status data:', statusData);
-            }
-
-            hideLoading('analytics');
-        } catch (error) {
-            console.error('Error loading analytics data:', error);
-            hideLoading('analytics');
-            showError('analytics', 'Failed to load analytics data');
-        }
-    }
-
-    // Load billing data
-    async function loadBillingData() {
-        try {
-            showLoading('billing');
-            const response = await makeApiCall('/api/auth/profile');
-            const user = response.user;
-
-            // Update billing information
-            if (user && user.subscription) {
-                updateElement('plan-name', user.subscription.plan || 'Free');
-                updateElement('plan-status', user.subscription.status || 'active');
-                updateElement('next-billing', user.subscription.nextBillingDate || 'N/A');
-            }
-
-            hideLoading('billing');
-        } catch (error) {
-            console.error('Error loading billing data:', error);
-            hideLoading('billing');
-            showError('billing', 'Failed to load billing data');
-        }
-    }
-
-    // Load profile data
-    async function loadProfileData() {
-        try {
-            console.log('loadProfileData called');
-            showLoading('profile');
-            const response = await makeApiCall('/api/auth/profile');
-            console.log('Profile API response:', response);
-            const user = response.user;
-
-            if (user) {
-                console.log('Profile data loaded:', user); // Debug log
-
-                // Update profile form fields
-                updateElement('profile-name', user.name || '');
-                updateElement('profile-email', user.email || '');
-                updateElement('profile-phone', user.profile?.phone || '');
-                updateElement('profile-company', user.profile?.company || '');
-                updateElement('profile-bio', user.profile?.bio || '');
-
-                // Debug: Check if form fields exist
-                console.log('Form fields check:');
-                console.log('profile-name:', document.getElementById('profile-name'));
-                console.log('profile-email:', document.getElementById('profile-email'));
-                console.log('profile-phone:', document.getElementById('profile-phone'));
-                console.log('profile-company:', document.getElementById('profile-company'));
-                console.log('profile-bio:', document.getElementById('profile-bio'));
-
-                // Update account status
-                const emailVerifiedBadge = document.getElementById('email-verified-badge');
-                if (emailVerifiedBadge) {
-                    emailVerifiedBadge.textContent = user.isEmailVerified ? 'Verified' : 'Unverified';
-                    emailVerifiedBadge.className = user.isEmailVerified ? 'badge bg-success' : 'badge bg-warning';
-                }
-
-                updateElement('account-created-date', user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-');
-                updateElement('last-login-date', user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : '-');
-
-                const planBadge = document.getElementById('profile-plan-badge');
-                if (planBadge) {
-                    const plan = user.subscription?.plan || 'free';
-                    planBadge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
-                    planBadge.className = `badge ${plan === 'free' ? 'bg-secondary' : plan === 'basic' ? 'bg-primary' : 'bg-success'}`;
-                }
-
-                // Update email verification status
-                const verifyBtn = document.getElementById('verify-email-btn');
-                const emailStatusText = document.getElementById('email-status-text');
-
-                if (user.isEmailVerified) {
-                    if (verifyBtn) {
-                        verifyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Verified';
-                        verifyBtn.className = 'btn btn-outline-success';
-                        verifyBtn.disabled = true;
-                    }
-                    if (emailStatusText) {
-                        emailStatusText.textContent = 'Your email is verified';
-                        emailStatusText.className = 'form-text text-success';
-                    }
-                } else {
-                    if (verifyBtn) {
-                        verifyBtn.innerHTML = '<i class="fas fa-envelope me-1"></i>Verify';
-                        verifyBtn.className = 'btn btn-outline-warning';
-                        verifyBtn.disabled = false;
-                    }
-                    if (emailStatusText) {
-                        emailStatusText.textContent = 'Please verify your email address';
-                        emailStatusText.className = 'form-text text-warning';
-                    }
-                }
-            }
-
-            hideLoading('profile');
-        } catch (error) {
-            console.error('Error loading profile data:', error);
-            hideLoading('profile');
-            showError('profile', 'Failed to load profile data');
-        }
-    }
-
-    // Utility functions
-    function calculateDeliveryRate(stats) {
-        if (!stats.sentMessages || stats.sentMessages === 0) return '0.0';
-        const delivered = stats.messageStatus?.delivered || 0;
-        return ((delivered / stats.sentMessages) * 100).toFixed(1);
-    }
-
-    function updateElement(id, value) {
-        const element = document.getElementById(id);
-        if (element) {
-            if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-                element.value = value;
+            if (response.success) {
+                alert('Message sent successfully!');
+                document.getElementById('compose-message-form').reset();
+                updateCharCount(); // Reset character count
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('composeMessageModal'));
+                if (modal) modal.hide();
+                
+                loadMessagesData(); // Refresh messages
             } else {
-                element.textContent = value;
+                throw new Error(response.error || 'Failed to send message');
             }
-            console.log(`Updated ${id}:`, value); // Debug log
-        } else {
-            console.log(`Element with id '${id}' not found (this is normal if not on overview page)`); // Debug log
+        } catch (error) {
+            console.error('Error sending message:', error);
+            alert('Error sending message: ' + error.message);
+        } finally {
+            sendBtn.innerHTML = originalText;
+            sendBtn.disabled = false;
         }
     }
 
-    function showLoading(section) {
-        const sectionElement = document.getElementById(`dashboard-${section}`);
-        if (sectionElement) {
-            // Create loading overlay
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.id = `loading-${section}`;
-            loadingOverlay.className = 'loading-overlay';
-            loadingOverlay.innerHTML = `
-                <div class="loading-content">
-                    <div class="spinner-border text-primary mb-3" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-muted">Loading ${section} data...</p>
-                </div>
-            `;
-            
-            // Add loading overlay
-            sectionElement.appendChild(loadingOverlay);
+    function updateCharCount() {
+        const textArea = document.getElementById('compose-text');
+        const counter = document.getElementById('char-count');
+        if (textArea && counter) {
+            counter.textContent = textArea.value.length;
         }
     }
 
-    function hideLoading(section) {
-        const sectionElement = document.getElementById(`dashboard-${section}`);
-        if (sectionElement) {
-            const loadingOverlay = document.getElementById(`loading-${section}`);
-            if (loadingOverlay) {
-                loadingOverlay.remove();
-            }
+    function downloadCSVTemplate() {
+        const csvContent = "phone,message\n+1234567890,Hello! This is a sample message.\n+0987654321,Welcome to our service!";
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bulk_message_template.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    async function handleBulkUpload() {
+        const sessionId = document.getElementById('bulk-session-select').value;
+        const csvFile = document.getElementById('bulk-csv').files[0];
+
+        if (!sessionId || !csvFile) {
+            alert('Please select a session and CSV file');
+            return;
+        }
+
+        // TODO: Implement bulk upload functionality
+        alert('Bulk upload functionality will be implemented in the next update');
+    }
+
+    function saveBotConfiguration() {
+        const config = {
+            name: document.getElementById('bot-name').value,
+            defaultSession: document.getElementById('bot-default-session').value,
+            welcomeMessage: document.getElementById('bot-welcome').value,
+            fallbackMessage: document.getElementById('bot-fallback').value,
+            website: document.getElementById('bot-website').value,
+            enabled: document.getElementById('bot-enabled').checked
+        };
+
+        // TODO: Save to backend
+        console.log('Bot configuration:', config);
+        alert('Bot configuration saved! (Backend integration pending)');
+    }
+
+    async function testWebhook() {
+        try {
+            // TODO: Implement webhook testing
+            alert('Webhook test functionality will be implemented in the next update');
+        } catch (error) {
+            alert('Error testing webhook: ' + error.message);
         }
     }
 
-    function showError(section, message) {
-        const sectionElement = document.getElementById(`dashboard-${section}`);
-        if (sectionElement) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'alert alert-danger';
-            errorDiv.textContent = message;
-            sectionElement.appendChild(errorDiv);
-        }
+    function exportContacts() {
+        // TODO: Implement contact export
+        alert('Contact export functionality will be implemented in the next update');
     }
+
+    function backupData() {
+        // TODO: Implement data backup
+        alert('Data backup functionality will be implemented in the next update');
+    }
+
+    function filterMessages() {
+        // TODO: Implement message filtering
+        console.log('Filtering messages...');
+    }
+
+    function searchMessages() {
+        // TODO: Implement message search
+        console.log('Searching messages...');
+    }
+
+    function exportMessages() {
+        // TODO: Implement message export
+        alert('Message export functionality will be implemented in the next update');
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // End of DOMContentLoaded event listener
+};
 </script>

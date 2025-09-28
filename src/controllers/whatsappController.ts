@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import WhatsAppService from '../services/whatsappService';
 import RateLimitService from '../services/rateLimitService';
 import WhatsappSession from '../models/WhatsappSession';
@@ -92,11 +93,16 @@ export class WhatsAppController {
       // Get session statuses
       const sessionsWithStatus = await Promise.all(sessions.map(async (session) => {
         const status = await WhatsAppService.getSessionStatus(session.sessionId);
+        
+        // Use database status if available, otherwise derive from connection status
+        const sessionStatus = session.status || (status.connected ? 'connected' : 'disconnected');
+        
         return {
           id: session._id,
           sessionId: session.sessionId,
           phoneNumber: session.phoneNumber,
-          isConnected: status.connected,
+          isConnected: status.connected || session.isConnected,
+          status: sessionStatus,
           lastActivity: session.lastActivity,
           settings: session.settings,
           webhookUrl: session.webhookUrl,
@@ -130,6 +136,9 @@ export class WhatsAppController {
       }
 
       const status = await WhatsAppService.getSessionStatus(sessionId);
+      
+      // Use database status if available, otherwise derive from connection status
+      const sessionStatus = session.status || (status.connected ? 'connected' : 'disconnected');
 
       res.json({
         success: true,
@@ -137,7 +146,8 @@ export class WhatsAppController {
           id: session._id,
           sessionId: session.sessionId,
           phoneNumber: session.phoneNumber,
-          isConnected: status.connected,
+          isConnected: status.connected || session.isConnected,
+          status: sessionStatus,
           qrCode: session.qrCode,
           lastActivity: session.lastActivity,
           settings: session.settings,
@@ -162,15 +172,61 @@ export class WhatsAppController {
       const { to, message, quotedMessageId } = req.body;
       const userId = req.user!._id.toString();
 
-      // Verify session ownership
-      const session = await WhatsappSession.findOne({ sessionId, userId });
-      if (!session) {
-        res.status(404).json({ error: 'Session not found' });
+      // Input validation
+      if (!to || !message) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Phone number (to) and message are required',
+          code: 'MISSING_REQUIRED_FIELDS'
+        });
         return;
       }
 
-      if (!session.isConnected) {
-        res.status(400).json({ error: 'Session not connected' });
+      if (message.length > 4096) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Message is too long. Maximum length is 4096 characters.',
+          code: 'MESSAGE_TOO_LONG'
+        });
+        return;
+      }
+
+      // Verify session ownership
+      const session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found',
+          code: 'SESSION_NOT_FOUND'
+        });
+        return;
+      }
+
+      // Check both database and live connection status
+      const liveStatus = await WhatsAppService.getSessionStatus(sessionId);
+      const isConnected = session.isConnected && liveStatus.connected;
+
+      if (!isConnected) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is not connected. Please connect your WhatsApp session first.',
+          code: 'SESSION_NOT_CONNECTED',
+          sessionStatus: {
+            database: session.isConnected,
+            live: liveStatus.connected,
+            phoneNumber: session.phoneNumber
+          }
+        });
+        return;
+      }
+
+      // Verify session has a phone number (additional validation)
+      if (!session.phoneNumber) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is connected but phone number not available. Please reconnect your session.',
+          code: 'PHONE_NUMBER_MISSING'
+        });
         return;
       }
 
@@ -230,20 +286,70 @@ export class WhatsAppController {
       const { to, caption } = req.body;
       const userId = req.user!._id.toString();
 
+      // Input validation
       if (!req.file) {
-        res.status(400).json({ error: 'Media file is required' });
+        res.status(400).json({ 
+          success: false,
+          error: 'Media file is required',
+          code: 'MEDIA_FILE_REQUIRED'
+        });
+        return;
+      }
+
+      if (!to) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Phone number (to) is required',
+          code: 'MISSING_PHONE_NUMBER'
+        });
+        return;
+      }
+
+      if (caption && caption.length > 1024) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Caption is too long. Maximum length is 1024 characters.',
+          code: 'CAPTION_TOO_LONG'
+        });
         return;
       }
 
       // Verify session ownership
       const session = await WhatsappSession.findOne({ sessionId, userId });
       if (!session) {
-        res.status(404).json({ error: 'Session not found' });
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found',
+          code: 'SESSION_NOT_FOUND'
+        });
         return;
       }
 
-      if (!session.isConnected) {
-        res.status(400).json({ error: 'Session not connected' });
+      // Check both database and live connection status
+      const liveStatus = await WhatsAppService.getSessionStatus(sessionId);
+      const isConnected = session.isConnected && liveStatus.connected;
+
+      if (!isConnected) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is not connected. Please connect your WhatsApp session first.',
+          code: 'SESSION_NOT_CONNECTED',
+          sessionStatus: {
+            database: session.isConnected,
+            live: liveStatus.connected,
+            phoneNumber: session.phoneNumber
+          }
+        });
+        return;
+      }
+
+      // Verify session has a phone number (additional validation)
+      if (!session.phoneNumber) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is connected but phone number not available. Please reconnect your session.',
+          code: 'PHONE_NUMBER_MISSING'
+        });
         return;
       }
 
@@ -618,6 +724,22 @@ export class WhatsAppController {
         return;
       }
 
+      // Check if session is already connected in database first
+      if (session.isConnected || session.status === 'connected') {
+        logger.info(`Session ${sessionId} is already connected (from database)`);
+        res.json({
+          success: true,
+          status: 'connected',
+          qrCode: null,
+          sessionId,
+          message: 'Session is already connected',
+          error: null,
+          createdAt: session.createdAt,
+          lastUpdated: session.updatedAt
+        });
+        return;
+      }
+
       const qrSession = QRCodeManager.getSession(sessionId);
       
       if (!qrSession) {
@@ -772,11 +894,13 @@ export class WhatsAppController {
       const { sessionId } = req.params;
       const userId = req.user!._id;
 
-      // Try to find session by sessionId first, then by _id
+      // Try to find session by sessionId first
       let session = await WhatsappSession.findOne({ sessionId, userId });
       if (!session) {
-        // Try finding by _id if sessionId didn't work
-        session = await WhatsappSession.findOne({ _id: sessionId, userId });
+        // Try finding by _id only if sessionId is a valid ObjectId
+        if (mongoose.Types.ObjectId.isValid(sessionId)) {
+          session = await WhatsappSession.findOne({ _id: sessionId, userId });
+        }
       }
       
       if (!session) {
@@ -802,7 +926,143 @@ export class WhatsAppController {
       });
     } catch (error) {
       logger.error('Error deleting session:', error);
-      res.status(500).json({ error: 'Failed to delete session' });
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to delete session',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  /**
+   * Connect session (start QR generation process)
+   */
+  async connectSession(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user!._id;
+
+      logger.info(`Connecting session: ${sessionId} for user: ${userId}`);
+
+      // Verify session exists and belongs to user
+      const session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        logger.warn(`Session not found: ${sessionId} for user: ${userId}`);
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found',
+          details: `Session not found for user: ${userId}`
+        });
+        return;
+      }
+
+      // Check if session is already connected
+      if (session.isConnected) {
+        logger.info(`Session ${sessionId} is already connected`);
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is already connected',
+          details: `Session ${sessionId} is already connected`
+        });
+        return;
+      }
+
+      // Start the WhatsApp session (this will trigger QR generation)
+      try {
+        await WhatsAppService.initializeSession(sessionId, userId.toString());
+        
+        res.json({
+          success: true,
+          message: 'Session connection initiated. QR code will be generated.',
+          sessionId
+        });
+      } catch (error: any) {
+        logger.error(`Error starting session ${sessionId}:`, error);
+        res.status(500).json({
+          success: false,
+          error: error.message || 'Failed to start session',
+          details: error instanceof Error ? error.message : String(error)
+        });
+      }
+    } catch (error) {
+      logger.error('Error connecting session:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to connect session',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  /**
+   * Disconnect session
+   */
+  async disconnectSession(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user!._id;
+
+      logger.info(`Disconnecting session: ${sessionId} for user: ${userId}`);
+
+      // Verify session exists and belongs to user
+      const session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        logger.warn(`Session not found: ${sessionId} for user: ${userId}`);
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found',
+          details: `Session not found for user: ${userId}`
+        });
+        return;
+      }
+
+      // Check if session is already disconnected
+      if (!session.isConnected) {
+        logger.info(`Session ${sessionId} is already disconnected`);
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is already disconnected',
+          details: `Session ${sessionId} is already disconnected`
+        });
+        return;
+      }
+
+      // Disconnect the WhatsApp session
+      try {
+        await WhatsAppService.destroySession(sessionId);
+        
+        // Update session status in database
+        await WhatsappSession.findOneAndUpdate(
+          { sessionId, userId },
+          { 
+            isConnected: false,
+            phoneNumber: null,
+            qrCode: undefined,
+            status: 'disconnected',
+            lastActivity: new Date()
+          }
+        );
+
+        res.json({
+          success: true,
+          message: 'Session disconnected successfully',
+          sessionId
+        });
+      } catch (error: any) {
+        logger.error(`Error disconnecting session ${sessionId}:`, error);
+        res.status(500).json({
+          success: false,
+          error: error.message || 'Failed to disconnect session',
+          details: error instanceof Error ? error.message : String(error)
+        });
+      }
+    } catch (error) {
+      logger.error('Error disconnecting session:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to disconnect session',
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 }

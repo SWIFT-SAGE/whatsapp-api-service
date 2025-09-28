@@ -77,6 +77,8 @@ router.get('/debug/qr', WhatsAppController.debugQRGeneration);
 router.get('/debug/sessions', WhatsAppController.debugQRSessions);
 router.get('/debug/force-qr/:sessionId', WhatsAppController.debugForceQR);
 router.put('/sessions/:sessionId', updateSessionValidation, handleValidationErrors, WhatsAppController.updateSession);
+router.post('/sessions/:sessionId/connect', WhatsAppController.connectSession);
+router.post('/sessions/:sessionId/disconnect', WhatsAppController.disconnectSession);
 router.delete('/sessions/:sessionId', WhatsAppController.deleteSession);
 
 // Message routes

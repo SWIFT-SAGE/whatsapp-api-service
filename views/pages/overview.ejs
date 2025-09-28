@@ -78,7 +78,7 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="row g-4">
+    <div class="row g-4 mb-4">
         <div class="col-md-6">
             <div class="card">
                 <div class="card-body">
@@ -87,14 +87,23 @@
                     </h5>
                     <form id="quick-message-form">
                         <div class="mb-3">
+                            <label class="form-label">Session</label>
+                            <select class="form-select" id="quick-session-select" required>
+                                <option value="">Select a connected session</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" placeholder="+1234567890"
-                                required>
+                            <input type="tel" class="form-control" id="quick-phone" placeholder="+1234567890" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Message</label>
-                            <textarea class="form-control" rows="3"
-                                placeholder="Enter your message here..." required></textarea>
+                            <textarea class="form-control" id="quick-message" rows="3" placeholder="Enter your message here..." required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Media (Optional)</label>
+                            <input type="file" class="form-control" id="quick-media" accept="image/*,video/*,audio/*,.pdf,.doc,.docx">
+                            <small class="text-muted">Supported: Images, Videos, Audio, PDF, Documents</small>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-send me-2"></i>Send Message
@@ -136,6 +145,116 @@
                                     <i class="fas fa-plus me-2"></i>Generate Key
                                 </button>
                                 <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bot Configuration Section -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title m-0">
+                            <i class="fas fa-robot me-2"></i>Chatbot Configuration
+                        </h5>
+                        <button class="btn btn-outline-primary btn-sm" id="save-bot-config">
+                            <i class="fas fa-save me-2"></i>Save Configuration
+                        </button>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Bot Name</label>
+                            <input type="text" class="form-control" id="bot-name" placeholder="My WhatsApp Bot">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Default Session</label>
+                            <select class="form-select" id="bot-default-session">
+                                <option value="">Select default session for bot</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Welcome Message</label>
+                            <textarea class="form-control" id="bot-welcome" rows="2" placeholder="Hello! How can I help you today?"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fallback Message</label>
+                            <textarea class="form-control" id="bot-fallback" rows="2" placeholder="I didn't understand that. Please try again."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Website URL (Optional)</label>
+                            <input type="url" class="form-control" id="bot-website" placeholder="https://yourwebsite.com">
+                            <small class="text-muted">Link to your custom website or landing page</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input" type="checkbox" id="bot-enabled">
+                                <label class="form-check-label" for="bot-enabled">
+                                    Enable Auto-Reply Bot
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload & Bulk Operations -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-upload me-2"></i>Bulk Message Upload
+                    </h5>
+                    <p class="text-muted">Upload a CSV file to send messages to multiple contacts</p>
+                    <form id="bulk-upload-form" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label">Session</label>
+                            <select class="form-select" id="bulk-session-select" required>
+                                <option value="">Select a connected session</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CSV File</label>
+                            <input type="file" class="form-control" id="bulk-csv" accept=".csv" required>
+                            <small class="text-muted">Format: phone,message (one per line)</small>
+                        </div>
+                        <div class="mb-3">
+                            <a href="#" class="text-primary" id="download-template">
+                                <i class="fas fa-download me-1"></i>Download CSV Template
+                            </a>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload me-2"></i>Upload & Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-cogs me-2"></i>Quick Actions
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" id="connect-new-session">
+                            <i class="fas fa-plus me-2"></i>Connect New WhatsApp Session
+                        </button>
+                        <button class="btn btn-outline-success" id="test-webhook">
+                            <i class="fas fa-webhook me-2"></i>Test Webhook Connection
+                        </button>
+                        <button class="btn btn-outline-info" id="export-contacts">
+                            <i class="fas fa-address-book me-2"></i>Export Contact List
+                        </button>
+                        <button class="btn btn-outline-warning" id="backup-data">
+                            <i class="fas fa-database me-2"></i>Backup Messages Data
+                        </button>
                     </div>
                 </div>
             </div>
