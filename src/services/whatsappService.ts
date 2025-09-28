@@ -216,6 +216,7 @@ class WhatsAppService {
             phoneNumber: info.wid?.user || 'Unknown',
             qrCode: undefined,
             status: 'connected',
+            lastActivity: new Date(),
             deviceInfo: {
               name: info.pushname || 'Unknown',
               version: info.phone?.wa_version || 'Unknown'
@@ -237,7 +238,12 @@ class WhatsAppService {
       try {
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
-          { isConnected: false, qrCode: undefined }
+          { 
+            isConnected: false, 
+            qrCode: undefined,
+            status: 'disconnected',
+            lastActivity: new Date()
+          }
         );
 
         // Emit disconnection to user (will be implemented when socket.io is available)
@@ -360,24 +366,36 @@ class WhatsAppService {
         return { success: false, error: `Session is not ready. Current state: ${state}` };
       }
 
-      // Validate phone number format
-      if (!to || !to.includes('@')) {
-        // Auto-format phone number if needed
-        const formattedTo = to.includes('@') ? to : `${to}@c.us`;
-        const sentMessage = await client.sendMessage(formattedTo, message, options);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
-        };
-      } else {
-        const sentMessage = await client.sendMessage(to, message, options);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
-        };
+      // Validate and format phone number
+      if (!to) {
+        return { success: false, error: 'Phone number is required' };
       }
+
+      // Clean and format phone number
+      let formattedTo = to.trim();
+      
+      // Remove any non-digit characters except + and @
+      if (!formattedTo.includes('@')) {
+        // Remove spaces, dashes, parentheses, etc.
+        formattedTo = formattedTo.replace(/[^\d+]/g, '');
+        
+        // Ensure it starts with + for international format
+        if (!formattedTo.startsWith('+')) {
+          return { success: false, error: 'Phone number must include country code (e.g., +1234567890)' };
+        }
+        
+        // Add WhatsApp suffix
+        formattedTo = `${formattedTo.substring(1)}@c.us`;
+      }
+
+      logger.info(`Sending message to ${formattedTo} via session ${sessionId}`);
+      
+      const sentMessage = await client.sendMessage(formattedTo, message, options);
+      
+      return { 
+        success: true, 
+        messageId: sentMessage.id._serialized 
+      };
     } catch (error: any) {
       logger.error(`Error sending message via session ${sessionId}:`, error);
       
@@ -388,6 +406,10 @@ class WhatsAppService {
         return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
       } else if (error.message?.includes('Session closed')) {
         return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
+      } else if (error.message?.includes('Evaluation failed')) {
+        return { success: false, error: 'WhatsApp client error. Please check phone number format and try again.' };
+      } else if (error.message?.includes('Target closed')) {
+        return { success: false, error: 'WhatsApp session disconnected. Please reconnect the session.' };
       }
       
       return { success: false, error: error.message || 'Failed to send message' };
@@ -477,7 +499,12 @@ class WhatsAppService {
       // Update database
       await WhatsappSession.findOneAndUpdate(
         { sessionId },
-        { isConnected: false, qrCode: undefined }
+        { 
+          isConnected: false, 
+          qrCode: undefined,
+          status: 'disconnected',
+          lastActivity: new Date()
+        }
       );
 
       // Session data is stored in MongoDB, no file cleanup needed
@@ -564,6 +591,58 @@ class WhatsAppService {
     } catch (error) {
       logger.error(`Error getting existing QR code for session ${sessionId}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Fix session status for connected sessions that have incorrect status
+   */
+  async fixSessionStatus(sessionId: string): Promise<boolean> {
+    try {
+      const client = this.clients[sessionId];
+      if (!client) {
+        return false;
+      }
+
+      // Check if client is actually connected
+      const state = await client.getState();
+      const info = client.info;
+      
+      if (state === 'CONNECTED' && info && info.wid) {
+        // Update session to correct connected status
+        await WhatsappSession.findOneAndUpdate(
+          { sessionId },
+          {
+            isConnected: true,
+            phoneNumber: info.wid.user || 'Unknown',
+            status: 'connected',
+            lastActivity: new Date(),
+            deviceInfo: {
+              name: info.pushname || 'Unknown',
+              version: info.phone?.wa_version || 'Unknown'
+            }
+          }
+        );
+        
+        logger.info(`Fixed session status for ${sessionId}: now marked as connected`);
+        return true;
+      } else {
+        // Session is not actually connected, mark as disconnected
+        await WhatsappSession.findOneAndUpdate(
+          { sessionId },
+          {
+            isConnected: false,
+            status: 'disconnected',
+            lastActivity: new Date()
+          }
+        );
+        
+        logger.info(`Fixed session status for ${sessionId}: marked as disconnected`);
+        return false;
+      }
+    } catch (error) {
+      logger.error(`Error fixing session status for ${sessionId}:`, error);
+      return false;
     }
   }
 

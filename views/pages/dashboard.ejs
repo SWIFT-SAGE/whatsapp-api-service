@@ -655,10 +655,13 @@
                 // Load section-specific data after page is loaded
                 await loadSectionData(section);
                 
-                // Re-initialize API key buttons if we're on the overview section
+                // Re-initialize API key buttons and forms if we're on the overview section
                 if (section === 'overview') {
                     setTimeout(() => {
                         initializeApiKeyButtons();
+                        initializeOverviewForms();
+                        // Also refresh session dropdowns when overview loads
+                        loadOverviewSessionDropdowns();
                     }, 100);
                 }
                 
@@ -697,6 +700,7 @@
                     updateElement('delivery-rate', '0%');
                     updateElement('total-sessions', '0');
                     updateElement('plan-badge', 'Free Plan');
+                    loadApiKeyData();
                     hideLoading('overview');
                     return;
                 }
@@ -709,6 +713,7 @@
                     updateElement('delivery-rate', '0%');
                     updateElement('total-sessions', '0');
                     updateElement('plan-badge', 'Free Plan');
+                    loadApiKeyData();
                     hideLoading('overview');
                     return;
                 }
@@ -722,8 +727,19 @@
                 updateElement('delivery-rate', calculateDeliveryRate(stats) + '%');
                 updateElement('total-sessions', stats.totalSessions || 0);
 
+                // Update message limit text
+                const messageLimit = stats.messageLimit || 10000;
+                const messageCount = stats.messageCount || stats.totalMessages || 0;
+                updateElement('message-limit-text', `of ${messageLimit.toLocaleString()} this month (${messageCount.toLocaleString()} used)`);
+
                 // Update plan badge
                 updateElement('plan-badge', stats.plan ? stats.plan.charAt(0).toUpperCase() + stats.plan.slice(1) + ' Plan' : 'Free Plan');
+
+                // Load additional overview data
+                await loadApiKeyData();
+                await loadOverviewSessionDropdowns();
+                await loadUsageChart();
+                await loadBotConfiguration();
 
                 hideLoading('overview');
             } catch (error) {
@@ -736,6 +752,966 @@
                 } else {
                     showError('overview', 'Failed to load dashboard data: ' + error.message);
                 }
+            }
+        }
+
+        // Load API key data and buttons
+        async function loadApiKeyData() {
+            try {
+                const apiKeyInput = document.getElementById('api-key');
+                const apiKeyButtonsContainer = document.getElementById('api-key-buttons');
+                
+                if (!apiKeyInput || !apiKeyButtonsContainer) return;
+
+                // Get current user data
+                const currentUser = window.currentUser || {};
+                const hasApiKey = currentUser.apiKey && currentUser.apiKey !== 'Not generated';
+
+                if (hasApiKey) {
+                    apiKeyInput.value = currentUser.apiKey;
+                    apiKeyButtonsContainer.innerHTML = `
+                        <button class="btn btn-outline-secondary" type="button" id="toggle-api-key">
+                            <i class="fas fa-eye" id="api-key-icon"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" type="button" id="copy-api-key">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="btn btn-warning" type="button" id="regenerate-api-key" 
+                                data-bs-toggle="tooltip" data-bs-placement="top" 
+                                title="Generate a new API key (this will invalidate the current key)">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    `;
+                } else {
+                    apiKeyInput.value = 'Not generated';
+                    apiKeyButtonsContainer.innerHTML = `
+                        <button class="btn btn-primary" type="button" id="generate-api-key">
+                            <i class="fas fa-plus me-2"></i>Generate Key
+                        </button>
+                    `;
+                }
+
+                // Re-initialize API key button functionality
+                initializeApiKeyButtons();
+            } catch (error) {
+                console.error('Error loading API key data:', error);
+            }
+        }
+
+        // Load session dropdowns for overview forms
+        async function loadOverviewSessionDropdowns() {
+            try {
+                console.log('=== Loading overview session dropdowns ===');
+                
+                // Wait for DOM elements to be ready with retry logic
+                let retries = 0;
+                const maxRetries = 10;
+                let quickSessionSelect, bulkSessionSelect, botDefaultSessionSelect;
+                
+                while (retries < maxRetries) {
+                    quickSessionSelect = document.getElementById('quick-session-select');
+                    bulkSessionSelect = document.getElementById('bulk-session-select');
+                    botDefaultSessionSelect = document.getElementById('bot-default-session');
+                    
+                    if (quickSessionSelect || bulkSessionSelect || botDefaultSessionSelect) {
+                        break;
+                    }
+                    
+                    console.log(`Waiting for dropdown elements... retry ${retries + 1}/${maxRetries}`);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
+                }
+
+                console.log('Dropdown elements found:', {
+                    quickSessionSelect: !!quickSessionSelect,
+                    bulkSessionSelect: !!bulkSessionSelect,
+                    botDefaultSessionSelect: !!botDefaultSessionSelect,
+                    retriesNeeded: retries
+                });
+
+                if (!quickSessionSelect && !bulkSessionSelect && !botDefaultSessionSelect) {
+                    console.log('No dropdown elements found after retries, skipping session loading');
+                    return;
+                }
+
+                // Check if API key is available
+                const apiKey = window.getApiKey();
+                console.log('API Key available:', !!apiKey);
+                if (!apiKey) {
+                    console.error('No API key found - cannot load sessions');
+                    if (quickSessionSelect) {
+                        quickSessionSelect.innerHTML = '<option value="">No API key - Generate one first</option>';
+                    }
+                    return;
+                }
+
+                // Get sessions data
+                console.log('Fetching sessions from API...');
+                const sessionsResponse = await makeApiCall('/api/whatsapp/sessions');
+                console.log('Sessions API response:', sessionsResponse);
+                console.log('Response type:', typeof sessionsResponse);
+                console.log('Response keys:', Object.keys(sessionsResponse || {}));
+
+                // Handle different possible response structures
+                let sessions = [];
+                if (sessionsResponse.success && sessionsResponse.sessions) {
+                    // New API format: {success: true, sessions: [...]}
+                    sessions = Array.isArray(sessionsResponse.sessions) ? sessionsResponse.sessions : [];
+                } else if (sessionsResponse.success && sessionsResponse.data) {
+                    // Old API format: {success: true, data: [...]}
+                    sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : 
+                              (sessionsResponse.data.sessions || []);
+                } else if (Array.isArray(sessionsResponse.data)) {
+                    sessions = sessionsResponse.data;
+                } else if (Array.isArray(sessionsResponse)) {
+                    sessions = sessionsResponse;
+                }
+                
+                console.log('Response structure analysis:', {
+                    hasSuccess: !!sessionsResponse.success,
+                    hasSessions: !!sessionsResponse.sessions,
+                    hasData: !!sessionsResponse.data,
+                    sessionsIsArray: Array.isArray(sessionsResponse.sessions),
+                    dataIsArray: Array.isArray(sessionsResponse.data),
+                    sessionsLength: sessionsResponse.sessions?.length || 0,
+                    dataLength: sessionsResponse.data?.length || 0
+                });
+
+                console.log('Parsed sessions:', sessions);
+                console.log('Total sessions found:', sessions.length);
+
+                // Filter connected sessions - check multiple possible status fields
+                // Also include sessions that are isConnected=true but have pending status (temporary fix)
+                const connectedSessions = sessions.filter(session => {
+                    const isConnectedByFlag = session.isConnected === true || session.connected === true;
+                    const isConnectedByStatus = session.status === 'connected' || session.status === 'ready';
+                    const hasPendingButConnected = session.isConnected === true && session.status === 'pending' && session.phoneNumber;
+                    
+                    console.log(`Session ${session.sessionId || session.id}:`, {
+                        isConnected: session.isConnected,
+                        status: session.status,
+                        phoneNumber: session.phoneNumber,
+                        isConnectedByFlag,
+                        isConnectedByStatus,
+                        hasPendingButConnected,
+                        willInclude: isConnectedByFlag || isConnectedByStatus || hasPendingButConnected
+                    });
+                    
+                    return isConnectedByFlag || isConnectedByStatus || hasPendingButConnected;
+                });
+
+                console.log('Connected sessions:', connectedSessions);
+                console.log('Connected sessions count:', connectedSessions.length);
+
+                // Populate quick message session dropdown
+                if (quickSessionSelect) {
+                    quickSessionSelect.innerHTML = '<option value="">Select a connected session</option>';
+                    
+                    if (connectedSessions.length === 0) {
+                        const noSessionOption = document.createElement('option');
+                        noSessionOption.value = '';
+                        noSessionOption.textContent = 'No connected sessions available';
+                        noSessionOption.disabled = true;
+                        quickSessionSelect.appendChild(noSessionOption);
+                    } else {
+                        connectedSessions.forEach(session => {
+                            const option = document.createElement('option');
+                            option.value = session.sessionId || session.id;
+                            option.textContent = `${session.sessionId || session.id} (${session.phoneNumber || session.phone || 'No phone'})`;
+                            quickSessionSelect.appendChild(option);
+                        });
+                    }
+                    console.log('Quick session dropdown populated with', quickSessionSelect.options.length - 1, 'sessions');
+                }
+
+                // Populate bulk upload session dropdown
+                if (bulkSessionSelect) {
+                    bulkSessionSelect.innerHTML = '<option value="">Select a connected session</option>';
+                    
+                    if (connectedSessions.length === 0) {
+                        const noSessionOption = document.createElement('option');
+                        noSessionOption.value = '';
+                        noSessionOption.textContent = 'No connected sessions available';
+                        noSessionOption.disabled = true;
+                        bulkSessionSelect.appendChild(noSessionOption);
+                    } else {
+                        connectedSessions.forEach(session => {
+                            const option = document.createElement('option');
+                            option.value = session.sessionId || session.id;
+                            option.textContent = `${session.sessionId || session.id} (${session.phoneNumber || session.phone || 'No phone'})`;
+                            bulkSessionSelect.appendChild(option);
+                        });
+                    }
+                    console.log('Bulk session dropdown populated with', bulkSessionSelect.options.length - 1, 'sessions');
+                }
+
+                // Populate bot default session dropdown
+                if (botDefaultSessionSelect) {
+                    botDefaultSessionSelect.innerHTML = '<option value="">Select default session for bot</option>';
+                    
+                    if (connectedSessions.length === 0) {
+                        const noSessionOption = document.createElement('option');
+                        noSessionOption.value = '';
+                        noSessionOption.textContent = 'No connected sessions available';
+                        noSessionOption.disabled = true;
+                        botDefaultSessionSelect.appendChild(noSessionOption);
+                    } else {
+                        connectedSessions.forEach(session => {
+                            const option = document.createElement('option');
+                            option.value = session.sessionId || session.id;
+                            option.textContent = `${session.sessionId || session.id} (${session.phoneNumber || session.phone || 'No phone'})`;
+                            botDefaultSessionSelect.appendChild(option);
+                        });
+                    }
+                    console.log('Bot session dropdown populated with', botDefaultSessionSelect.options.length - 1, 'sessions');
+                }
+
+                // Show user-friendly message if no connected sessions
+                if (connectedSessions.length === 0) {
+                    console.warn('No connected sessions found. Users need to connect a WhatsApp session first.');
+                }
+
+            } catch (error) {
+                console.error('Error loading session dropdowns:', error);
+                
+                // Show error in dropdowns
+                const dropdowns = [
+                    document.getElementById('quick-session-select'),
+                    document.getElementById('bulk-session-select'),
+                    document.getElementById('bot-default-session')
+                ];
+
+                dropdowns.forEach(dropdown => {
+                    if (dropdown) {
+                        dropdown.innerHTML = '<option value="">Error loading sessions</option>';
+                    }
+                });
+            }
+        }
+
+        // Load usage analytics chart
+        async function loadUsageChart() {
+            try {
+                const chartCanvas = document.getElementById('messagesChart');
+                if (!chartCanvas) {
+                    console.log('Chart canvas not found');
+                    return;
+                }
+
+                // Wait for Chart.js to be available
+                let chartRetries = 0;
+                const maxRetries = 10;
+                
+                while (typeof Chart === 'undefined' && chartRetries < maxRetries) {
+                    console.log(`Waiting for Chart.js to load... (attempt ${chartRetries + 1})`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    chartRetries++;
+                }
+
+                if (typeof Chart === 'undefined') {
+                    console.warn('Chart.js not loaded after waiting, skipping chart creation');
+                    showChartFallback(chartCanvas, 'Chart.js library not loaded');
+                    return;
+                }
+
+                // Ensure canvas has proper dimensions
+                if (chartCanvas.width === 0 || chartCanvas.height === 0) {
+                    // Set default dimensions if not set
+                    chartCanvas.width = chartCanvas.offsetWidth || 400;
+                    chartCanvas.height = chartCanvas.offsetHeight || 300;
+                }
+
+                // Get message analytics data
+                const analyticsResponse = await makeApiCall('/api/analytics/messages?period=30d');
+                const timeSeriesData = analyticsResponse.data.timeSeries || [];
+
+                // Prepare chart data
+                const labels = timeSeriesData.map(item => {
+                    const date = new Date(item._id);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                
+                const sentData = timeSeriesData.map(item => item.sent || 0);
+                const receivedData = timeSeriesData.map(item => item.received || 0);
+
+                // Safely destroy existing chart
+                if (window.messagesChart && typeof window.messagesChart.destroy === 'function') {
+                    try {
+                        window.messagesChart.destroy();
+                    } catch (destroyError) {
+                        console.warn('Error destroying existing chart:', destroyError);
+                    }
+                    window.messagesChart = null;
+                }
+
+                // Create new chart
+                const ctx = chartCanvas.getContext('2d');
+                window.messagesChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Messages Sent',
+                            data: sentData,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }, {
+                            label: 'Messages Received',
+                            data: receivedData,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: 'rgba(255,255,255,0.2)',
+                                borderWidth: 1
+                            }
+                        }
+                    }
+                });
+
+                console.log('Chart created successfully with', timeSeriesData.length, 'data points');
+            } catch (error) {
+                console.error('Error loading usage chart:', error);
+                const chartCanvas = document.getElementById('messagesChart');
+                if (chartCanvas) {
+                    showChartFallback(chartCanvas, 'Unable to load chart data');
+                }
+            }
+        }
+
+        // Show fallback message in chart area
+        function showChartFallback(canvas, message) {
+            try {
+                // Ensure canvas has dimensions
+                if (canvas.width === 0 || canvas.height === 0) {
+                    canvas.width = canvas.offsetWidth || 400;
+                    canvas.height = canvas.offsetHeight || 300;
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Set background
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw border
+                ctx.strokeStyle = '#dee2e6';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw text
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#6c757d';
+                
+                // Split long messages into multiple lines
+                const words = message.split(' ');
+                const maxWidth = canvas.width - 40;
+                const lines = [];
+                let currentLine = '';
+                
+                for (const word of words) {
+                    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                    const metrics = ctx.measureText(testLine);
+                    
+                    if (metrics.width > maxWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = testLine;
+                    }
+                }
+                if (currentLine) lines.push(currentLine);
+                
+                // Draw lines
+                const lineHeight = 20;
+                const startY = (canvas.height - (lines.length * lineHeight)) / 2;
+                
+                lines.forEach((line, index) => {
+                    ctx.fillText(line, canvas.width / 2, startY + (index * lineHeight));
+                });
+                
+            } catch (fallbackError) {
+                console.error('Error showing chart fallback:', fallbackError);
+                // Ultimate fallback - just hide the canvas
+                if (canvas.parentElement) {
+                    canvas.parentElement.innerHTML = `<div class="text-center text-muted p-4">${message}</div>`;
+                }
+            }
+        }
+
+        // Initialize overview form handlers
+        function initializeOverviewForms() {
+            // Quick message form
+            const quickMessageForm = document.getElementById('quick-message-form');
+            if (quickMessageForm) {
+                quickMessageForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await sendQuickMessage();
+                });
+            }
+
+            // Bulk upload form
+            const bulkUploadForm = document.getElementById('bulk-upload-form');
+            if (bulkUploadForm) {
+                bulkUploadForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    await handleBulkUpload();
+                });
+            }
+
+            // Bot configuration form
+            const saveBotConfigBtn = document.getElementById('save-bot-config');
+            if (saveBotConfigBtn) {
+                saveBotConfigBtn.addEventListener('click', async function() {
+                    await saveBotConfiguration();
+                });
+            }
+
+            // CSV template download
+            const downloadTemplateLink = document.getElementById('download-template');
+            if (downloadTemplateLink) {
+                downloadTemplateLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    downloadCSVTemplate();
+                });
+            }
+
+            // Refresh sessions button
+            const refreshSessionsBtn = document.getElementById('refresh-sessions-btn');
+            if (refreshSessionsBtn) {
+                refreshSessionsBtn.addEventListener('click', async function() {
+                    const originalContent = this.innerHTML;
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    try {
+                        await loadOverviewSessionDropdowns();
+                    } finally {
+                        this.disabled = false;
+                        this.innerHTML = originalContent;
+                    }
+                });
+            }
+
+            // Fix session status button
+            const fixSessionStatusBtn = document.getElementById('fix-session-status-btn');
+            if (fixSessionStatusBtn) {
+                fixSessionStatusBtn.addEventListener('click', async function() {
+                    const originalContent = this.innerHTML;
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    try {
+                        // Get all sessions first
+                        const sessionsResponse = await makeApiCall('/api/whatsapp/sessions');
+                        let sessions = [];
+                        
+                        if (sessionsResponse.success && sessionsResponse.data) {
+                            sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : 
+                                      (sessionsResponse.data.sessions || []);
+                        } else if (Array.isArray(sessionsResponse.data)) {
+                            sessions = sessionsResponse.data;
+                        } else if (Array.isArray(sessionsResponse)) {
+                            sessions = sessionsResponse;
+                        }
+
+                        // Find sessions that need fixing (isConnected=true but status=pending)
+                        const sessionsToFix = sessions.filter(session => 
+                            session.isConnected === true && session.status === 'pending' && session.phoneNumber
+                        );
+
+                        if (sessionsToFix.length === 0) {
+                            alert('No sessions found that need status fixing.');
+                            return;
+                        }
+
+                        let fixedCount = 0;
+                        let errorCount = 0;
+
+                        for (const session of sessionsToFix) {
+                            try {
+                                const result = await makeApiCall(`/api/whatsapp/sessions/${session.sessionId}/fix-status`, {
+                                    method: 'POST'
+                                });
+                                
+                                if (result.success) {
+                                    fixedCount++;
+                                    console.log(`Fixed status for session ${session.sessionId}:`, result);
+                                } else {
+                                    errorCount++;
+                                    console.error(`Failed to fix session ${session.sessionId}:`, result);
+                                }
+                            } catch (error) {
+                                errorCount++;
+                                console.error(`Error fixing session ${session.sessionId}:`, error);
+                            }
+                        }
+
+                        // Show results and refresh dropdowns
+                        alert(`Session status fix completed!\nFixed: ${fixedCount}\nErrors: ${errorCount}`);
+                        await loadOverviewSessionDropdowns();
+
+                    } catch (error) {
+                        console.error('Error fixing session status:', error);
+                        alert('Failed to fix session status. Check console for details.');
+                    } finally {
+                        this.disabled = false;
+                        this.innerHTML = originalContent;
+                    }
+                });
+            }
+
+            // Test load sessions button (for debugging)
+            const testLoadSessionsBtn = document.getElementById('test-load-sessions-btn');
+            if (testLoadSessionsBtn) {
+                testLoadSessionsBtn.addEventListener('click', async function() {
+                    const originalContent = this.innerHTML;
+                    this.disabled = true;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    
+                    try {
+                        console.log('=== MANUAL TEST: Loading sessions ===');
+                        await loadOverviewSessionDropdowns();
+                        alert('Session loading test completed. Check console for details.');
+                    } catch (error) {
+                        console.error('Test failed:', error);
+                        alert('Test failed: ' + error.message);
+                    } finally {
+                        this.disabled = false;
+                        this.innerHTML = originalContent;
+                    }
+                });
+            }
+
+            // Quick action buttons
+            const connectNewSessionBtn = document.getElementById('connect-new-session');
+            if (connectNewSessionBtn) {
+                connectNewSessionBtn.addEventListener('click', function() {
+                    // Navigate to sessions page
+                    const sessionsLink = document.querySelector('.sidebar-nav .nav-link[data-section="sessions"]');
+                    if (sessionsLink) {
+                        sessionsLink.click();
+                    }
+                });
+            }
+
+            // Refresh button is now part of the overview.ejs template
+
+            const testWebhookBtn = document.getElementById('test-webhook');
+            if (testWebhookBtn) {
+                testWebhookBtn.addEventListener('click', async function() {
+                    await testWebhookConnection();
+                });
+            }
+
+            const exportContactsBtn = document.getElementById('export-contacts');
+            if (exportContactsBtn) {
+                exportContactsBtn.addEventListener('click', async function() {
+                    await exportContactList();
+                });
+            }
+
+            const backupDataBtn = document.getElementById('backup-data');
+            if (backupDataBtn) {
+                backupDataBtn.addEventListener('click', async function() {
+                    await backupMessagesData();
+                });
+            }
+        }
+
+        // Send quick message function
+        async function sendQuickMessage() {
+            const sessionId = document.getElementById('quick-session-select').value;
+            const phone = document.getElementById('quick-phone').value;
+            const message = document.getElementById('quick-message').value;
+            const mediaFile = document.getElementById('quick-media').files[0];
+
+            if (!sessionId || !phone || !message) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                let response;
+                
+                if (mediaFile) {
+                    // Send media message
+                    const formData = new FormData();
+                    formData.append('to', phone);
+                    formData.append('caption', message);
+                    formData.append('media', mediaFile);
+
+                    const headers = getApiKeyHeaders();
+                    delete headers['Content-Type']; // Let browser set content-type for FormData
+                    
+                    response = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
+                } else {
+                    // Send text message
+                    response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            to: phone,
+                            message: message
+                        })
+                    });
+                }
+
+                if (response.success || response.ok) {
+                    alert('Message sent successfully!');
+                    // Reset form
+                    document.getElementById('quick-message-form').reset();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to send message');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message: ' + error.message);
+            }
+        }
+
+        // Handle bulk upload
+        async function handleBulkUpload() {
+            const sessionId = document.getElementById('bulk-session-select').value;
+            const csvFile = document.getElementById('bulk-csv').files[0];
+
+            if (!sessionId || !csvFile) {
+                alert('Please select a session and upload a CSV file');
+                return;
+            }
+
+            if (!csvFile.name.endsWith('.csv')) {
+                alert('Please upload a valid CSV file');
+                return;
+            }
+
+            try {
+                // For now, process CSV locally and send individual messages
+                const text = await csvFile.text();
+                const lines = text.split('\n').filter(line => line.trim());
+                
+                if (lines.length < 2) {
+                    alert('CSV file must contain at least a header row and one data row');
+                    return;
+                }
+
+                // Parse CSV (simple parsing - assumes phone,message format)
+                const messages = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line) {
+                        const [phone, message] = line.split(',').map(item => item.replace(/"/g, '').trim());
+                        if (phone && message) {
+                            messages.push({ phone, message });
+                        }
+                    }
+                }
+
+                if (messages.length === 0) {
+                    alert('No valid messages found in CSV file');
+                    return;
+                }
+
+                if (messages.length > 100) {
+                    alert('Maximum 100 messages allowed per bulk upload');
+                    return;
+                }
+
+                // Send messages individually (until bulk endpoint is implemented)
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const msg of messages) {
+                    try {
+                        await makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                to: msg.phone,
+                                message: msg.message
+                            })
+                        });
+                        successCount++;
+                        
+                        // Add small delay between messages
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    } catch (error) {
+                        console.error(`Failed to send message to ${msg.phone}:`, error);
+                        failCount++;
+                    }
+                }
+
+                alert(`Bulk upload completed!\nSuccessful: ${successCount}\nFailed: ${failCount}`);
+                document.getElementById('bulk-upload-form').reset();
+
+                // TODO: Replace with proper bulk endpoint when available
+                /*
+                const formData = new FormData();
+                formData.append('csv', csvFile);
+
+                const headers = getApiKeyHeaders();
+                delete headers['Content-Type'];
+
+                const response = await fetch(`/api/whatsapp/sessions/${sessionId}/bulk-messages`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Bulk messages queued successfully! ${result.data.queued} messages will be sent.`);
+                    document.getElementById('bulk-upload-form').reset();
+                } else {
+                    alert('Failed to upload bulk messages: ' + (result.message || 'Unknown error'));
+                }
+                */
+            } catch (error) {
+                console.error('Error uploading bulk messages:', error);
+                alert('Failed to upload bulk messages: ' + error.message);
+            }
+        }
+
+        // Save bot configuration
+        async function saveBotConfiguration() {
+            const botName = document.getElementById('bot-name').value;
+            const defaultSession = document.getElementById('bot-default-session').value;
+            const welcomeMessage = document.getElementById('bot-welcome').value;
+            const fallbackMessage = document.getElementById('bot-fallback').value;
+            const websiteUrl = document.getElementById('bot-website').value;
+            const botEnabled = document.getElementById('bot-enabled').checked;
+
+            if (!botName || !welcomeMessage || !fallbackMessage) {
+                alert('Please fill in all required fields (Bot Name, Welcome Message, Fallback Message)');
+                return;
+            }
+
+            try {
+                // For now, save to localStorage until backend endpoint is implemented
+                const botConfig = {
+                    name: botName,
+                    defaultSession: defaultSession,
+                    welcomeMessage: welcomeMessage,
+                    fallbackMessage: fallbackMessage,
+                    websiteUrl: websiteUrl,
+                    enabled: botEnabled,
+                    lastUpdated: new Date().toISOString()
+                };
+
+                localStorage.setItem('botConfiguration', JSON.stringify(botConfig));
+                alert('Bot configuration saved locally! (Backend integration coming soon)');
+
+                // TODO: Uncomment when backend endpoint is ready
+                /*
+                const response = await makeApiCall('/api/bot/config', {
+                    method: 'POST',
+                    body: JSON.stringify(botConfig)
+                });
+
+                if (response.success) {
+                    alert('Bot configuration saved successfully!');
+                } else {
+                    alert('Failed to save bot configuration: ' + (response.message || 'Unknown error'));
+                }
+                */
+            } catch (error) {
+                console.error('Error saving bot configuration:', error);
+                alert('Failed to save bot configuration: ' + error.message);
+            }
+        }
+
+        // Load bot configuration from localStorage
+        async function loadBotConfiguration() {
+            try {
+                const savedConfig = localStorage.getItem('botConfiguration');
+                if (savedConfig) {
+                    const config = JSON.parse(savedConfig);
+                    
+                    const botNameInput = document.getElementById('bot-name');
+                    const defaultSessionSelect = document.getElementById('bot-default-session');
+                    const welcomeMessageInput = document.getElementById('bot-welcome');
+                    const fallbackMessageInput = document.getElementById('bot-fallback');
+                    const websiteUrlInput = document.getElementById('bot-website');
+                    const botEnabledInput = document.getElementById('bot-enabled');
+
+                    if (botNameInput) botNameInput.value = config.name || '';
+                    if (defaultSessionSelect) defaultSessionSelect.value = config.defaultSession || '';
+                    if (welcomeMessageInput) welcomeMessageInput.value = config.welcomeMessage || '';
+                    if (fallbackMessageInput) fallbackMessageInput.value = config.fallbackMessage || '';
+                    if (websiteUrlInput) websiteUrlInput.value = config.websiteUrl || '';
+                    if (botEnabledInput) botEnabledInput.checked = config.enabled || false;
+                }
+            } catch (error) {
+                console.error('Error loading bot configuration:', error);
+            }
+        }
+
+        // Download CSV template
+        function downloadCSVTemplate() {
+            const csvContent = 'phone,message\n+1234567890,"Hello, this is a test message"\n+0987654321,"Another test message"';
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'bulk_messages_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Test webhook connection
+        async function testWebhookConnection() {
+            try {
+                // For now, show a placeholder message until webhook endpoint is implemented
+                alert('Webhook testing functionality will be available once webhook endpoints are configured.\n\nTo test webhooks manually:\n1. Configure your webhook URL in the settings\n2. Send a test message\n3. Check your webhook endpoint for incoming data');
+                
+                // TODO: Uncomment when webhook endpoint is ready
+                /*
+                const response = await makeApiCall('/api/webhooks/test', {
+                    method: 'POST'
+                });
+
+                if (response.success) {
+                    alert('Webhook test successful! Check your webhook endpoint for the test message.');
+                } else {
+                    alert('Webhook test failed: ' + (response.message || 'Unknown error'));
+                }
+                */
+            } catch (error) {
+                console.error('Error testing webhook:', error);
+                alert('Webhook test failed: ' + error.message);
+            }
+        }
+
+        // Export contact list
+        async function exportContactList() {
+            try {
+                const response = await makeApiCall('/api/analytics/contacts?limit=1000');
+                
+                if (response.success && response.data.contacts) {
+                    const contacts = response.data.contacts;
+                    const csvContent = 'contact,total_messages,sent_messages,received_messages,last_message_date\n' +
+                        contacts.map(contact => 
+                            `${contact.contact},${contact.totalMessages},${contact.sentMessages},${contact.receivedMessages},${contact.lastMessageDate}`
+                        ).join('\n');
+
+                    const blob = new Blob([csvContent], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'contacts_export.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Failed to export contacts: ' + (response.message || 'No contacts found'));
+                }
+            } catch (error) {
+                console.error('Error exporting contacts:', error);
+                alert('Failed to export contacts: ' + error.message);
+            }
+        }
+
+        // Backup messages data
+        async function backupMessagesData() {
+            try {
+                // Try to get messages from analytics endpoint as fallback
+                const response = await makeApiCall('/api/analytics/dashboard?period=90d');
+                
+                if (response.success && response.data) {
+                    // Create a basic backup with available data
+                    const backupData = {
+                        exportDate: new Date().toISOString(),
+                        overview: response.data.overview,
+                        messageStatus: response.data.messageStatus,
+                        messageTypes: response.data.messageTypes,
+                        period: response.data.period,
+                        note: 'This is a basic backup. Full message export will be available when the messages export endpoint is implemented.'
+                    };
+                    
+                    const jsonContent = JSON.stringify(backupData, null, 2);
+                    const blob = new Blob([jsonContent], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `dashboard_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert('Dashboard data backup created successfully!');
+                } else {
+                    alert('Failed to backup data: No data available');
+                }
+
+                // TODO: Replace with proper messages export endpoint when available
+                /*
+                const response = await makeApiCall('/api/messages/export?format=json');
+                
+                if (response.success && response.data) {
+                    const jsonContent = JSON.stringify(response.data, null, 2);
+                    const blob = new Blob([jsonContent], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `messages_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Failed to backup messages: ' + (response.message || 'No messages found'));
+                }
+                */
+            } catch (error) {
+                console.error('Error backing up messages:', error);
+                alert('Failed to backup messages: ' + error.message);
             }
         }
         
@@ -777,7 +1753,7 @@
             await loadSectionPage('overview');
 
             // Initialize API key buttons after data is loaded
-        initializeApiKeyButtons();
+            initializeApiKeyButtons();
         }, 100);
 
         // Generate API key functionality
@@ -1028,41 +2004,6 @@
                         alert('Error deleting session: ' + error.message);
                     }
                 }
-            }
-        });
-
-        // Session button initialization will be handled by initializeSessionButtons() function
-
-        // Quick message form
-        document.getElementById('quick-message-form')?.addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const phoneNumber = this.querySelector('input[type="tel"]').value;
-            const message = this.querySelector('textarea').value;
-
-            // Get the first active session
-            try {
-                const sessionsResponse = await makeApiCall('/api/whatsapp/sessions');
-                const sessions = sessionsResponse.data.sessions;
-                const activeSession = sessions.find(s => s.isConnected);
-
-                if (!activeSession) {
-                    alert('No active WhatsApp session found. Please connect a session first.');
-                    return;
-                }
-
-                const response = await makeApiCall(`/api/whatsapp/sessions/${activeSession.sessionId}/messages`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        to: phoneNumber,
-                        message: message
-                    })
-                });
-
-                alert('Message sent successfully!');
-                this.reset();
-            } catch (error) {
-                alert('Error sending message: ' + error.message);
             }
         });
 
@@ -2289,8 +3230,7 @@
         // Load connected sessions for dropdowns
         loadConnectedSessions();
 
-        // Initialize overview page functionality
-        initializeOverviewFunctionality();
+        // Overview page functionality is now handled by initializeOverviewForms() when section loads
 
         // Initialize messages page functionality
         initializeMessagesFunctionality();
@@ -2333,65 +3273,7 @@
         });
     }
 
-    function initializeOverviewFunctionality() {
-        // Quick message form
-        const quickForm = document.getElementById('quick-message-form');
-        if (quickForm) {
-            quickForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await sendQuickMessage();
-            });
-        }
-
-        // Bot configuration save
-        const saveBotBtn = document.getElementById('save-bot-config');
-        if (saveBotBtn) {
-            saveBotBtn.addEventListener('click', saveBotConfiguration);
-        }
-
-        // Bulk upload form
-        const bulkForm = document.getElementById('bulk-upload-form');
-        if (bulkForm) {
-            bulkForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await handleBulkUpload();
-            });
-        }
-
-        // Download CSV template
-        const downloadTemplate = document.getElementById('download-template');
-        if (downloadTemplate) {
-            downloadTemplate.addEventListener('click', (e) => {
-                e.preventDefault();
-                downloadCSVTemplate();
-            });
-        }
-
-        // Quick action buttons
-        const connectNewBtn = document.getElementById('connect-new-session');
-        if (connectNewBtn) {
-            connectNewBtn.addEventListener('click', () => {
-                // Navigate to sessions page
-                const sessionsLink = document.querySelector('[data-section="sessions"]');
-                if (sessionsLink) sessionsLink.click();
-            });
-        }
-
-        const testWebhookBtn = document.getElementById('test-webhook');
-        if (testWebhookBtn) {
-            testWebhookBtn.addEventListener('click', testWebhook);
-        }
-
-        const exportContactsBtn = document.getElementById('export-contacts');
-        if (exportContactsBtn) {
-            exportContactsBtn.addEventListener('click', exportContacts);
-        }
-
-        const backupDataBtn = document.getElementById('backup-data');
-        if (backupDataBtn) {
-            backupDataBtn.addEventListener('click', backupData);
-        }
-    }
+    // initializeOverviewFunctionality() removed - now handled by initializeOverviewForms() when section loads
 
     function initializeMessagesFunctionality() {
         // Compose message button
@@ -2442,59 +3324,6 @@
         const exportBtn = document.getElementById('export-messages');
         if (exportBtn) {
             exportBtn.addEventListener('click', exportMessages);
-        }
-    }
-
-    async function sendQuickMessage() {
-        const sessionId = document.getElementById('quick-session-select').value;
-        const phone = document.getElementById('quick-phone').value;
-        const message = document.getElementById('quick-message').value;
-        const mediaFile = document.getElementById('quick-media').files[0];
-
-        if (!sessionId || !phone || !message) {
-            alert('Please fill in all required fields');
-            return;
-        }
-
-        try {
-            let response;
-            
-            if (mediaFile) {
-                // Send media message
-                const formData = new FormData();
-                formData.append('to', phone);
-                formData.append('caption', message);
-                formData.append('media', mediaFile);
-
-                const headers = getApiKeyHeaders();
-                delete headers['Content-Type']; // Let browser set content-type for FormData
-                
-                response = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: formData
-                });
-            } else {
-                // Send text message
-                response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        to: phone,
-                        message: message
-                    })
-                });
-            }
-
-            if (response.success || response.ok) {
-                alert('Message sent successfully!');
-                document.getElementById('quick-message-form').reset();
-                loadMessagesData(); // Refresh messages if on messages page
-            } else {
-                throw new Error(response.error || 'Failed to send message');
-            }
-        } catch (error) {
-            console.error('Error sending message:', error);
-            alert('Error sending message: ' + error.message);
         }
     }
 

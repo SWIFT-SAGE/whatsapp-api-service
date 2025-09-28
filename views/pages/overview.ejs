@@ -2,7 +2,7 @@
 <div id="dashboard-overview" class="dashboard-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Dashboard Overview</h2>
-        <div class="badge bg-success fs-6" id="plan-badge">Basic Plan</div>
+        <div class="badge bg-success fs-6" id="plan-badge">Loading...</div>
     </div>
 
     <!-- Stats Cards -->
@@ -14,10 +14,10 @@
                 </div>
                 <div class="stat-info">
                     <h3 id="messages-sent" data-stat="totalMessages">
-                        <%= stats.totalMessages.toLocaleString() %>
+                        <span class="loading-placeholder">Loading...</span>
                     </h3>
                     <p>Messages Sent</p>
-                    <small class="text-muted">of 10,000 this month</small>
+                    <small class="text-muted" id="message-limit-text">Loading...</small>
                 </div>
             </div>
         </div>
@@ -28,7 +28,7 @@
                 </div>
                 <div class="stat-info">
                     <h3 id="active-sessions" data-stat="activeSessions">
-                        <%= stats.activeSessions %>
+                        <span class="loading-placeholder">Loading...</span>
                     </h3>
                     <p>Active Sessions</p>
                     <small class="text-muted">WhatsApp connected</small>
@@ -42,7 +42,7 @@
                 </div>
                 <div class="stat-info">
                     <h3 id="delivery-rate" data-stat="deliveryRate">
-                        <%= stats.deliveryRate %>%
+                        <span class="loading-placeholder">Loading...</span>
                     </h3>
                     <p>Delivery Rate</p>
                     <small class="text-muted">Last 30 days</small>
@@ -56,7 +56,7 @@
                 </div>
                 <div class="stat-info">
                     <h3 id="total-sessions">
-                        <%= stats.totalSessions %>
+                        <span class="loading-placeholder">Loading...</span>
                     </h3>
                     <p>Total Sessions</p>
                     <small class="text-muted">All systems operational</small>
@@ -65,17 +65,6 @@
         </div>
     </div>
 
-    <!-- Usage Analytics -->
-    <div class="card mb-5">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title m-0"><i class="fas fa-chart-line me-2"></i>Usage Analytics
-                </h5>
-                <span class="text-muted small">Last 30 days</span>
-            </div>
-            <canvas id="messagesChart" height="100"></canvas>
-        </div>
-    </div>
 
     <!-- Quick Actions -->
     <div class="row g-4 mb-4">
@@ -88,13 +77,26 @@
                     <form id="quick-message-form">
                         <div class="mb-3">
                             <label class="form-label">Session</label>
-                            <select class="form-select" id="quick-session-select" required>
-                                <option value="">Select a connected session</option>
-                            </select>
+                            <div class="d-flex">
+                                <select class="form-select" id="quick-session-select" required>
+                                    <option value="">Loading sessions...</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary ms-2" id="refresh-sessions-btn" title="Refresh connected sessions">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-warning ms-2" id="fix-session-status-btn" title="Fix session status for connected sessions">
+                                    <i class="fas fa-wrench"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-info ms-2" id="test-load-sessions-btn" title="Test load sessions function">
+                                    <i class="fas fa-bug"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Connect a WhatsApp session first if no sessions are available. Use the wrench button to fix session status if needed.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Phone Number</label>
                             <input type="tel" class="form-control" id="quick-phone" placeholder="+1234567890" required>
+                            <small class="text-muted">Include country code (e.g., +91 for India, +1 for US)</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Message</label>
@@ -121,30 +123,11 @@
                     <p class="text-muted">Use this key to authenticate your API requests</p>
                     <div class="input-group">
                         <input type="password" class="form-control" id="api-key"
-                            value="<%= (user && user.apiKey) ? user.apiKey : 'Not generated' %>"
+                            value="Loading..."
                             readonly>
-                        <% if (user && user.apiKey) { %>
-                            <button class="btn btn-outline-secondary" type="button"
-                                id="toggle-api-key">
-                                <i class="fas fa-eye" id="api-key-icon"></i>
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button"
-                                id="copy-api-key">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                            <button class="btn btn-warning" type="button"
-                                id="regenerate-api-key" 
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="top" 
-                                title="Generate a new API key (this will invalidate the current key)">
-                                <i class="fas fa-sync-alt"></i>
-                            </button>
-                            <% } else { %>
-                                <button class="btn btn-primary" type="button"
-                                    id="generate-api-key">
-                                    <i class="fas fa-plus me-2"></i>Generate Key
-                                </button>
-                                <% } %>
+                        <div id="api-key-buttons">
+                            <!-- Buttons will be dynamically populated based on API key status -->
+                        </div>
                     </div>
                 </div>
             </div>

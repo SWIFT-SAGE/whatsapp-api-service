@@ -1065,6 +1065,55 @@ export class WhatsAppController {
       });
     }
   }
+
+  /**
+   * Fix session status for sessions with incorrect status
+   */
+  async fixSessionStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user!._id;
+
+      logger.info(`Fixing session status: ${sessionId} for user: ${userId}`);
+
+      // Verify session exists and belongs to user
+      const session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        logger.warn(`Session not found: ${sessionId} for user: ${userId}`);
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found'
+        });
+        return;
+      }
+
+      // Fix the session status
+      const isActuallyConnected = await WhatsAppService.fixSessionStatus(sessionId);
+      
+      // Get updated session data
+      const updatedSession = await WhatsappSession.findOne({ sessionId, userId });
+
+      res.json({
+        success: true,
+        message: `Session status fixed: ${isActuallyConnected ? 'connected' : 'disconnected'}`,
+        session: {
+          sessionId: updatedSession?.sessionId,
+          isConnected: updatedSession?.isConnected,
+          status: updatedSession?.status,
+          phoneNumber: updatedSession?.phoneNumber,
+          lastActivity: updatedSession?.lastActivity
+        }
+      });
+
+    } catch (error) {
+      logger.error('Error fixing session status:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to fix session status',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
 }
 
 export default new WhatsAppController();
