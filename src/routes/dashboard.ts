@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { authenticateToken } from '../middleware/auth';
+import User from '../models/User';
 
 const router = express.Router();
 
@@ -18,9 +19,12 @@ router.get('/section/:section', async (req, res) => {
             return res.status(400).json({ error: 'Invalid section name' });
         }
 
+        // Fetch fresh user data to ensure API key is up to date
+        const freshUser = await User.findById(req.user!._id);
+        
         // Render the section page
         res.render(`pages/${section}`, {
-            user: req.user,
+            user: freshUser || req.user,
             stats: {
                 totalMessages: 0,
                 activeSessions: 0,

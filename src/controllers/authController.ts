@@ -499,7 +499,29 @@ export class AuthController {
   }
 
   /**
-   * Generate new API key
+   * Generate new API key (for users without an API key)
+   */
+  async generateApiKey(req: Request, res: Response): Promise<void> {
+    try {
+      const user = req.user!;
+
+      // Generate new API key
+      user.apiKey = user.generateApiKey();
+      await user.save();
+
+      res.json({
+        success: true,
+        apiKey: user.apiKey,
+        message: 'API key generated successfully'
+      });
+    } catch (error) {
+      logger.error('API key generation error:', error);
+      res.status(500).json({ error: 'Failed to generate API key' });
+    }
+  }
+
+  /**
+   * Regenerate existing API key
    */
   async regenerateApiKey(req: Request, res: Response): Promise<void> {
     try {

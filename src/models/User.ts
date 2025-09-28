@@ -99,7 +99,7 @@ const userSchema = new Schema<IUser>({
   apiKey: {
     type: String,
     unique: true,
-    required: true
+    sparse: true // Allow null/undefined values, but enforce uniqueness when present
   },
   active: {
     type: Boolean,

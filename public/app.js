@@ -428,7 +428,28 @@ function setupEventListeners() {
       e.preventDefault();
       const element = e.target.hasAttribute('data-section') ? e.target : e.target.closest('[data-section]');
       const sectionName = element.getAttribute('data-section');
-      showDashboardSection(sectionName);
+      
+      console.log('Dashboard section navigation clicked:', sectionName);
+      
+      // Use the dashboard's loadSectionPage function if available, otherwise fallback to showDashboardSection
+      if (typeof loadSectionPage === 'function') {
+        console.log('Using loadSectionPage function');
+        // Update sidebar active state first
+        const navLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+        });
+        
+        const activeLink = document.querySelector(`[data-section="${sectionName}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+        
+        loadSectionPage(sectionName);
+      } else {
+        console.log('Using showDashboardSection function');
+        showDashboardSection(sectionName);
+      }
       return;
     }
     
@@ -896,6 +917,17 @@ function updateAuthUI() {
   }
 }
 
+// Function to refresh sessions (can be called from dashboard)
+function refreshSessions() {
+  console.log('refreshSessions() called');
+  if (typeof loadSessions === 'function') {
+    loadSessions();
+  }
+}
+
+// Make refreshSessions available globally
+window.refreshSessions = refreshSessions;
+
 // Dashboard Functions
 async function initializeDashboard() {
   if (!currentUser) return;
@@ -959,7 +991,10 @@ async function initializeDashboard() {
   }
 
   // Load sessions and messages
-  loadSessions();
+  // Only load sessions if user has an API key
+  if (currentUser?.apiKey && currentUser.apiKey !== 'Not generated') {
+    loadSessions();
+  }
   loadMessages();
   
   // Show overview section by default
@@ -972,10 +1007,69 @@ async function loadSessions() {
   const container = document.getElementById('sessions-container');
   if (!container) return;
   
+  // Check if user has an API key before trying to load sessions
+  // Check multiple sources: currentUser, window.currentUser, and sessionStorage
+  let apiKey = currentUser?.apiKey;
+  
+  // Check window.currentUser (updated by dashboard)
+  if (window.currentUser && window.currentUser.apiKey) {
+    apiKey = window.currentUser.apiKey;
+    // Sync the local currentUser with window.currentUser
+    if (currentUser) {
+      currentUser.apiKey = window.currentUser.apiKey;
+    }
+  }
+  
+  // Also check sessionStorage for the most recent user data
+  const storedUser = sessionStorage.getItem('currentUser');
+  if (storedUser) {
+    try {
+      const userObj = JSON.parse(storedUser);
+      if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
+        apiKey = userObj.apiKey;
+        // Update both currentUser objects
+        if (currentUser) {
+          currentUser.apiKey = userObj.apiKey;
+        }
+        if (window.currentUser) {
+          window.currentUser.apiKey = userObj.apiKey;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing stored user:', e);
+    }
+  }
+  
+  console.log('loadSessions - API key check:', {
+    currentUserApiKey: currentUser?.apiKey,
+    windowCurrentUserApiKey: window.currentUser?.apiKey,
+    finalApiKey: apiKey
+  });
+  
+  if (!apiKey || apiKey === 'Not generated') {
+    container.innerHTML = `
+      <div class="col-12">
+        <div class="text-center py-5">
+          <i class="fas fa-key fa-3x text-warning mb-3"></i>
+          <h5 class="text-muted">API Key Required</h5>
+          <p class="text-muted">Please generate an API key first to manage WhatsApp sessions</p>
+          <a href="#" class="btn btn-primary" data-section="overview">
+            <i class="fas fa-key me-2"></i>Go to Overview to Generate API Key
+          </a>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
   try {
-    // JWT authentication is handled by authenticatedFetch helper
-    
-    const response = await authenticatedFetch('/api/whatsapp/sessions');
+    // Use API key authentication for WhatsApp endpoints
+    const response = await fetch('/api/whatsapp/sessions', {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey
+      }
+    });
     
     const data = await response.json();
     

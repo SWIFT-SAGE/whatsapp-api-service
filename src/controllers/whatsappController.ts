@@ -421,42 +421,47 @@ export class WhatsAppController {
         return;
       }
 
-      // Get or generate QR code
-      let qrCode = session.qrCode;
-      if (!qrCode) {
-        try {
-          // Start QR code generation in background
-          WhatsAppService.initializeSession(sessionId, userId.toString()).then(async (generatedQR) => {
-            // Update session with QR code when ready
-            await WhatsappSession.findOneAndUpdate(
-              { sessionId },
-              { qrCode: generatedQR, lastQRGenerated: new Date() }
-            );
-            logger.info(`QR code generated and stored for session: ${sessionId}`);
-          }).catch((error) => {
-            logger.error(`Error generating QR code for session ${sessionId}:`, error);
-          });
+      // Check if QR code exists (raw QR string)
+      if (session.qrCode) {
+        // Generate QR code data URL using qrcode library
+        const QRCode = require('qrcode');
+        const qrCodeDataURL = await QRCode.toDataURL(session.qrCode, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
 
-          // Return response indicating QR code generation is in progress
-          res.json({
-            success: true,
-            qrCode: null,
-            sessionId,
-            message: 'QR code generation in progress'
-          });
-          return;
-        } catch (error) {
-          logger.error(`Error starting QR code generation for session ${sessionId}:`, error);
-          res.status(500).json({ error: 'Failed to start QR code generation' });
-          return;
-        }
+        res.json({
+          success: true,
+          qrCode: qrCodeDataURL,
+          sessionId
+        });
+        return;
       }
 
-      res.json({
-        success: true,
-        qrCode,
-        sessionId
-      });
+      // If no QR code, start generation
+      try {
+        // Start QR code generation in background
+        WhatsAppService.initializeSession(sessionId, userId.toString()).then(async () => {
+          // QR code will be stored in database by the event handler
+        }).catch((error) => {
+          logger.error(`Error generating QR code for session ${sessionId}:`, error);
+        });
+
+        // Return response indicating QR code generation is in progress
+        res.json({
+          success: true,
+          qrCode: null,
+          sessionId,
+          message: 'QR code generation in progress'
+        });
+      } catch (error) {
+        logger.error(`Error starting QR code generation for session ${sessionId}:`, error);
+        res.status(500).json({ error: 'Failed to start QR code generation' });
+      }
     } catch (error) {
       logger.error('Error getting QR code:', error);
       res.status(500).json({ error: 'Failed to retrieve QR code' });

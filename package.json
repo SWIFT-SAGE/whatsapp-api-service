@@ -95,6 +95,7 @@
     "whatsapp-web.js": "^1.22.2",
     "winston": "^3.10.0",
     "winston-daily-rotate-file": "^4.7.1",
+    "wwebjs-mongo": "^1.1.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@ import authRoutes from './auth';
 import whatsappRoutes from './whatsapp';
 import analyticsRoutes from './analytics';
 import dashboardRoutes from './dashboard';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, authenticateApiKey } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.get('/', (req, res) => {
 
 // Route handlers
 router.use('/auth', authRoutes);
-router.use('/whatsapp', authenticateToken, whatsappRoutes);
+router.use('/whatsapp', authenticateApiKey, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
 router.use('/dashboard', dashboardRoutes);
 

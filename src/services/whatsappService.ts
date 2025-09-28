@@ -1,11 +1,9 @@
-import { Client, LocalAuth, MessageMedia, Contact, GroupChat, Message } from 'whatsapp-web.js';
-import QRCode from 'qrcode';
-import path from 'path';
-import fs from 'fs';
-import { logger } from '../utils/logger';
-import WhatsappSession, { IWhatsappSession } from '../models/WhatsappSession';
+import { Client, Message, MessageMedia, RemoteAuth } from 'whatsapp-web.js';
+import { MongoStore } from 'wwebjs-mongo';
+import mongoose from 'mongoose';
+import WhatsappSession from '../models/WhatsappSession';
 import MessageLog from '../models/MessageLog';
-import User from '../models/User';
+import { logger } from '../utils/logger';
 // Socket.io instance will be injected from main app
 
 interface WhatsAppClientManager {
@@ -15,9 +13,23 @@ interface WhatsAppClientManager {
 class WhatsAppService {
   private clients: WhatsAppClientManager = {};
   private initialized: boolean = false;
+  private mongoStore: any = null;
 
   constructor() {
     // Don't initialize sessions in constructor to avoid database connection issues
+    this.initializeMongoStore();
+  }
+
+  /**
+   * Initialize MongoDB store for WhatsApp sessions
+   */
+  private initializeMongoStore(): void {
+    try {
+      this.mongoStore = new MongoStore({ mongoose: mongoose });
+      logger.info('MongoDB store initialized for WhatsApp sessions');
+    } catch (error) {
+      logger.error('Error initializing MongoDB store:', error);
+    }
   }
 
   /**
@@ -62,6 +74,8 @@ class WhatsAppService {
     return this.initialize();
   }
 
+
+
   /**
    * Create a new WhatsApp client
    */
@@ -79,12 +93,11 @@ class WhatsAppService {
         }
       }
 
-      const sessionPath = path.join(process.env.WHATSAPP_SESSION_PATH || './whatsapp-sessions', sessionId);
-
       const client = new Client({
-        authStrategy: new LocalAuth({
+        authStrategy: new RemoteAuth({
+          store: this.mongoStore,
           clientId: sessionId,
-          dataPath: sessionPath
+          backupSyncIntervalMs: 300000 // 5 minutes backup sync interval
         }),
         puppeteer: {
           headless: true,
@@ -95,9 +108,23 @@ class WhatsAppService {
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-          ]
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-extensions',
+            '--disable-plugins',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-translate',
+            '--hide-scrollbars',
+            '--mute-audio',
+            '--no-default-browser-check',
+            '--no-pings',
+            '--disable-background-timer-throttling',
+            '--disable-renderer-backgrounding',
+            '--disable-backgrounding-occluded-windows'
+          ],
+          timeout: 300000 // 5 minutes timeout for browser launch
         }
       });
 
@@ -126,21 +153,41 @@ class WhatsAppService {
     // QR Code generation
     client.on('qr', async (qr) => {
       try {
-        logger.info(`QR code received for session: ${sessionId}, generating data URL...`);
-        const qrCode = await QRCode.toDataURL(qr);
-
         // Update session with QR code
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
-          { qrCode, isConnected: false, lastQRGenerated: new Date() }
+          { 
+            qrCode: qr, // Store raw QR string instead of data URL
+            isConnected: false, 
+            lastQRGenerated: new Date(),
+            status: 'pending'
+          },
+          { new: true }
         );
 
-        // Emit QR code to user (will be implemented when socket.io is available)
-        // io.to(userId).emit('qr-code', { sessionId, qrCode });
-
-        logger.info(`QR code generated and stored for session: ${sessionId}`);
       } catch (error) {
-        logger.error(`Error generating QR code for session ${sessionId}:`, error);
+        logger.error(`Error storing QR code for session ${sessionId}:`, error);
+        await WhatsappSession.findOneAndUpdate(
+          { sessionId },
+          { status: 'error', 'errorLog.lastError': error instanceof Error ? error.message : String(error) }
+        ).catch(err => logger.error('Failed to update session with error:', err));
+      }
+    });
+
+    // Authentication success - RemoteAuth with MongoStore handles auth data automatically
+    client.on('authenticated', async () => {
+      try {
+        // Update session status in our custom session model
+        await WhatsappSession.findOneAndUpdate(
+          { sessionId },
+          { 
+            status: 'connected',
+            lastActivity: new Date()
+          }
+        );
+        logger.info(`Session ${sessionId} authenticated successfully`);
+      } catch (error) {
+        logger.error(`Error updating session status for ${sessionId}:`, error);
       }
     });
 
@@ -156,6 +203,7 @@ class WhatsAppService {
             isConnected: true,
             phoneNumber: info.wid.user,
             qrCode: undefined,
+            status: 'connected',
             deviceInfo: {
               name: info.pushname || 'Unknown',
               version: info.phone.wa_version
@@ -215,7 +263,38 @@ class WhatsAppService {
     // Authentication failure
     client.on('auth_failure', async (msg) => {
       logger.error(`Authentication failed for session ${sessionId}:`, msg);
+      await WhatsappSession.findOneAndUpdate(
+        { sessionId },
+        { 
+          status: 'error', 
+          'errorLog.lastError': `Authentication failed: ${msg}`,
+          'errorLog.lastErrorAt': new Date()
+        }
+      );
       // io.to(userId).emit('auth-failure', { sessionId, message: msg });
+    });
+
+    // Loading screen event
+    client.on('loading_screen', (percent, message) => {
+      logger.info(`Loading screen for session ${sessionId}: ${percent}% - ${message}`);
+    });
+
+    // Client initialization error
+    client.on('change_state', (state) => {
+      logger.info(`Client state changed for session ${sessionId}: ${state}`);
+    });
+
+    // Add error handler for client
+    client.on('error', async (error) => {
+      logger.error(`Client error for session ${sessionId}:`, error);
+      await WhatsappSession.findOneAndUpdate(
+        { sessionId },
+        { 
+          status: 'error', 
+          'errorLog.lastError': error instanceof Error ? error.message : String(error),
+          'errorLog.lastErrorAt': new Date()
+        }
+      );
     });
   }
 
@@ -340,11 +419,7 @@ class WhatsAppService {
         { isConnected: false, qrCode: undefined }
       );
 
-      // Clean up session files
-      const sessionPath = path.join(process.env.WHATSAPP_SESSION_PATH || './whatsapp-sessions', sessionId);
-      if (fs.existsSync(sessionPath)) {
-        fs.rmSync(sessionPath, { recursive: true, force: true });
-      }
+      // Session data is stored in MongoDB, no file cleanup needed
 
       logger.info(`Session ${sessionId} destroyed successfully`);
       return true;
@@ -457,10 +532,10 @@ class WhatsAppService {
           return;
         }
 
-        // Increase timeout to 60 seconds for better reliability
+        // Increase timeout to 5 minutes to match frontend timeout
         const timeout = setTimeout(() => {
           reject(new Error('QR code generation timeout'));
-        }, 60000); // 60 second timeout
+        }, 300000); // 300 second (5 minutes) timeout
 
         // Check if QR code is already available in database
         const checkExistingQR = async () => {
@@ -492,19 +567,13 @@ class WhatsAppService {
             client.once('qr', async (qr) => {
               clearTimeout(timeout);
               clearInterval(checkInterval);
-              try {
-                const qrCode = await QRCode.toDataURL(qr);
-                resolve(qrCode);
-              } catch (error) {
-                reject(error);
-              }
+              resolve(qr); // Return raw QR string instead of data URL
             });
 
             // Clean up interval on timeout
-            timeout.refresh();
             setTimeout(() => {
               clearInterval(checkInterval);
-            }, 60000);
+            }, 300000); // 5 minutes
           }
         });
 

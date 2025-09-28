@@ -50,6 +50,7 @@ router.use(authenticateToken);
 router.get('/profile', AuthController.getProfile);
 router.put('/profile', updateProfileValidation, AuthController.updateProfile);
 router.post('/change-password', changePasswordValidation, AuthController.changePassword);
+router.post('/generate-api-key', AuthController.generateApiKey);
 router.post('/regenerate-api-key', AuthController.regenerateApiKey);
 router.get('/email-config', AuthController.checkEmailConfig);
 router.post('/send-verification-email', AuthController.sendVerificationEmail);

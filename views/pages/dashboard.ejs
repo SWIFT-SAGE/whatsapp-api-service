@@ -103,7 +103,6 @@
                                 document.body.style.overflow = '';
                                 document.body.style.paddingRight = '';
                                 
-                                console.log('QR modal closed, backdrop cleaned up');
                             });
                         }
                     });
@@ -149,6 +148,7 @@
         sidebarLinks.forEach(link => {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
+                e.stopPropagation(); // Prevent event bubbling to avoid double execution
 
                 // Remove active class from all links
                 sidebarLinks.forEach(l => l.classList.remove('active'));
@@ -178,7 +178,7 @@
         if (generateBtn) {
             generateBtn.addEventListener('click', async function () {
                 try {
-                    const data = await makeApiCall('/api/auth/regenerate-api-key', {
+                    const data = await makeApiCall('/api/auth/generate-api-key', {
                         method: 'POST'
                     });
 
@@ -194,6 +194,38 @@
                         // Update currentUser object with new API key
                         if (window.currentUser) {
                             window.currentUser.apiKey = apiKey;
+                            console.log('Updated window.currentUser.apiKey:', apiKey);
+                        }
+                        
+                        // Also update sessionStorage
+                        const storedUser = sessionStorage.getItem('currentUser');
+                        if (storedUser) {
+                            try {
+                                const userObj = JSON.parse(storedUser);
+                                userObj.apiKey = apiKey;
+                                sessionStorage.setItem('currentUser', JSON.stringify(userObj));
+                                console.log('Updated sessionStorage currentUser with new API key');
+                            } catch (e) {
+                                console.error('Error updating sessionStorage user:', e);
+                            }
+                        }
+
+                        // Reload sessions if loadSessions function exists
+                        if (typeof loadSessions === 'function') {
+                            loadSessions();
+                        }
+                        
+                        // Also call the global refresh function if available
+                        if (typeof window.refreshSessions === 'function') {
+                            window.refreshSessions();
+                        }
+                        
+                        // If we're currently on the sessions page, reload it
+                        const currentSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                        if (currentSection === 'sessions') {
+                            setTimeout(() => {
+                                loadSectionPage('sessions');
+                            }, 500);
                         }
                     } else if (!apiKey) {
                         throw new Error('API key not found in response');
@@ -297,13 +329,10 @@
                     button.classList.add('disabled');
 
                     // Show QR code modal first
-                    console.log('Calling showQRCodeModal...');
                     showQRCodeModal(sessionId);
 
                     // Wait a moment for modal to fully render, then start QR code generation
-                    console.log('Starting QR code generation...');
                     setTimeout(async () => {
-                        console.log('Starting QR code generation after timeout...');
                         await startQRCodeGeneration(sessionId);
                     }, 500); // Increased timeout to 500ms
 
@@ -391,142 +420,7 @@
             }
         });
 
-        // Create new session
-        document.getElementById('create-session-btn')?.addEventListener('click', async function () {
-            let originalContent = this.innerHTML; // Declare at function scope
-            
-            try {
-                // Show loading state
-                originalContent = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
-                this.disabled = true;
-                this.classList.add('disabled');
-
-                const response = await makeApiCall('/api/whatsapp/sessions', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: 'Session ' + new Date().toLocaleString(),
-                        settings: {
-                            autoReply: false,
-                            allowGroups: true,
-                            allowUnknown: true
-                        }
-                    })
-                });
-
-                // Reset button state
-                this.innerHTML = originalContent;
-                this.disabled = false;
-                this.classList.remove('disabled');
-
-                // Show QR code modal for the new session
-                if (response.session && response.session.sessionId) {
-                    showQRCodeModal(response.session.sessionId);
-                    // Wait a moment for modal to fully render, then start QR code generation
-                    setTimeout(async () => {
-                        await startQRCodeGeneration(response.session.sessionId);
-                    }, 100);
-                        // Refresh sessions data after showing QR code
-                        setTimeout(() => {
-                            loadSessionsData();
-                            // Also refresh overview stats
-                            if (typeof loadSessions === 'function') {
-                                loadSessions();
-                            }
-                        }, 1000);
-                    } else {
-                        alert('Session created successfully!');
-                        // Refresh sessions data instead of reloading page
-                        loadSessionsData();
-                        // Also refresh overview stats
-                        if (typeof loadSessions === 'function') {
-                            loadSessions();
-                        }
-                    }
-            } catch (error) {
-                console.error('Error creating session:', error);
-                
-                // Reset button state on error
-                this.innerHTML = originalContent;
-                this.disabled = false;
-                this.classList.remove('disabled');
-                
-                // Show user-friendly error message
-                if (error.message.includes('Maximum sessions reached')) {
-                    alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
-                } else {
-                    alert('Error creating session: ' + error.message);
-                }
-            }
-        });
-
-        document.getElementById('create-first-session-btn')?.addEventListener('click', async function () {
-            let originalContent = this.innerHTML; // Declare at function scope
-            
-            try {
-                // Show loading state
-                originalContent = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
-                this.disabled = true;
-                this.classList.add('disabled');
-
-                const response = await makeApiCall('/api/whatsapp/sessions', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: 'Session ' + new Date().toLocaleString(),
-                        settings: {
-                            autoReply: false,
-                            allowGroups: true,
-                            allowUnknown: true
-                        }
-                    })
-                });
-
-                // Reset button state
-                this.innerHTML = originalContent;
-                this.disabled = false;
-                this.classList.remove('disabled');
-
-                // Show QR code modal for the new session
-                if (response.session && response.session.sessionId) {
-                    showQRCodeModal(response.session.sessionId);
-                    // Wait a moment for modal to fully render, then start QR code generation
-                    setTimeout(async () => {
-                        await startQRCodeGeneration(response.session.sessionId);
-                    }, 100);
-                    // Refresh sessions data after showing QR code
-                    setTimeout(() => {
-                        loadSessionsData();
-                        // Also refresh overview stats
-                        if (typeof loadSessions === 'function') {
-                            loadSessions();
-                        }
-                    }, 1000);
-                } else {
-                    alert('Session created successfully!');
-                    // Refresh sessions data instead of reloading page
-                    loadSessionsData();
-                    // Also refresh overview stats
-                    if (typeof loadSessions === 'function') {
-                        loadSessions();
-                    }
-                }
-            } catch (error) {
-                console.error('Error creating session:', error);
-                
-                // Reset button state on error
-                this.innerHTML = originalContent;
-                this.disabled = false;
-                this.classList.remove('disabled');
-                
-                // Show user-friendly error message
-                if (error.message.includes('Maximum sessions reached')) {
-                    alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
-                } else {
-                    alert('Error creating session: ' + error.message);
-                }
-            }
-        });
+        // Session button initialization will be handled by initializeSessionButtons() function
 
         // Quick message form
         document.getElementById('quick-message-form')?.addEventListener('submit', async function (e) {
@@ -561,18 +455,22 @@
             }
         });
 
-        // Auto-refresh dashboard stats every 30 seconds (only if user is logged in)
+        // Auto-refresh dashboard stats every 30 seconds (only if user is logged in and on overview)
         setInterval(async function () {
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
             if (isLoggedIn) {
-                await loadDashboardData();
-                // Restore API key visibility state after refresh
-                if (isApiKeyVisible) {
-                    const apiKeyInput = document.getElementById('api-key');
-                    const apiKeyIcon = document.getElementById('api-key-icon');
-                    if (apiKeyInput && apiKeyIcon) {
-                        apiKeyInput.type = 'text';
-                        apiKeyIcon.className = 'fas fa-eye-slash';
+                // Only refresh data for the currently active section
+                const activeSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                if (activeSection === 'overview') {
+                    await loadDashboardData();
+                    // Restore API key visibility state after refresh
+                    if (isApiKeyVisible) {
+                        const apiKeyInput = document.getElementById('api-key');
+                        const apiKeyIcon = document.getElementById('api-key-icon');
+                        if (apiKeyInput && apiKeyIcon) {
+                            apiKeyInput.type = 'text';
+                            apiKeyIcon.className = 'fas fa-eye-slash';
+                        }
                     }
                 }
             }
@@ -724,11 +622,59 @@
     // Global variable to track API key visibility state
     let isApiKeyVisible = false;
 
+    // Ensure API key buttons are present when user has an API key
+    function ensureApiKeyButtons() {
+        const apiKeyInput = document.getElementById('api-key');
+        const inputGroup = apiKeyInput?.parentElement;
+        
+        if (!inputGroup) return;
+        
+        // Check if regenerate button already exists
+        if (document.getElementById('regenerate-api-key')) {
+            return; // Buttons already exist
+        }
+        
+        // Remove generate button if it exists
+        const generateBtn = document.getElementById('generate-api-key');
+        if (generateBtn) {
+            generateBtn.remove();
+        }
+        
+        // Add the API key management buttons
+        const buttonsHTML = `
+            <button class="btn btn-outline-secondary" type="button" id="toggle-api-key">
+                <i class="fas fa-eye" id="api-key-icon"></i>
+            </button>
+            <button class="btn btn-outline-secondary" type="button" id="copy-api-key">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="btn btn-warning" type="button" id="regenerate-api-key" 
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top" 
+                    title="Generate a new API key (this will invalidate the current key)">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        `;
+        
+        // Add buttons to the input group
+        inputGroup.insertAdjacentHTML('beforeend', buttonsHTML);
+        
+        console.log('API key buttons added dynamically');
+    }
+
     // Initialize API key buttons function
     function initializeApiKeyButtons() {
+        console.log('initializeApiKeyButtons() called');
+        
+        // Check if user has an API key and ensure buttons are present
+        const apiKeyInput = document.getElementById('api-key');
+        if (apiKeyInput && apiKeyInput.value && apiKeyInput.value !== 'Not generated') {
+            // User has an API key, make sure all buttons are present
+            ensureApiKeyButtons();
+        }
+        
         // Toggle API key visibility
         const toggleBtn = document.getElementById('toggle-api-key');
-        const apiKeyInput = document.getElementById('api-key');
         const apiKeyIcon = document.getElementById('api-key-icon');
 
         if (toggleBtn && apiKeyInput && apiKeyIcon) {
@@ -793,14 +739,307 @@
                 }
             });
         }
+
+        // Regenerate API key functionality
+        const regenerateBtn = document.getElementById('regenerate-api-key');
+        console.log('Regenerate button found:', !!regenerateBtn);
+        if (regenerateBtn) {
+            // Remove existing event listeners to prevent duplicates
+            const newRegenerateBtn = regenerateBtn.cloneNode(true);
+            regenerateBtn.parentNode.replaceChild(newRegenerateBtn, regenerateBtn);
+
+            newRegenerateBtn.addEventListener('click', async function () {
+                // Show confirmation dialog
+                if (!confirm('Are you sure you want to regenerate your API key? This will invalidate your current key and any applications using it will need to be updated.')) {
+                    return;
+                }
+
+                try {
+                    // Show loading state
+                    const originalContent = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    this.disabled = true;
+                    this.classList.add('disabled');
+
+                    const data = await makeApiCall('/api/auth/regenerate-api-key', {
+                        method: 'POST'
+                    });
+
+                    // Get reference to the API key input field
+                    const currentApiKeyInput = document.getElementById('api-key');
+
+                    // Update the input field - handle different response structures
+                    const apiKey = data?.apiKey || data.apiKey || data.data?.data?.apiKey;
+                    if (apiKey && currentApiKeyInput) {
+                        currentApiKeyInput.value = apiKey;
+
+                        // Update currentUser object with new API key
+                        if (window.currentUser) {
+                            window.currentUser.apiKey = apiKey;
+                            console.log('Updated window.currentUser.apiKey:', apiKey);
+                        }
+                        
+                        // Also update sessionStorage
+                        const storedUser = sessionStorage.getItem('currentUser');
+                        if (storedUser) {
+                            try {
+                                const userObj = JSON.parse(storedUser);
+                                userObj.apiKey = apiKey;
+                                sessionStorage.setItem('currentUser', JSON.stringify(userObj));
+                                console.log('Updated sessionStorage currentUser with new API key');
+                            } catch (e) {
+                                console.error('Error updating sessionStorage user:', e);
+                            }
+                        }
+
+                        // Reload sessions if loadSessions function exists
+                        if (typeof loadSessions === 'function') {
+                            loadSessions();
+                        }
+                        
+                        // Also call the global refresh function if available
+                        if (typeof window.refreshSessions === 'function') {
+                            window.refreshSessions();
+                        }
+                        
+                        // If we're currently on the sessions page, reload it
+                        const currentSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                        if (currentSection === 'sessions') {
+                            setTimeout(() => {
+                                loadSectionPage('sessions');
+                            }, 500);
+                        }
+
+                        // Show success message
+                        alert('API key regenerated successfully! Please update any applications using the old key.');
+                    } else if (!apiKey) {
+                        throw new Error('API key not found in response');
+                    } else {
+                        throw new Error('API key input field not found');
+                    }
+
+                    // Reset button state
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+
+                } catch (error) {
+                    console.error('Error regenerating API key:', error);
+                    
+                    // Reset button state
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+                    
+                    alert('Error regenerating API key: ' + error.message);
+                }
+            });
+        }
+    }
+
+    // Initialize Session Buttons function
+    function initializeSessionButtons() {
+        console.log('initializeSessionButtons() called');
+        
+        // Create new session button
+        const createSessionBtn = document.getElementById('create-session-btn');
+        if (createSessionBtn) {
+            // Remove existing event listeners to prevent duplicates
+            const newCreateSessionBtn = createSessionBtn.cloneNode(true);
+            createSessionBtn.parentNode.replaceChild(newCreateSessionBtn, createSessionBtn);
+
+            newCreateSessionBtn.addEventListener('click', async function () {
+                let originalContent = this.innerHTML;
+                
+                try {
+                    // Check if API key exists first
+                    const apiKey = getApiKey();
+                    if (!apiKey) {
+                        alert('Please generate an API key first!\n\n1. Go to the Overview section\n2. Click "Generate API Key"\n3. Then return here to create sessions');
+                        
+                        // Redirect to overview section
+                        const overviewLink = document.querySelector('[data-section="overview"]');
+                        if (overviewLink) {
+                            overviewLink.click();
+                        }
+                        return;
+                    }
+
+                    // Show loading state
+                    originalContent = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
+                    this.disabled = true;
+                    this.classList.add('disabled');
+
+                    const response = await makeApiCall('/api/whatsapp/sessions', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            name: 'Session ' + new Date().toLocaleString(),
+                            settings: {
+                                autoReply: false,
+                                allowGroups: true,
+                                allowUnknown: true
+                            }
+                        })
+                    });
+
+                    // Reset button state
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+
+                    // Show QR code modal for the new session
+                    if (response.session && response.session.sessionId) {
+                        showQRCodeModal(response.session.sessionId);
+                        // Wait a moment for modal to fully render, then start QR code generation
+                        setTimeout(async () => {
+                            await startQRCodeGeneration(response.session.sessionId);
+                        }, 100);
+                        // Refresh sessions data after showing QR code
+                        setTimeout(() => {
+                            loadSessionsData();
+                            // Also refresh overview stats
+                            if (typeof loadSessions === 'function') {
+                                loadSessions();
+                            }
+                        }, 1000);
+                    } else {
+                        alert('Session created successfully!');
+                        // Refresh sessions data instead of reloading page
+                        loadSessionsData();
+                        // Also refresh overview stats
+                        if (typeof loadSessions === 'function') {
+                            loadSessions();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error creating session:', error);
+                    
+                    // Reset button state on error
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+                    
+                    // Show user-friendly error message
+                    if (error.message.includes('Maximum sessions reached')) {
+                        alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
+                    } else if (error.message.includes('API key not found')) {
+                        alert('Please generate an API key first!\n\n1. Go to the Overview section\n2. Click "Generate API Key"\n3. Then return here to create sessions');
+                        
+                        // Redirect to overview section
+                        const overviewLink = document.querySelector('[data-section="overview"]');
+                        if (overviewLink) {
+                            overviewLink.click();
+                        }
+                    } else {
+                        alert('Error creating session: ' + error.message);
+                    }
+                }
+            });
+        }
+
+        // Create first session button
+        const createFirstSessionBtn = document.getElementById('create-first-session-btn');
+        if (createFirstSessionBtn) {
+            // Remove existing event listeners to prevent duplicates
+            const newCreateFirstSessionBtn = createFirstSessionBtn.cloneNode(true);
+            createFirstSessionBtn.parentNode.replaceChild(newCreateFirstSessionBtn, createFirstSessionBtn);
+
+            newCreateFirstSessionBtn.addEventListener('click', async function () {
+                let originalContent = this.innerHTML;
+                
+                try {
+                    // Check if API key exists first
+                    const apiKey = getApiKey();
+                    if (!apiKey) {
+                        alert('Please generate an API key first!\n\n1. Go to the Overview section\n2. Click "Generate API Key"\n3. Then return here to create sessions');
+                        
+                        // Redirect to overview section
+                        const overviewLink = document.querySelector('[data-section="overview"]');
+                        if (overviewLink) {
+                            overviewLink.click();
+                        }
+                        return;
+                    }
+
+                    // Show loading state
+                    originalContent = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating Session...';
+                    this.disabled = true;
+                    this.classList.add('disabled');
+
+                    const response = await makeApiCall('/api/whatsapp/sessions', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            name: 'Session ' + new Date().toLocaleString(),
+                            settings: {
+                                autoReply: false,
+                                allowGroups: true,
+                                allowUnknown: true
+                            }
+                        })
+                    });
+
+                    // Reset button state
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+
+                    // Show QR code modal for the new session
+                    if (response.session && response.session.sessionId) {
+                        showQRCodeModal(response.session.sessionId);
+                        // Wait a moment for modal to fully render, then start QR code generation
+                        setTimeout(async () => {
+                            await startQRCodeGeneration(response.session.sessionId);
+                        }, 100);
+                        // Refresh sessions data after showing QR code
+                        setTimeout(() => {
+                            loadSessionsData();
+                            // Also refresh overview stats
+                            if (typeof loadSessions === 'function') {
+                                loadSessions();
+                            }
+                        }, 1000);
+                    } else {
+                        alert('Session created successfully!');
+                        // Refresh sessions data instead of reloading page
+                        loadSessionsData();
+                        // Also refresh overview stats
+                        if (typeof loadSessions === 'function') {
+                            loadSessions();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error creating session:', error);
+                    
+                    // Reset button state on error
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+                    
+                    // Show user-friendly error message
+                    if (error.message.includes('Maximum sessions reached')) {
+                        alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
+                    } else if (error.message.includes('API key not found')) {
+                        alert('Please generate an API key first!\n\n1. Go to the Overview section\n2. Click "Generate API Key"\n3. Then return here to create sessions');
+                        
+                        // Redirect to overview section
+                        const overviewLink = document.querySelector('[data-section="overview"]');
+                        if (overviewLink) {
+                            overviewLink.click();
+                        }
+                    } else {
+                        alert('Error creating session: ' + error.message);
+                    }
+                }
+            });
+        }
     }
 
     // QR Code Modal Functions
     let currentSessionId = null;
 
     function showQRCodeModal(sessionId) {
-        console.log('showQRCodeModal called with sessionId:', sessionId);
-        console.log('Current time:', new Date().toISOString());
         currentSessionId = sessionId;
         
         // Clean up any existing backdrops before showing modal
@@ -821,7 +1060,6 @@
 
         // Reset modal content to show initial loading state with progress
         const container = document.getElementById('qr-code-container');
-        console.log('QR container found:', !!container);
         if (container) {
             container.innerHTML = `
                 <div class="text-center">
@@ -829,7 +1067,7 @@
                         <span class="visually-hidden">Connecting...</span>
                     </div>
                     <p class="text-muted">Connecting to WhatsApp...</p>
-                    <p class="text-muted small">This may take up to 60 seconds</p>
+                    <p class="text-muted small">This may take up to 5 minutes</p>
                     <div class="progress mt-3" style="height: 8px;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
                              role="progressbar" 
@@ -843,7 +1081,6 @@
                     </p>
                 </div>
             `;
-            console.log('QR container updated with progress state');
         } else {
             console.error('QR container not found!');
         }
@@ -851,20 +1088,18 @@
         // Show modal
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
-        console.log('Modal shown, ready for QR code generation...');
         
         // Force a re-render by updating the container again after modal is shown
         setTimeout(() => {
             const container = document.getElementById('qr-code-container');
             if (container) {
-                console.log('Force updating QR container after modal show...');
                 container.innerHTML = `
                     <div class="text-center">
                         <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
                             <span class="visually-hidden">Connecting...</span>
                         </div>
                         <p class="text-muted">Connecting to WhatsApp...</p>
-                        <p class="text-muted small">This may take up to 60 seconds</p>
+                        <p class="text-muted small">This may take up to 5 minutes</p>
                         <div class="progress mt-3" style="height: 8px;">
                             <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
                                  role="progressbar" 
@@ -878,7 +1113,6 @@
                         </p>
                     </div>
                 `;
-                console.log('QR container force updated');
             }
         }, 50);
         
@@ -887,7 +1121,6 @@
     }
 
     async function startQRCodeGeneration(sessionId) {
-        console.log('Starting QR code generation for session:', sessionId);
         
         // Update modal title to show generation in progress
         const modalTitle = document.querySelector('#qrCodeModal .modal-title');
@@ -907,7 +1140,7 @@
                         <span class="visually-hidden">Generating QR Code...</span>
                     </div>
                     <p class="text-muted">Generating QR code, please wait...</p>
-                    <p class="text-muted small">This may take up to 60 seconds</p>
+                    <p class="text-muted small">This may take up to 5 minutes</p>
                     <div class="progress mt-3" style="height: 8px;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" 
                              role="progressbar" 
@@ -924,17 +1157,15 @@
         }
 
         // Start polling for QR code
-        const maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds max
+        const maxAttempts = 150; // 150 attempts * 2 seconds = 300 seconds (5 minutes) max
         let attempts = 0;
 
         const pollForQRCode = async () => {
             try {
                 attempts++;
-                console.log(`Polling for QR code, attempt ${attempts}/${maxAttempts}`);
 
                 // Update progress display
                 const progress = Math.min((attempts / maxAttempts) * 100, 100);
-                console.log(`Progress: ${Math.round(progress)}% - QR generation in progress...`);
                 
                 // Update progress elements directly instead of replacing entire container
                 const progressBar = document.getElementById('qr-progress-bar');
@@ -1008,7 +1239,7 @@
                                     <span class="visually-hidden">Generating QR Code...</span>
                                 </div>
                                 <p class="text-muted">Generating QR code, please wait...</p>
-                                <p class="text-muted small">This may take up to 60 seconds</p>
+                                <p class="text-muted small">This may take up to 5 minutes</p>
                                 <div class="progress mt-3" style="height: 8px;">
                                     <div class="progress-bar progress-bar-striped progress-bar-animated ${progressBarColor}" 
                                          role="progressbar" 
@@ -1037,10 +1268,8 @@
                 document.title = `[${Math.round(progress)}%] ${originalTitle}`;
 
                 const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr`);
-                console.log('QR code poll response:', response);
 
                 if (response.success && response.qrCode) {
-                    console.log('QR code found, displaying...');
                     
                     // Reset browser tab title
                     document.title = document.title.replace(/^\[\d+%\]\s*/, '');
@@ -1049,7 +1278,6 @@
                     return; // Success, stop polling
                 } else if (response.success && !response.qrCode) {
                     // QR code generation in progress, continue polling
-                    console.log('QR code generation in progress, continuing to poll...');
                     
                     // Update modal title to show progress
                     const modalTitle = document.querySelector('#qrCodeModal .modal-title');
@@ -1063,7 +1291,7 @@
                     if (attempts < maxAttempts) {
                         setTimeout(pollForQRCode, 2000); // Poll every 2 seconds
                     } else {
-                        throw new Error('QR code generation timeout after 60 seconds');
+                        throw new Error('QR code generation timeout after 5 minutes');
                     }
                 } else {
                     throw new Error(response.message || 'Failed to generate QR code');
@@ -1092,17 +1320,14 @@
 
     async function loadQRCode(sessionId, qrCodeData = null) {
         try {
-            console.log('Loading QR code for session:', sessionId);
             
             let response;
             if (qrCodeData) {
                 // Use provided QR code data
                 response = qrCodeData;
-                console.log('Using provided QR code data:', response);
             } else {
                 // Make API call
                 response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}/qr`);
-                console.log('QR code response:', response);
             }
 
             if (response.success && response.qrCode) {
@@ -1137,7 +1362,6 @@
                             QR Code generated successfully
                         </p>
                     `;
-                console.log('QR code displayed successfully');
             } else {
                 throw new Error(response.message || 'Failed to generate QR code');
             }
@@ -1215,18 +1439,41 @@
 
     // Global API functions
     function getApiKey() {
-        // First try to get API key from currentUser (most reliable)
+        // Use comprehensive API key checking (same as loadSessionsData)
         let apiKey = '';
+        
+        // Check window.currentUser first (updated by dashboard)
         if (window.currentUser && window.currentUser.apiKey) {
             apiKey = window.currentUser.apiKey;
-        } else {
-            // Fallback to input field
+        }
+        
+        // Also check sessionStorage for the most recent user data
+        if (!apiKey) {
+            const storedUser = sessionStorage.getItem('currentUser');
+            if (storedUser) {
+                try {
+                    const userObj = JSON.parse(storedUser);
+                    if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
+                        apiKey = userObj.apiKey;
+                    }
+                } catch (e) {
+                    console.error('Error parsing stored user in getApiKey:', e);
+                }
+            }
+        }
+        
+        // Fallback to input field if available (on overview page)
+        if (!apiKey) {
             const apiKeyInput = document.getElementById('api-key');
-            apiKey = apiKeyInput ? apiKeyInput.value : '';
+            if (apiKeyInput && apiKeyInput.value && apiKeyInput.value !== 'Not generated') {
+                apiKey = apiKeyInput.value;
+            }
         }
 
+        console.log('getApiKey() result:', apiKey);
+
         if (!apiKey || apiKey === 'Not generated') {
-            throw new Error('API key not found. Please generate an API key first.');
+            return null; // Return null instead of throwing error
         }
 
         return apiKey;
@@ -1250,6 +1497,9 @@
 
     function getApiKeyHeaders() {
         const apiKey = getApiKey();
+        if (!apiKey) {
+            throw new Error('API key not found. Please generate an API key first.');
+        }
         return {
             'Content-Type': 'application/json',
             'x-api-key': apiKey
@@ -1380,6 +1630,7 @@
     // Load section page dynamically
     async function loadSectionPage(section) {
         console.log('loadSectionPage called with section:', section);
+        console.log('Auth token available:', !!sessionStorage.getItem('authToken'));
         
         try {
             // Show loading state
@@ -1396,14 +1647,18 @@
             }
 
             // Load the section page content
+            console.log(`Fetching section: /api/dashboard/section/${section}`);
             const response = await fetch(`/api/dashboard/section/${section}`, {
                 headers: {
                     'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
                     'Content-Type': 'application/json'
                 }
             });
+            console.log(`Response status: ${response.status} ${response.statusText}`);
             if (!response.ok) {
-                throw new Error(`Failed to load ${section} page: ${response.statusText}`);
+                const errorText = await response.text();
+                console.error(`Error response body:`, errorText);
+                throw new Error(`Failed to load ${section} page: ${response.statusText} - ${errorText}`);
             }
             
             const html = await response.text();
@@ -1413,6 +1668,20 @@
 
             // Load section-specific data after page is loaded
             await loadSectionData(section);
+            
+            // Re-initialize API key buttons if we're on the overview section
+            if (section === 'overview') {
+                setTimeout(() => {
+                    initializeApiKeyButtons();
+                }, 100);
+            }
+            
+            // Initialize session buttons if we're on the sessions section
+            if (section === 'sessions') {
+                setTimeout(() => {
+                    initializeSessionButtons();
+                }, 100);
+            }
             
         } catch (error) {
             console.error('Error loading section page:', error);
@@ -1471,9 +1740,58 @@
             }
 
             // Check if API key exists for WhatsApp endpoints
-            const apiKey = document.getElementById('api-key')?.value;
+            // Use comprehensive API key checking (same as app.js loadSessions)
+            let apiKey = '';
+            
+            // Check window.currentUser first (updated by dashboard)
+            if (window.currentUser && window.currentUser.apiKey) {
+                apiKey = window.currentUser.apiKey;
+            }
+            
+            // Also check sessionStorage for the most recent user data
+            const storedUser = sessionStorage.getItem('currentUser');
+            if (storedUser && !apiKey) {
+                try {
+                    const userObj = JSON.parse(storedUser);
+                    if (userObj.apiKey && userObj.apiKey !== 'Not generated') {
+                        apiKey = userObj.apiKey;
+                    }
+                } catch (e) {
+                    console.error('Error parsing stored user:', e);
+                }
+            }
+            
+            // Fallback to input field if available (on overview page)
+            if (!apiKey) {
+                const apiKeyInput = document.getElementById('api-key');
+                if (apiKeyInput && apiKeyInput.value && apiKeyInput.value !== 'Not generated') {
+                    apiKey = apiKeyInput.value;
+                }
+            }
+            
+            console.log('loadSessionsData - API key check:', {
+                windowCurrentUserApiKey: window.currentUser?.apiKey,
+                sessionStorageApiKey: storedUser ? JSON.parse(storedUser).apiKey : 'none',
+                finalApiKey: apiKey
+            });
+            
             if (!apiKey || apiKey === 'Not generated') {
-                showError('sessions', 'Please generate an API key first');
+                // Show a friendly message instead of an error for users without API keys
+                const container = document.getElementById('sessions-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="text-center py-5">
+                                <i class="fas fa-key fa-3x text-warning mb-3"></i>
+                                <h5 class="text-muted">API Key Required</h5>
+                                <p class="text-muted">Please generate an API key first to manage WhatsApp sessions</p>
+                                <a href="#" class="btn btn-primary" data-section="overview">
+                                    <i class="fas fa-key me-2"></i>Go to Overview to Generate API Key
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
                 hideLoading('sessions');
                 return;
             }
@@ -1805,7 +2123,7 @@
             }
             console.log(`Updated ${id}:`, value); // Debug log
         } else {
-            console.warn(`Element with id '${id}' not found`); // Debug log
+            console.log(`Element with id '${id}' not found (this is normal if not on overview page)`); // Debug log
         }
     }
 
