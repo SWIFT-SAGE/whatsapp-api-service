@@ -3,14 +3,14 @@
   "version": "1.0.0",
   "description": "A production-ready WhatsApp API service built with Node.js, Express, TypeScript, and whatsapp-web.js. Features include session management, message handling, webhooks, analytics, rate limiting, and comprehensive monitoring.",
   "license": "MIT",
-  "author": "Your Name <your.email@example.com>",
-  "homepage": "https://github.com/yourusername/whatsapp-api-service#readme",
+  "author": "Jasmit Singh <jasmit.singh@example.com>",
+  "homepage": "https://github.com/jasmit/whatsapp-api-service#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/whatsapp-api-service.git"
+    "url": "git+https://github.com/jasmit/whatsapp-api-service.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/whatsapp-api-service/issues"
+    "url": "https://github.com/jasmit/whatsapp-api-service/issues"
   },
   "keywords": [
     "whatsapp",

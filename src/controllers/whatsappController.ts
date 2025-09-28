@@ -5,6 +5,8 @@ import WhatsappSession from '../models/WhatsappSession';
 import MessageLog from '../models/MessageLog';
 import { logger } from '../utils/logger';
 import { generateId } from '../utils/helpers';
+import QRCodeService from '../services/QRCodeService';
+import QRCodeManager from '../services/QRCodeManager';
 
 export class WhatsAppController {
   /**
@@ -403,68 +405,362 @@ export class WhatsAppController {
   }
 
   /**
-   * Get session QR code
+   * Get session QR code using new QR Code Manager
    */
   async getQRCode(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
       const userId = req.user!._id;
 
+      logger.info(`Getting QR code for session: ${sessionId}, user: ${userId}`);
+
+      // Verify session exists and belongs to user
       const session = await WhatsappSession.findOne({ sessionId, userId });
       if (!session) {
+        logger.warn(`Session not found: ${sessionId} for user: ${userId}`);
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found' 
+        });
+        return;
+      }
+
+      // Check if session is already connected
+      if (session.isConnected) {
+        logger.info(`Session ${sessionId} is already connected`);
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is already connected' 
+        });
+        return;
+      }
+
+      // Check QR session status in manager first
+      const qrSession = QRCodeManager.getSession(sessionId);
+      logger.info(`QR session status for ${sessionId}: ${qrSession ? qrSession.status : 'not found'}`);
+      
+      if (qrSession) {
+        switch (qrSession.status) {
+          case 'ready':
+            if (qrSession.qrDataURL) {
+              logger.info(`Returning ready QR code for session: ${sessionId}`);
+              res.json({
+                success: true,
+                qrCode: qrSession.qrDataURL,
+                sessionId,
+                status: 'ready',
+                message: 'QR code is ready to scan',
+                createdAt: qrSession.createdAt,
+                lastUpdated: qrSession.lastUpdated
+              });
+              return;
+            }
+            break;
+            
+          case 'generating':
+            logger.info(`QR code is being generated for session: ${sessionId}`);
+            res.json({
+              success: true,
+              qrCode: null,
+              sessionId,
+              status: 'generating',
+              message: 'QR code is being generated...',
+              createdAt: qrSession.createdAt,
+              lastUpdated: qrSession.lastUpdated
+            });
+            return;
+            
+          case 'initializing':
+            logger.info(`Session is initializing: ${sessionId}`);
+            res.json({
+              success: true,
+              qrCode: null,
+              sessionId,
+              status: 'initializing',
+              message: 'WhatsApp session is initializing...',
+              createdAt: qrSession.createdAt,
+              lastUpdated: qrSession.lastUpdated
+            });
+            return;
+            
+          case 'expired':
+            logger.info(`QR session expired for ${sessionId}, cleaning up`);
+            QRCodeManager.removeSession(sessionId);
+            break;
+            
+          case 'error':
+            logger.error(`QR session error for ${sessionId}: ${qrSession.error}`);
+            res.status(400).json({
+              success: false,
+              error: qrSession.error || 'QR code generation failed',
+              sessionId,
+              status: 'error',
+              details: 'QR code generation encountered an error'
+            });
+            return;
+            
+          case 'connected':
+            logger.info(`Session ${sessionId} is connected via QR manager`);
+            res.status(400).json({ 
+              success: false,
+              error: 'Session is already connected' 
+            });
+            return;
+        }
+      }
+
+      // Fallback: Check database for existing valid QR code
+      if (session.qrCode && session.lastQRGenerated) {
+        const qrAge = new Date().getTime() - session.lastQRGenerated.getTime();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (qrAge < fiveMinutes) {
+          logger.info(`Found valid QR code in database for session: ${sessionId}, age: ${Math.round(qrAge/1000)}s`);
+          
+          try {
+            // Validate and generate data URL from stored QR text
+            const validation = QRCodeService.validateQRText(session.qrCode);
+            if (!validation.valid) {
+              logger.warn(`Invalid QR code in database for session ${sessionId}: ${validation.error}`);
+            } else {
+              const qrResult = await QRCodeService.generateDataURL(session.qrCode);
+              if (qrResult.success) {
+                logger.info(`Successfully generated QR data URL from database for session: ${sessionId}`);
+                res.json({
+                  success: true,
+                  qrCode: qrResult.dataURL,
+                  sessionId,
+                  status: 'ready',
+                  message: 'QR code retrieved from database',
+                  validation: validation,
+                  qrAge: Math.round(qrAge/1000) + 's'
+                });
+                return;
+              } else {
+                logger.error(`Failed to generate QR data URL for session ${sessionId}: ${qrResult.error}`);
+              }
+            }
+          } catch (qrError) {
+            logger.error(`Error processing stored QR code for session ${sessionId}:`, qrError);
+          }
+        } else {
+          logger.info(`QR code in database is expired for session ${sessionId}, age: ${Math.round(qrAge/1000)}s`);
+        }
+      }
+
+      // Start fresh QR code generation
+      logger.info(`Starting fresh QR code generation for session: ${sessionId}`);
+      
+      try {
+        // Clean up any existing QR session
+        QRCodeManager.removeSession(sessionId);
+        logger.info(`Cleaned up existing QR session for: ${sessionId}`);
+        
+        // Initialize new session
+        const result = await WhatsAppService.initializeSession(sessionId, userId.toString());
+        logger.info(`WhatsApp service initialization result for ${sessionId}:`, result);
+        
+        if (result.success) {
+          res.json({
+            success: true,
+            qrCode: null,
+            sessionId,
+            status: 'initializing',
+            message: result.message,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          logger.error(`WhatsApp service initialization failed for ${sessionId}: ${result.message}`);
+          res.status(400).json({ 
+            success: false,
+            error: result.message,
+            sessionId,
+            details: 'WhatsApp service initialization failed'
+          });
+        }
+      } catch (initError) {
+        logger.error(`Error during QR initialization for session ${sessionId}:`, initError);
+        res.status(500).json({ 
+          success: false,
+          error: 'Failed to start QR code generation',
+          sessionId,
+          details: initError instanceof Error ? initError.message : String(initError)
+        });
+      }
+      
+    } catch (error) {
+      const sessionId = req.params.sessionId || 'unknown';
+      logger.error(`Unexpected error in getQRCode for session ${sessionId}:`, error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to retrieve QR code',
+        details: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Get QR code status for polling
+   */
+  async getQRCodeStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user!._id;
+
+      logger.info(`Getting QR status for session: ${sessionId}`);
+
+      // Verify session ownership
+      const session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        logger.warn(`Session not found in database: ${sessionId}`);
         res.status(404).json({ error: 'Session not found' });
         return;
       }
 
-      if (session.isConnected) {
-        res.status(400).json({ error: 'Session is already connected' });
-        return;
-      }
-
-      // Check if QR code exists (raw QR string)
-      if (session.qrCode) {
-        // Generate QR code data URL using qrcode library
-        const QRCode = require('qrcode');
-        const qrCodeDataURL = await QRCode.toDataURL(session.qrCode, {
-          errorCorrectionLevel: 'M',
-          margin: 1,
-          color: {
-            dark: '#000000',
-            light: '#FFFFFF'
-          }
-        });
-
+      const qrSession = QRCodeManager.getSession(sessionId);
+      
+      if (!qrSession) {
+        logger.warn(`QR session not found in manager: ${sessionId}`);
         res.json({
           success: true,
-          qrCode: qrCodeDataURL,
-          sessionId
+          status: 'not_found',
+          message: 'QR session not found'
         });
         return;
       }
 
-      // If no QR code, start generation
-      try {
-        // Start QR code generation in background
-        WhatsAppService.initializeSession(sessionId, userId.toString()).then(async () => {
-          // QR code will be stored in database by the event handler
-        }).catch((error) => {
-          logger.error(`Error generating QR code for session ${sessionId}:`, error);
-        });
+      logger.info(`QR session found - Status: ${qrSession.status}, Has QR: ${!!qrSession.qrDataURL}`);
 
-        // Return response indicating QR code generation is in progress
+      res.json({
+        success: true,
+        status: qrSession.status,
+        qrCode: qrSession.qrDataURL || null,
+        sessionId,
+        message: WhatsAppController.getStatusMessage(qrSession.status),
+        error: qrSession.error || null,
+        createdAt: qrSession.createdAt,
+        lastUpdated: qrSession.lastUpdated
+      });
+    } catch (error) {
+      logger.error('Error getting QR code status:', error);
+      res.status(500).json({ error: 'Failed to get QR code status' });
+    }
+  }
+
+  private static getStatusMessage(status: string): string {
+    switch (status) {
+      case 'initializing': return 'Initializing WhatsApp session...';
+      case 'generating': return 'Generating QR code...';
+      case 'ready': return 'QR code is ready to scan';
+      case 'expired': return 'QR code has expired';
+      case 'connected': return 'Session is connected';
+      case 'error': return 'An error occurred';
+      default: return 'Unknown status';
+    }
+  }
+
+  /**
+   * Debug endpoint to test QR generation
+   */
+  async debugQRGeneration(req: Request, res: Response): Promise<void> {
+    try {
+      const testQRText = "1@test,test,test,test"; // Sample WhatsApp-like QR text
+      const qrResult = await QRCodeService.generateDataURL(testQRText);
+      
+      res.json({
+        success: true,
+        qrResult,
+        testText: testQRText,
+        validation: QRCodeService.validateQRText(testQRText)
+      });
+    } catch (error) {
+      logger.error('Debug QR generation error:', error);
+      res.status(500).json({ error: 'Debug QR generation failed' });
+    }
+  }
+
+  /**
+   * Debug endpoint to force generate QR for a session (bypass WhatsApp client)
+   */
+  async debugForceQR(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const userId = req.user!._id;
+
+      logger.info(`Force generating QR for session: ${sessionId}`);
+
+      // Generate a test QR code directly
+      const testQRText = `2@${sessionId},${Date.now()},test,test`;
+      const qrResult = await QRCodeService.generateDataURL(testQRText);
+
+      if (qrResult.success) {
+        // Update QR manager directly
+        await QRCodeManager.updateQRCode(sessionId, testQRText);
+        
         res.json({
           success: true,
-          qrCode: null,
+          qrCode: qrResult.dataURL,
           sessionId,
-          message: 'QR code generation in progress'
+          status: 'ready',
+          message: 'Test QR code generated successfully',
+          testText: testQRText,
+          timestamp: new Date().toISOString()
         });
-      } catch (error) {
-        logger.error(`Error starting QR code generation for session ${sessionId}:`, error);
-        res.status(500).json({ error: 'Failed to start QR code generation' });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to generate test QR code',
+          details: qrResult.error
+        });
       }
     } catch (error) {
-      logger.error('Error getting QR code:', error);
-      res.status(500).json({ error: 'Failed to retrieve QR code' });
+      logger.error('Debug force QR error:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Debug force QR failed',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  /**
+   * Debug endpoint to check all QR sessions status
+   */
+  async debugQRSessions(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user!._id;
+      
+      // Get all sessions for this user
+      const sessions = await WhatsappSession.find({ userId });
+      
+      const sessionStatuses = sessions.map(session => {
+        const qrSession = QRCodeManager.getSession(session.sessionId);
+        
+        return {
+          sessionId: session.sessionId,
+          dbStatus: session.status,
+          isConnected: session.isConnected,
+          qrManagerStatus: qrSession ? qrSession.status : 'not_found',
+          hasQRCode: qrSession ? !!qrSession.qrDataURL : false,
+          qrCreatedAt: qrSession ? qrSession.createdAt : null,
+          qrLastUpdated: qrSession ? qrSession.lastUpdated : null,
+          lastQRGenerated: session.lastQRGenerated,
+          createdAt: session.createdAt
+        };
+      });
+      
+      res.json({
+        success: true,
+        userId,
+        totalSessions: sessions.length,
+        sessions: sessionStatuses,
+        qrManagerSessions: QRCodeManager.getAllSessions(),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logger.error('Debug QR sessions error:', error);
+      res.status(500).json({ error: 'Debug QR sessions failed' });
     }
   }
 

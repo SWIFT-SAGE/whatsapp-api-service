@@ -72,6 +72,10 @@ router.post('/sessions', createSessionValidation, handleValidationErrors, WhatsA
 router.get('/sessions', WhatsAppController.getSessions);
 router.get('/sessions/:sessionId', WhatsAppController.getSession);
 router.get('/sessions/:sessionId/qr', WhatsAppController.getQRCode);
+router.get('/sessions/:sessionId/qr/status', WhatsAppController.getQRCodeStatus);
+router.get('/debug/qr', WhatsAppController.debugQRGeneration);
+router.get('/debug/sessions', WhatsAppController.debugQRSessions);
+router.get('/debug/force-qr/:sessionId', WhatsAppController.debugForceQR);
 router.put('/sessions/:sessionId', updateSessionValidation, handleValidationErrors, WhatsAppController.updateSession);
 router.delete('/sessions/:sessionId', WhatsAppController.deleteSession);
 

@@ -5,6 +5,8 @@ import WhatsAppService from '../services/whatsappService';
 import { logger } from '../utils/logger';
 import { generateId } from '../utils/helpers';
 import { ApiResponse } from '../types/common';
+import * as QRCode from 'qrcode';
+import QRCodeManager from '../services/QRCodeManager';
 
 export class SessionController {
   /**
@@ -60,26 +62,34 @@ export class SessionController {
 
       await session.save();
 
-      // Initialize WhatsApp client
-      const whatsappService = WhatsAppService;
-      const qrCode = await whatsappService.initializeSession(sessionId, userId);
+      // Initialize WhatsApp client using new QR manager
+      try {
+        const whatsappService = WhatsAppService;
+        const result = await whatsappService.initializeSession(sessionId, userId);
 
-      // Update session with QR code
-      session.qrCode = qrCode;
-      await session.save();
-
-      logger.info(`WhatsApp session created: ${sessionId} for user: ${req.user!.email}`);
-
-      res.status(201).json({
-        success: true,
-        message: 'Session created successfully',
-        data: {
-          sessionId,
-          qrCode,
-          isConnected: false,
-          settings: session.settings
+        if (!result.success) {
+          throw new Error(result.message);
         }
-      } as ApiResponse);
+
+        logger.info(`WhatsApp session created: ${sessionId} for user: ${req.user!.email}`);
+
+        res.status(201).json({
+          success: true,
+          message: 'Session created successfully',
+          data: {
+            sessionId,
+            qrCode: null, // QR code will be available via polling
+            isConnected: false,
+            settings: session.settings,
+            status: 'initializing'
+          }
+        } as ApiResponse);
+      } catch (qrError) {
+        logger.error(`Error creating session ${sessionId}:`, qrError);
+        // Clean up session if creation fails
+        await WhatsappSession.findByIdAndDelete(session._id);
+        throw new Error('Failed to create session');
+      }
 
     } catch (error) {
       logger.error('Error creating WhatsApp session:', error);
@@ -287,20 +297,53 @@ export class SessionController {
         return;
       }
 
-      // Generate new QR code if needed
-      let qrCode = session.qrCode;
-      if (!qrCode) {
-        const whatsappService = WhatsAppService;
-        qrCode = await whatsappService.initializeSession(sessionId, userId.toString());
-        session.qrCode = qrCode;
-        await session.save();
+      // Check if QR session exists in manager
+      const qrSession = QRCodeManager.getSession(sessionId);
+      
+      if (qrSession && qrSession.status === 'ready' && qrSession.qrDataURL) {
+        res.json({
+          success: true,
+          message: 'QR code retrieved successfully',
+          data: { 
+            qrCode: qrSession.qrDataURL,
+            status: qrSession.status
+          }
+        } as ApiResponse);
+        return;
       }
 
-      res.json({
-        success: true,
-        message: 'QR code retrieved successfully',
-        data: { qrCode }
-      } as ApiResponse);
+      // Generate new QR code if needed
+      if (!qrSession || qrSession.status === 'expired' || qrSession.status === 'error') {
+        try {
+          const whatsappService = WhatsAppService;
+          const result = await whatsappService.initializeSession(sessionId, userId.toString());
+          
+          if (!result.success) {
+            throw new Error(result.message);
+          }
+          
+          res.json({
+            success: true,
+            message: 'QR code generation started',
+            data: { 
+              qrCode: null,
+              status: 'initializing'
+            }
+          } as ApiResponse);
+        } catch (error) {
+          throw new Error('Failed to start QR code generation');
+        }
+      } else {
+        // QR code is being generated
+        res.json({
+          success: true,
+          message: 'QR code generation in progress',
+          data: { 
+            qrCode: null,
+            status: qrSession.status
+          }
+        } as ApiResponse);
+      }
 
     } catch (error) {
       logger.error('Error getting QR code:', error);

@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import WhatsappSession from '../models/WhatsappSession';
 import MessageLog from '../models/MessageLog';
 import { logger } from '../utils/logger';
+import QRCodeManager from './QRCodeManager';
 // Socket.io instance will be injected from main app
 
 interface WhatsAppClientManager {
@@ -79,17 +80,30 @@ class WhatsAppService {
   /**
    * Create a new WhatsApp client
    */
-  async createClient(sessionId: string, userId: string): Promise<{ qr?: string; success: boolean; message: string }> {
+  async createClient(sessionId: string, userId: string, forceRestart: boolean = false): Promise<{ qr?: string; success: boolean; message: string }> {
     try {
       // Check if client already exists
       if (this.clients[sessionId]) {
-        // If client exists but is not ready, wait for QR code
         const client = this.clients[sessionId];
-        if (client.info && client.info.wid) {
-          return { success: true, message: 'Session already connected' };
+        
+        if (forceRestart) {
+          logger.info(`Force restarting client for session: ${sessionId}`);
+          // Destroy existing client
+          try {
+            await client.destroy();
+          } catch (destroyError) {
+            logger.warn(`Error destroying existing client for ${sessionId}:`, destroyError);
+          }
+          delete this.clients[sessionId];
+          // Continue to create new client below
         } else {
-          // Client exists but not connected, return existing QR if available
-          return { success: true, message: 'Session exists, waiting for connection' };
+          // If client exists and is connected
+          if (client.info && client.info.wid) {
+            return { success: true, message: 'Session already connected' };
+          } else {
+            // Client exists but not connected, return existing QR if available
+            return { success: true, message: 'Session exists, waiting for connection' };
+          }
         }
       }
 
@@ -98,34 +112,7 @@ class WhatsAppService {
           store: this.mongoStore,
           clientId: sessionId,
           backupSyncIntervalMs: 300000 // 5 minutes backup sync interval
-        }),
-        puppeteer: {
-          headless: true,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--disable-extensions',
-            '--disable-plugins',
-            '--disable-default-apps',
-            '--disable-sync',
-            '--disable-translate',
-            '--hide-scrollbars',
-            '--mute-audio',
-            '--no-default-browser-check',
-            '--no-pings',
-            '--disable-background-timer-throttling',
-            '--disable-renderer-backgrounding',
-            '--disable-backgrounding-occluded-windows'
-          ],
-          timeout: 300000 // 5 minutes timeout for browser launch
-        }
+        })
       });
 
       // Store client reference
@@ -134,12 +121,49 @@ class WhatsAppService {
       // Set up event handlers
       await this.setupEventHandlers(client, sessionId, userId);
 
-      // Initialize client
+      // Initialize client with timeout
       logger.info(`Initializing WhatsApp client for session: ${sessionId}`);
-      await client.initialize();
-      logger.info(`WhatsApp client initialized for session: ${sessionId}`);
-
-      return { success: true, message: 'Client initialization started' };
+      
+      try {
+        // Set a timeout for client initialization
+        const initPromise = client.initialize();
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Client initialization timeout')), 30000); // 30 seconds
+        });
+        
+        await Promise.race([initPromise, timeoutPromise]);
+        logger.info(`WhatsApp client initialized successfully for session: ${sessionId}`);
+        
+        // Set a fallback timer to check if QR code was generated
+        setTimeout(async () => {
+          const qrSession = QRCodeManager.getSession(sessionId);
+          if (qrSession && qrSession.status === 'initializing') {
+            logger.warn(`QR code not generated after 10 seconds for session ${sessionId}, checking client status`);
+            
+            // Check if client is still valid
+            const client = this.clients[sessionId];
+            if (client && !client.info) {
+              logger.info(`Client exists but no QR generated for ${sessionId}, this is normal during initialization`);
+            }
+          }
+        }, 10000); // Check after 10 seconds
+        
+        return { success: true, message: 'Client initialization started' };
+      } catch (initError) {
+        logger.error(`Client initialization failed for session ${sessionId}:`, initError);
+        
+        // Clean up failed client
+        if (this.clients[sessionId]) {
+          try {
+            await this.clients[sessionId].destroy();
+          } catch (destroyError) {
+            logger.warn(`Error destroying failed client for ${sessionId}:`, destroyError);
+          }
+          delete this.clients[sessionId];
+        }
+        
+        return { success: false, message: `Client initialization failed: ${initError instanceof Error ? initError.message : String(initError)}` };
+      }
     } catch (error) {
       logger.error(`Error creating WhatsApp client for session ${sessionId}:`, error);
       return { success: false, message: 'Failed to create client' };
@@ -153,20 +177,22 @@ class WhatsAppService {
     // QR Code generation
     client.on('qr', async (qr) => {
       try {
-        // Update session with QR code
-        await WhatsappSession.findOneAndUpdate(
-          { sessionId },
-          { 
-            qrCode: qr, // Store raw QR string instead of data URL
-            isConnected: false, 
-            lastQRGenerated: new Date(),
-            status: 'pending'
-          },
-          { new: true }
-        );
+        logger.info(`QR code generated for session: ${sessionId}`);
+        
+        // Check if QR session exists in manager, if not initialize it
+        let qrSession = QRCodeManager.getSession(sessionId);
+        if (!qrSession) {
+          logger.info(`QR session not found, initializing for: ${sessionId}`);
+          qrSession = await QRCodeManager.initializeSession(sessionId, userId);
+        }
+        
+        // Update QR code through manager
+        await QRCodeManager.updateQRCode(sessionId, qr);
+        
+        logger.info(`QR code updated in manager for session: ${sessionId}`);
 
       } catch (error) {
-        logger.error(`Error storing QR code for session ${sessionId}:`, error);
+        logger.error(`Error handling QR code for session ${sessionId}:`, error);
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
           { status: 'error', 'errorLog.lastError': error instanceof Error ? error.message : String(error) }
@@ -196,7 +222,10 @@ class WhatsAppService {
       try {
         const info = client.info;
 
-        // Update session status
+        // Mark session as connected in QR manager
+        await QRCodeManager.markSessionConnected(sessionId);
+
+        // Update session status in database
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
           {
@@ -477,6 +506,12 @@ class WhatsAppService {
    * Get existing QR code for a session
    */
   async getExistingQRCode(sessionId: string): Promise<string | null> {
+    const qrSession = QRCodeManager.getSession(sessionId);
+    if (qrSession && qrSession.status === 'ready' && qrSession.qrText) {
+      return qrSession.qrText;
+    }
+    
+    // Fallback to database check
     try {
       const session = await WhatsappSession.findOne({ sessionId });
       if (session && session.qrCode) {
@@ -501,89 +536,44 @@ class WhatsAppService {
   }
 
   /**
-   * Initialize a new WhatsApp session and return QR code
+   * Initialize a new WhatsApp session using QR Code Manager
    */
-  async initializeSession(sessionId: string, userId: string): Promise<string> {
+  async initializeSession(sessionId: string, userId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const result = await this.createClient(sessionId, userId);
+      logger.info(`Starting session initialization for: ${sessionId}, user: ${userId}`);
+      
+      // Initialize QR session in manager
+      await QRCodeManager.initializeSession(sessionId, userId);
+      logger.info(`QR session initialized in manager for: ${sessionId}`);
+      
+      // Check if this is a retry/restart scenario
+      const existingClient = this.clients[sessionId];
+      const forceRestart = existingClient && (!existingClient.info || !existingClient.info.wid);
+      
+      logger.info(`Client status for ${sessionId}: exists=${!!existingClient}, forceRestart=${forceRestart}`);
+      
+      const result = await this.createClient(sessionId, userId, forceRestart);
+      logger.info(`Create client result for ${sessionId}:`, result);
+      
       if (!result.success) {
         throw new Error(result.message);
       }
 
-      // If session already exists and is connected, return a message
+      // If session already exists and is connected
       if (result.message === 'Session already connected') {
-        throw new Error('Session is already connected');
+        logger.info(`Session ${sessionId} already connected, marking in manager`);
+        await QRCodeManager.markSessionConnected(sessionId);
+        return { success: true, message: 'Session is already connected' };
       }
 
-      // If session exists but is waiting for connection, check if QR code is already available
-      if (result.message === 'Session exists, waiting for connection') {
-        const existingQR = await this.getExistingQRCode(sessionId);
-        if (existingQR) {
-          logger.info(`Returning existing QR code for session: ${sessionId}`);
-          return existingQR;
-        }
-      }
-
-      // Wait for QR code to be generated
-      return new Promise((resolve, reject) => {
-        const client = this.clients[sessionId];
-        if (!client) {
-          reject(new Error('Client not found after creation'));
-          return;
-        }
-
-        // Increase timeout to 5 minutes to match frontend timeout
-        const timeout = setTimeout(() => {
-          reject(new Error('QR code generation timeout'));
-        }, 300000); // 300 second (5 minutes) timeout
-
-        // Check if QR code is already available in database
-        const checkExistingQR = async () => {
-          try {
-            const existingQR = await this.getExistingQRCode(sessionId);
-            if (existingQR) {
-              clearTimeout(timeout);
-              resolve(existingQR);
-              return true;
-            }
-          } catch (error) {
-            // Ignore database errors, continue with event listener
-          }
-          return false;
-        };
-
-        // Check immediately
-        checkExistingQR().then(found => {
-          if (!found) {
-            // Set up periodic check every 2 seconds
-            const checkInterval = setInterval(async () => {
-              const found = await checkExistingQR();
-              if (found) {
-                clearInterval(checkInterval);
-              }
-            }, 2000);
-
-            // Also listen for QR event as backup
-            client.once('qr', async (qr) => {
-              clearTimeout(timeout);
-              clearInterval(checkInterval);
-              resolve(qr); // Return raw QR string instead of data URL
-            });
-
-            // Clean up interval on timeout
-            setTimeout(() => {
-              clearInterval(checkInterval);
-            }, 300000); // 5 minutes
-          }
-        });
-
-        client.once('ready', () => {
-          clearTimeout(timeout);
-          reject(new Error('Client connected without QR code'));
-        });
-      });
+      logger.info(`Session ${sessionId} initialization completed successfully`);
+      return { success: true, message: 'Session initialization started' };
     } catch (error) {
       logger.error(`Error initializing session ${sessionId}:`, error);
+      
+      // Remove session from manager on error
+      QRCodeManager.removeSession(sessionId);
+      
       throw error;
     }
   }

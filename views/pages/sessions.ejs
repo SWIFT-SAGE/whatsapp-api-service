@@ -2,9 +2,14 @@
 <div id="dashboard-sessions" class="dashboard-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>WhatsApp Sessions</h2>
-        <button class="btn btn-primary" id="create-session-btn">
-            <i class="fas fa-plus me-2"></i>New Session
-        </button>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="create-session-btn">
+                <i class="fas fa-plus me-2"></i>New Session
+            </button>
+            <button class="btn btn-outline-info" id="debug-qr-btn" title="Test QR Code Generation">
+                <i class="fas fa-bug me-2"></i>Debug QR
+            </button>
+        </div>
     </div>
     <div class="row g-4" id="sessions-container">
         <% if (sessions && sessions.length> 0) { %>
