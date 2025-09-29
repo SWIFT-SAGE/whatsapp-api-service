@@ -16,15 +16,23 @@
                 <input type="radio" class="btn-check" name="message-filter" id="filter-failed" autocomplete="off">
                 <label class="btn btn-outline-secondary" for="filter-failed">Failed</label>
             </div>
-            <select class="form-select" style="max-width: 200px;" id="session-filter">
-                <option value="">All Sessions</option>
-            </select>
+            <div class="d-flex align-items-center gap-1">
+                <select class="form-select" style="max-width: 200px;" id="session-filter">
+                    <option value="">Loading sessions...</option>
+                </select>
+                <button class="btn btn-outline-secondary btn-sm" id="refresh-session-filter" title="Refresh sessions">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
             <input type="search" class="form-control" placeholder="Search messages" id="message-search" style="max-width: 220px;">
             <button class="btn btn-outline-primary" id="export-messages">
                 <i class="fas fa-file-export me-2"></i>Export CSV
             </button>
             <button class="btn btn-primary" id="compose-message">
                 <i class="fas fa-plus me-2"></i>Compose
+            </button>
+            <button class="btn btn-outline-info btn-sm" id="debug-sessions-api" title="Debug Sessions API">
+                <i class="fas fa-bug"></i> Debug API
             </button>
         </div>
     </div>
@@ -122,3 +130,976 @@
         </div>
     </div>
 </div>
+
+<script>
+// Ensure the function is available immediately when script loads
+(function() {
+    console.log('Messages.ejs script loading...');
+    
+    // Define the initialization function immediately
+    window.initializeMessagesPage = function() {
+        console.log('Initializing messages page...');
+        
+        // Wait a bit for DOM elements to be available
+        setTimeout(() => {
+            // Load initial data
+            if (typeof loadMessagesData === 'function') {
+                loadMessagesData();
+            }
+            if (typeof loadSessionsForFilter === 'function') {
+                loadSessionsForFilter();
+            }
+            
+            // Initialize event listeners
+            if (typeof initializeMessageEventListeners === 'function') {
+                initializeMessageEventListeners();
+            }
+            
+            // Make debug function available immediately
+            console.log('Debug function available: window.debugSessionsApiCall()');
+        }, 200);
+    };
+    
+    // Also make manual session loader available immediately
+    window.manualLoadSessions = async function() {
+        console.log('=== MANUAL SESSION LOADING ===');
+        try {
+            // Check if we have the required functions
+            if (typeof window.makeApiCall !== 'function') {
+                console.error('window.makeApiCall not available');
+                return;
+            }
+            
+            console.log('Making API call to /api/whatsapp/sessions...');
+            const response = await window.makeApiCall('/api/whatsapp/sessions');
+            console.log('API Response:', response);
+            
+            // Try to populate the dropdown manually
+            const sessionFilter = document.getElementById('session-filter');
+            if (sessionFilter) {
+                console.log('Found session filter dropdown, populating...');
+                sessionFilter.innerHTML = '<option value="">All Sessions</option>';
+                
+                let sessions = [];
+                if (response && response.success && response.data) {
+                    sessions = Array.isArray(response.data) ? response.data : (response.data.sessions || []);
+                } else if (Array.isArray(response)) {
+                    sessions = response;
+                }
+                
+                console.log('Sessions to add:', sessions);
+                
+                sessions.forEach(session => {
+                    const option = document.createElement('option');
+                    option.value = session.sessionId || session.id;
+                    option.textContent = `${session.sessionId || session.id} ${session.phoneNumber ? '(' + session.phoneNumber + ')' : ''}`;
+                    sessionFilter.appendChild(option);
+                });
+                
+                console.log(`✅ Added ${sessions.length} sessions to dropdown`);
+            } else {
+                console.error('Session filter dropdown not found');
+            }
+            
+        } catch (error) {
+            console.error('❌ Manual session loading failed:', error);
+        }
+    };
+    
+    console.log('Messages.ejs functions defined:', {
+        initializeMessagesPage: typeof window.initializeMessagesPage,
+        manualLoadSessions: typeof window.manualLoadSessions
+    });
+})();
+
+// Messages page functionality
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Messages.ejs DOMContentLoaded - functions available:', {
+        initializeMessagesPage: typeof window.initializeMessagesPage,
+        manualLoadSessions: typeof window.manualLoadSessions
+    });
+});
+
+// Global variables for messages page
+let currentPage = 1;
+let currentLimit = 20;
+let currentFilters = {
+    direction: '',
+    status: '',
+    sessionId: '',
+    search: ''
+};
+
+/**
+ * Load messages data from backend
+ */
+async function loadMessagesData(page = 1, limit = 20) {
+    try {
+        console.log('Loading messages data...', { page, limit, filters: currentFilters });
+        
+        const messagesTable = document.getElementById('messages-table');
+        const messagesEmpty = document.getElementById('messages-empty');
+        const messagesPagination = document.getElementById('messages-pagination');
+        
+        if (!messagesTable) {
+            console.error('Messages table not found');
+            return;
+        }
+
+        // Show loading state
+        messagesTable.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Loading messages...</div>
+                </td>
+            </tr>
+        `;
+
+        // Get all sessions first to aggregate messages
+        const sessionsResponse = await window.makeApiCall('/api/whatsapp/sessions');
+        let sessions = [];
+        
+        if (sessionsResponse.success && sessionsResponse.data) {
+            sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : 
+                      (sessionsResponse.data.sessions || []);
+        } else if (Array.isArray(sessionsResponse.data)) {
+            sessions = sessionsResponse.data;
+        } else if (Array.isArray(sessionsResponse)) {
+            sessions = sessionsResponse;
+        }
+
+        console.log('Found sessions:', sessions.length);
+
+        let allMessages = [];
+        
+        // If specific session filter is applied, only get messages from that session
+        if (currentFilters.sessionId) {
+            const sessionMessages = await getMessagesFromSession(currentFilters.sessionId, page, limit);
+            allMessages = sessionMessages;
+        } else {
+            // Get messages from all sessions (both connected and disconnected)
+            console.log('Loading messages from all sessions...');
+            for (const session of sessions) {
+                try {
+                    const sessionId = session.sessionId || session.id;
+                    console.log(`Loading messages from session: ${sessionId} (Status: ${session.status || 'unknown'})`);
+                    const sessionMessages = await getMessagesFromSession(sessionId, 1, 100);
+                    if (sessionMessages.length > 0) {
+                        console.log(`Found ${sessionMessages.length} messages from session ${sessionId}`);
+                        allMessages = allMessages.concat(sessionMessages);
+                    }
+                } catch (error) {
+                    console.warn(`Failed to get messages from session ${session.sessionId || session.id}:`, error);
+                    // Continue with other sessions even if one fails
+                }
+            }
+        }
+
+        console.log('Total messages loaded:', allMessages.length);
+
+        // Apply filters
+        let filteredMessages = allMessages;
+        
+        if (currentFilters.direction) {
+            filteredMessages = filteredMessages.filter(msg => msg.direction === currentFilters.direction);
+        }
+        
+        if (currentFilters.status) {
+            filteredMessages = filteredMessages.filter(msg => msg.status === currentFilters.status);
+        }
+        
+        if (currentFilters.search) {
+            const searchTerm = currentFilters.search.toLowerCase();
+            filteredMessages = filteredMessages.filter(msg => 
+                (msg.content && msg.content.toLowerCase().includes(searchTerm)) ||
+                (msg.from && msg.from.toLowerCase().includes(searchTerm)) ||
+                (msg.to && msg.to.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Sort by creation date (newest first)
+        filteredMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Pagination
+        const total = filteredMessages.length;
+        const totalPages = Math.ceil(total / limit);
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedMessages = filteredMessages.slice(startIndex, endIndex);
+
+        // Update current page
+        currentPage = page;
+        currentLimit = limit;
+
+        if (paginatedMessages.length === 0) {
+            messagesTable.innerHTML = '';
+            messagesEmpty.style.display = 'block';
+            messagesPagination.innerHTML = '';
+        } else {
+            messagesEmpty.style.display = 'none';
+            renderMessagesTable(paginatedMessages);
+            renderPagination(page, totalPages, total);
+        }
+
+    } catch (error) {
+        console.error('Error loading messages:', error);
+        const messagesTable = document.getElementById('messages-table');
+        if (messagesTable) {
+            messagesTable.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading messages: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+}
+
+/**
+ * Get messages from a specific session
+ */
+async function getMessagesFromSession(sessionId, page = 1, limit = 100) {
+    try {
+        const response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages?page=${page}&limit=${limit}`);
+        
+        if (response.success && response.data && response.data.messages) {
+            return response.data.messages.map(msg => ({
+                ...msg,
+                sessionId: sessionId
+            }));
+        }
+        
+        return [];
+    } catch (error) {
+        console.warn(`Error getting messages from session ${sessionId}:`, error);
+        return [];
+    }
+}
+
+/**
+ * Render messages table
+ */
+function renderMessagesTable(messages) {
+    const messagesTable = document.getElementById('messages-table');
+    
+    messagesTable.innerHTML = messages.map(message => {
+        const messagePreview = message.content ? 
+            (message.content.length > 50 ? message.content.substring(0, 50) + '...' : message.content) : 
+            `[${message.type}]`;
+            
+        const statusBadge = getStatusBadge(message.status);
+        const typeBadge = getTypeBadge(message.type);
+        const directionIcon = message.direction === 'outbound' ? 
+            '<i class="fas fa-arrow-up text-success"></i>' : 
+            '<i class="fas fa-arrow-down text-primary"></i>';
+            
+        const timeFormatted = new Date(message.createdAt).toLocaleString();
+        const contact = message.direction === 'outbound' ? message.to : message.from;
+        const contactDisplay = contact ? contact.replace('@c.us', '').replace('@g.us', ' (Group)') : 'Unknown';
+        
+        return `
+            <tr>
+                <td>
+                    <small class="text-muted font-monospace">${message.messageId || 'N/A'}</small>
+                </td>
+                <td>
+                    <small class="text-muted">${message.sessionId || 'Unknown'}</small>
+                </td>
+                <td>
+                    ${directionIcon}
+                    <span class="ms-1">${contactDisplay}</span>
+                </td>
+                <td>
+                    <div class="message-preview" title="${message.content || ''}">${messagePreview}</div>
+                </td>
+                <td>${typeBadge}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <small class="text-muted">${timeFormatted}</small>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+/**
+ * Get status badge HTML
+ */
+function getStatusBadge(status) {
+    const badges = {
+        'pending': '<span class="badge bg-warning">Pending</span>',
+        'sent': '<span class="badge bg-info">Sent</span>',
+        'delivered': '<span class="badge bg-success">Delivered</span>',
+        'read': '<span class="badge bg-primary">Read</span>',
+        'failed': '<span class="badge bg-danger">Failed</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+}
+
+/**
+ * Get type badge HTML
+ */
+function getTypeBadge(type) {
+    const badges = {
+        'text': '<span class="badge bg-light text-dark">Text</span>',
+        'chat': '<span class="badge bg-light text-dark">Chat</span>',
+        'image': '<span class="badge bg-info">Image</span>',
+        'video': '<span class="badge bg-primary">Video</span>',
+        'audio': '<span class="badge bg-success">Audio</span>',
+        'document': '<span class="badge bg-warning">Document</span>',
+        'location': '<span class="badge bg-danger">Location</span>',
+        'contact': '<span class="badge bg-secondary">Contact</span>',
+        'sticker': '<span class="badge bg-purple">Sticker</span>',
+        'gif': '<span class="badge bg-pink">GIF</span>'
+    };
+    return badges[type] || '<span class="badge bg-secondary">Unknown</span>';
+}
+
+/**
+ * Render pagination
+ */
+function renderPagination(currentPage, totalPages, totalItems) {
+    const pagination = document.getElementById('messages-pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = `
+            <li class="page-item disabled">
+                <span class="page-link">Showing ${totalItems} message${totalItems !== 1 ? 's' : ''}</span>
+            </li>
+        `;
+        return;
+    }
+    
+    let paginationHTML = '';
+    
+    // Previous button
+    paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a>
+        </li>
+    `;
+    
+    // Page numbers
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    if (startPage > 1) {
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>`;
+        if (startPage > 2) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHTML += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${i}">${i}</a>
+            </li>
+        `;
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        paginationHTML += `<li class="page-item"><a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a></li>`;
+    }
+    
+    // Next button
+    paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}">Next</a>
+        </li>
+    `;
+    
+    pagination.innerHTML = paginationHTML;
+}
+
+/**
+ * Load sessions for filter dropdown
+ */
+async function loadSessionsForFilter() {
+    const sessionFilter = document.getElementById('session-filter');
+    
+    try {
+        if (!sessionFilter) {
+            console.error('Session filter dropdown not found');
+            return;
+        }
+
+        console.log('Loading sessions for filter dropdown...');
+        
+        // Show loading state
+        sessionFilter.innerHTML = '<option value="">Loading sessions...</option>';
+
+        // Check if user is logged in and has API key
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+        const apiKey = window.getApiKey ? window.getApiKey() : null;
+        
+        console.log('Auth status:', { isLoggedIn, hasApiKey: !!apiKey });
+        
+        if (!isLoggedIn) {
+            sessionFilter.innerHTML = '<option value="">Please log in first</option>';
+            return;
+        }
+        
+        if (!apiKey) {
+            sessionFilter.innerHTML = '<option value="">Please generate API key first</option>';
+            return;
+        }
+
+        const response = await window.makeApiCall('/api/whatsapp/sessions');
+        console.log('Sessions API response:', response);
+        
+        let sessions = [];
+        
+        if (response && response.success && response.data) {
+            sessions = Array.isArray(response.data) ? response.data : 
+                      (response.data.sessions || []);
+        } else if (response && Array.isArray(response.data)) {
+            sessions = response.data;
+        } else if (Array.isArray(response)) {
+            sessions = response;
+        } else {
+            console.warn('Unexpected response format:', response);
+        }
+
+        console.log('Parsed sessions for filter:', sessions.length, sessions);
+
+        // Clear existing options
+        sessionFilter.innerHTML = '<option value="">All Sessions</option>';
+        
+        if (sessions.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No sessions found - Create a session first';
+            option.disabled = true;
+            sessionFilter.appendChild(option);
+            console.log('No sessions found');
+            return;
+        }
+        
+        // Show ALL sessions (connected and disconnected) in the filter dropdown
+        sessions.forEach((session, index) => {
+            try {
+                const option = document.createElement('option');
+                const sessionId = session.sessionId || session.id || `session_${index}`;
+                option.value = sessionId;
+                
+                // Show connection status in the dropdown
+                let statusText = '';
+                if (session.isConnected === true || session.connected === true || session.status === 'connected' || session.status === 'ready') {
+                    statusText = ' ✓ Connected';
+                } else {
+                    statusText = ' ✗ Disconnected';
+                }
+                
+                const phoneText = session.phoneNumber ? ` (${session.phoneNumber})` : '';
+                option.textContent = `${sessionId}${phoneText}${statusText}`;
+                sessionFilter.appendChild(option);
+                
+                console.log(`Added session to dropdown: ${sessionId}${statusText}`);
+            } catch (sessionError) {
+                console.error('Error processing session:', session, sessionError);
+            }
+        });
+
+        console.log(`Successfully added ${sessions.length} sessions to filter dropdown`);
+
+    } catch (error) {
+        console.error('Error loading sessions for filter:', error);
+        
+        // Show detailed error in dropdown
+        if (sessionFilter) {
+            let errorMessage = 'Error loading sessions';
+            if (error.message) {
+                if (error.message.includes('API key')) {
+                    errorMessage = 'API key required';
+                } else if (error.message.includes('log in')) {
+                    errorMessage = 'Please log in';
+                } else if (error.message.includes('401')) {
+                    errorMessage = 'Authentication failed';
+                } else if (error.message.includes('403')) {
+                    errorMessage = 'Access denied';
+                } else if (error.message.includes('404')) {
+                    errorMessage = 'Sessions endpoint not found';
+                }
+            }
+            sessionFilter.innerHTML = `<option value="">${errorMessage}</option>`;
+        }
+    }
+}
+
+/**
+ * Initialize event listeners for messages page
+ */
+function initializeMessageEventListeners() {
+    // Filter buttons
+    const filterButtons = document.querySelectorAll('input[name="message-filter"]');
+    filterButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            if (this.checked) {
+                const filterId = this.id;
+                if (filterId === 'filter-all') {
+                    currentFilters.direction = '';
+                    currentFilters.status = '';
+                } else if (filterId === 'filter-sent') {
+                    currentFilters.direction = 'outbound';
+                    currentFilters.status = '';
+                } else if (filterId === 'filter-received') {
+                    currentFilters.direction = 'inbound';
+                    currentFilters.status = '';
+                } else if (filterId === 'filter-failed') {
+                    currentFilters.direction = '';
+                    currentFilters.status = 'failed';
+                }
+                loadMessagesData(1, currentLimit);
+            }
+        });
+    });
+
+    // Session filter
+    const sessionFilter = document.getElementById('session-filter');
+    if (sessionFilter) {
+        sessionFilter.addEventListener('change', function() {
+            currentFilters.sessionId = this.value;
+            loadMessagesData(1, currentLimit);
+        });
+    }
+
+    // Search input
+    const searchInput = document.getElementById('message-search');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentFilters.search = this.value;
+                loadMessagesData(1, currentLimit);
+            }, 500); // Debounce search
+        });
+    }
+
+    // Refresh button
+    const refreshButton = document.getElementById('refresh-messages');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            const originalContent = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            loadMessagesData(currentPage, currentLimit).finally(() => {
+                this.disabled = false;
+                this.innerHTML = originalContent;
+            });
+        });
+    }
+
+    // Pagination clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('#messages-pagination a[data-page]')) {
+            e.preventDefault();
+            const page = parseInt(e.target.getAttribute('data-page'));
+            if (page && page !== currentPage) {
+                loadMessagesData(page, currentLimit);
+            }
+        }
+    });
+
+    // Compose message button
+    const composeButton = document.getElementById('compose-message');
+    if (composeButton) {
+        composeButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            loadSessionsForCompose();
+        });
+    }
+
+    // Send composed message
+    const sendButton = document.getElementById('send-composed-message');
+    if (sendButton) {
+        sendButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            sendComposedMessage();
+        });
+    }
+
+    // Character counter for compose message
+    const composeText = document.getElementById('compose-text');
+    const charCount = document.getElementById('char-count');
+    if (composeText && charCount) {
+        composeText.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+            if (this.value.length > 4096) {
+                charCount.classList.add('text-danger');
+            } else {
+                charCount.classList.remove('text-danger');
+            }
+        });
+    }
+
+    // Export messages button
+    const exportButton = document.getElementById('export-messages');
+    if (exportButton) {
+        exportButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            exportMessages();
+        });
+    }
+
+    // Refresh session filter button
+    const refreshSessionFilterButton = document.getElementById('refresh-session-filter');
+    if (refreshSessionFilterButton) {
+        refreshSessionFilterButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            const originalContent = this.innerHTML;
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            loadSessionsForFilter().finally(() => {
+                this.disabled = false;
+                this.innerHTML = originalContent;
+            });
+        });
+    }
+
+    // Debug sessions API button - use setTimeout to ensure button exists
+    setTimeout(() => {
+        const debugSessionsApiButton = document.getElementById('debug-sessions-api');
+        console.log('Looking for debug button:', debugSessionsApiButton);
+        
+        if (debugSessionsApiButton) {
+            console.log('Debug button found, attaching event listener');
+            debugSessionsApiButton.addEventListener('click', async function(e) {
+                e.preventDefault();
+                console.log('Debug button clicked!');
+                const originalContent = this.innerHTML;
+                this.disabled = true;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+                
+                try {
+                    await debugSessionsApiCall();
+                    alert('Debug completed! Check browser console for details.');
+                } catch (error) {
+                    alert('Debug failed: ' + error.message + '\nCheck browser console for details.');
+                } finally {
+                    this.disabled = false;
+                    this.innerHTML = originalContent;
+                }
+            });
+        } else {
+            console.error('Debug button not found! Available buttons:', 
+                Array.from(document.querySelectorAll('button')).map(b => b.id || b.className));
+        }
+    }, 500);
+    
+    // Also add event delegation as backup
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.id === 'debug-sessions-api') {
+            e.preventDefault();
+            console.log('Debug button clicked via delegation!');
+            window.testSessionsAPI();
+        }
+    });
+}
+
+/**
+ * Load sessions for compose modal
+ */
+async function loadSessionsForCompose() {
+    try {
+        const composeSession = document.getElementById('compose-session');
+        if (!composeSession) return;
+
+        const response = await window.makeApiCall('/api/whatsapp/sessions');
+        let sessions = [];
+        
+        if (response.success && response.data) {
+            sessions = Array.isArray(response.data) ? response.data : 
+                      (response.data.sessions || []);
+        }
+
+        // Filter only connected sessions
+        const connectedSessions = sessions.filter(session => 
+            session.isConnected === true || 
+            session.connected === true || 
+            session.status === 'connected' ||
+            session.status === 'ready'
+        );
+
+        composeSession.innerHTML = '<option value="">Select a connected session</option>';
+        
+        connectedSessions.forEach(session => {
+            const option = document.createElement('option');
+            option.value = session.sessionId || session.id;
+            option.textContent = `${session.sessionId || session.id} ${session.phoneNumber ? '(' + session.phoneNumber + ')' : ''}`;
+            composeSession.appendChild(option);
+        });
+
+        if (connectedSessions.length === 0) {
+            composeSession.innerHTML = '<option value="">No connected sessions available</option>';
+        }
+
+    } catch (error) {
+        console.error('Error loading sessions for compose:', error);
+    }
+}
+
+/**
+ * Send composed message
+ */
+async function sendComposedMessage() {
+    try {
+        const sessionId = document.getElementById('compose-session').value;
+        const phone = document.getElementById('compose-phone').value;
+        const text = document.getElementById('compose-text').value;
+        const mediaFile = document.getElementById('compose-media').files[0];
+
+        if (!sessionId || !phone || !text) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const sendButton = document.getElementById('send-composed-message');
+        const originalContent = sendButton.innerHTML;
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+
+        let response;
+        
+        if (mediaFile) {
+            // Send media message
+            const formData = new FormData();
+            formData.append('to', phone);
+            formData.append('message', text);
+            formData.append('media', mediaFile);
+
+            response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/media`, {
+                method: 'POST',
+                body: formData
+            });
+        } else {
+            // Send text message
+            response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    to: phone,
+                    message: text
+                })
+            });
+        }
+
+        if (response.success) {
+            alert('Message sent successfully!');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('composeMessageModal'));
+            if (modal) modal.hide();
+            
+            // Reset form
+            document.getElementById('compose-message-form').reset();
+            document.getElementById('char-count').textContent = '0';
+            
+            // Refresh messages
+            loadMessagesData(currentPage, currentLimit);
+        } else {
+            throw new Error(response.message || 'Failed to send message');
+        }
+
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Failed to send message: ' + error.message);
+    } finally {
+        const sendButton = document.getElementById('send-composed-message');
+        sendButton.disabled = false;
+        sendButton.innerHTML = '<i class="fas fa-send me-2"></i>Send Message';
+    }
+}
+
+/**
+ * Export messages to CSV
+ */
+async function exportMessages() {
+    try {
+        const exportButton = document.getElementById('export-messages');
+        const originalContent = exportButton.innerHTML;
+        exportButton.disabled = true;
+        exportButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Exporting...';
+
+        // Get all messages (without pagination)
+        const sessionsResponse = await window.makeApiCall('/api/whatsapp/sessions');
+        let sessions = [];
+        
+        if (sessionsResponse.success && sessionsResponse.data) {
+            sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : 
+                      (sessionsResponse.data.sessions || []);
+        }
+
+        let allMessages = [];
+        
+        for (const session of sessions) {
+            try {
+                const sessionMessages = await getMessagesFromSession(session.sessionId || session.id, 1, 1000);
+                allMessages = allMessages.concat(sessionMessages);
+            } catch (error) {
+                console.warn(`Failed to get messages from session ${session.sessionId || session.id}:`, error);
+            }
+        }
+
+        // Apply current filters
+        let filteredMessages = allMessages;
+        
+        if (currentFilters.direction) {
+            filteredMessages = filteredMessages.filter(msg => msg.direction === currentFilters.direction);
+        }
+        
+        if (currentFilters.status) {
+            filteredMessages = filteredMessages.filter(msg => msg.status === currentFilters.status);
+        }
+        
+        if (currentFilters.sessionId) {
+            filteredMessages = filteredMessages.filter(msg => msg.sessionId === currentFilters.sessionId);
+        }
+        
+        if (currentFilters.search) {
+            const searchTerm = currentFilters.search.toLowerCase();
+            filteredMessages = filteredMessages.filter(msg => 
+                (msg.content && msg.content.toLowerCase().includes(searchTerm)) ||
+                (msg.from && msg.from.toLowerCase().includes(searchTerm)) ||
+                (msg.to && msg.to.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Sort by creation date
+        filteredMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Create CSV content
+        const csvHeaders = ['Message ID', 'Session ID', 'Direction', 'Type', 'Status', 'From', 'To', 'Content', 'Created At'];
+        const csvRows = filteredMessages.map(msg => [
+            msg.messageId || '',
+            msg.sessionId || '',
+            msg.direction || '',
+            msg.type || '',
+            msg.status || '',
+            msg.from || '',
+            msg.to || '',
+            (msg.content || '').replace(/"/g, '""'), // Escape quotes
+            new Date(msg.createdAt).toISOString()
+        ]);
+
+        const csvContent = [csvHeaders, ...csvRows]
+            .map(row => row.map(field => `"${field}"`).join(','))
+            .join('\n');
+
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `messages_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        console.log(`Exported ${filteredMessages.length} messages to CSV`);
+
+    } catch (error) {
+        console.error('Error exporting messages:', error);
+        alert('Failed to export messages: ' + error.message);
+    } finally {
+        const exportButton = document.getElementById('export-messages');
+        exportButton.disabled = false;
+        exportButton.innerHTML = '<i class="fas fa-file-export me-2"></i>Export CSV';
+    }
+}
+
+/**
+ * Debug function to test the sessions API call directly
+ */
+async function debugSessionsApiCall() {
+    console.log('=== DEBUGGING SESSIONS API CALL ===');
+    
+    // Check authentication status
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
+    const authToken = sessionStorage.getItem('authToken');
+    const currentUser = window.currentUser;
+    const storedUser = sessionStorage.getItem('currentUser');
+    
+    console.log('Auth Status:', {
+        isLoggedIn,
+        hasAuthToken: !!authToken,
+        currentUser,
+        storedUser: storedUser ? JSON.parse(storedUser) : null
+    });
+    
+    // Check API key
+    const apiKey = window.getApiKey ? window.getApiKey() : null;
+    console.log('API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'NOT FOUND');
+    
+    // Test the API call directly
+    try {
+        console.log('Making direct fetch call to /api/whatsapp/sessions...');
+        
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        
+        if (apiKey) {
+            headers['x-api-key'] = apiKey;
+        }
+        
+        console.log('Request headers:', headers);
+        
+        const response = await fetch('/api/whatsapp/sessions', {
+            method: 'GET',
+            headers: headers
+        });
+        
+        console.log('Response status:', response.status, response.statusText);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response body:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Success! Response data:', data);
+        
+        return data;
+        
+    } catch (error) {
+        console.error('Direct API call failed:', error);
+        throw error;
+    }
+}
+
+// Make debug function globally available
+window.debugSessionsApiCall = debugSessionsApiCall;
+
+// Also add a simple test function
+window.testSessionsAPI = async function() {
+    console.log('=== SIMPLE API TEST ===');
+    try {
+        const result = await debugSessionsApiCall();
+        console.log('✅ API test successful!', result);
+        return result;
+    } catch (error) {
+        console.error('❌ API test failed:', error);
+        return null;
+    }
+};
+
+// Manual session loader is now defined at the top of the script
+</script>

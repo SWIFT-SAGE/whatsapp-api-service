@@ -2,48 +2,64 @@
 <div id="dashboard-analytics" class="dashboard-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Advanced Analytics</h2>
-        <div class="btn-group">
-            <button class="btn btn-outline-secondary active">7 Days</button>
-            <button class="btn btn-outline-secondary">30 Days</button>
-            <button class="btn btn-outline-secondary">90 Days</button>
+        <div class="d-flex gap-2">
+            <div class="btn-group" id="period-selector">
+                <button class="btn btn-outline-secondary" data-period="7d">7 Days</button>
+                <button class="btn btn-outline-secondary active" data-period="30d">30 Days</button>
+                <button class="btn btn-outline-secondary" data-period="90d">90 Days</button>
+            </div>
+            <button class="btn btn-outline-primary" id="refresh-analytics-btn">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+            <button class="btn btn-success" id="export-analytics-btn">
+                <i class="fas fa-download me-2"></i>Export
+            </button>
         </div>
     </div>
 
     <!-- Key Metrics -->
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4" id="analytics-metrics">
         <div class="col-lg-3 col-md-6">
             <div class="card text-center">
                 <div class="card-body">
-                    <div class="display-6 text-primary mb-2">98.5%</div>
+                    <div class="display-6 text-primary mb-2" id="delivery-rate">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    </div>
                     <h6>Delivery Rate</h6>
-                    <small class="text-success"><i class="fas fa-arrow-up"></i> +2.3%</small>
+                    <small class="text-muted" id="delivery-rate-change">Loading...</small>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="card text-center">
                 <div class="card-body">
-                    <div class="display-6 text-success mb-2">1.2s</div>
-                    <h6>Avg Response Time</h6>
-                    <small class="text-success"><i class="fas fa-arrow-down"></i> -0.3s</small>
+                    <div class="display-6 text-success mb-2" id="total-messages">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    </div>
+                    <h6>Total Messages</h6>
+                    <small class="text-muted" id="total-messages-change">Loading...</small>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="card text-center">
                 <div class="card-body">
-                    <div class="display-6 text-warning mb-2">15.2%</div>
-                    <h6>Error Rate</h6>
-                    <small class="text-danger"><i class="fas fa-arrow-up"></i> +1.1%</small>
+                    <div class="display-6 text-warning mb-2" id="active-sessions">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    </div>
+                    <h6>Active Sessions</h6>
+                    <small class="text-muted" id="active-sessions-change">Loading...</small>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="card text-center">
                 <div class="card-body">
-                    <div class="display-6 text-info mb-2">4.8</div>
-                    <h6>Avg Session Duration (hrs)</h6>
-                    <small class="text-success"><i class="fas fa-arrow-up"></i> +0.5hrs</small>
+                    <div class="display-6 text-info mb-2" id="message-types">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                    </div>
+                    <h6>Message Types</h6>
+                    <small class="text-muted" id="message-types-change">Loading...</small>
                 </div>
             </div>
         </div>
@@ -53,11 +69,24 @@
     <div class="row g-4">
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5>Message Volume Trends</h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary active" data-chart-period="7d">7D</button>
+                        <button class="btn btn-outline-secondary" data-chart-period="30d">30D</button>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <canvas id="volumeChart" height="100"></canvas>
+                    <div id="volume-chart-loading" class="text-center py-5">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Loading chart data...</p>
+                    </div>
+                    <canvas id="volumeChart" height="100" style="display: none;"></canvas>
+                    <div id="volume-chart-error" class="text-center py-5 text-danger" style="display: none;">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <p>Failed to load chart data</p>
+                        <button class="btn btn-outline-primary btn-sm" onclick="loadVolumeChart()">Retry</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -67,40 +96,41 @@
                     <h5>Message Status Distribution</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="statusChart" height="200"></canvas>
+                    <div id="status-chart-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Loading...</p>
+                    </div>
+                    <canvas id="statusChart" height="200" style="display: none;"></canvas>
+                    <div id="status-chart-error" class="text-center py-4 text-danger" style="display: none;">
+                        <i class="fas fa-exclamation-triangle mb-2"></i>
+                        <p>Failed to load data</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Geographic Distribution -->
+    <!-- Additional Analytics -->
     <div class="row g-4 mt-2">
         <div class="col-lg-6">
             <div class="card">
-                <div class="card-header">
-                    <h5>Top Countries</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Top Contacts</h5>
+                    <button class="btn btn-outline-primary btn-sm" id="view-all-contacts-btn">
+                        View All
+                    </button>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span><i class="flag-icon flag-icon-us me-2"></i>United States</span>
-                        <span class="fw-bold">2,450 messages</span>
+                    <div id="top-contacts-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Loading contacts...</p>
                     </div>
-                    <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar" style="width: 85%"></div>
+                    <div id="top-contacts-list" style="display: none;">
+                        <!-- Contacts will be populated dynamically -->
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span><i class="flag-icon flag-icon-gb me-2"></i>United Kingdom</span>
-                        <span class="fw-bold">1,890 messages</span>
-                    </div>
-                    <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar" style="width: 65%"></div>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span><i class="flag-icon flag-icon-ca me-2"></i>Canada</span>
-                        <span class="fw-bold">1,234 messages</span>
-                    </div>
-                    <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar" style="width: 42%"></div>
+                    <div id="top-contacts-empty" class="text-center py-4 text-muted" style="display: none;">
+                        <i class="fas fa-users fa-2x mb-3 opacity-50"></i>
+                        <p>No contact data available</p>
                     </div>
                 </div>
             </div>
@@ -108,10 +138,38 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">
-                    <h5>Peak Usage Hours</h5>
+                    <h5>Session Analytics</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="hourlyChart" height="200"></canvas>
+                    <div id="session-analytics-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Loading sessions...</p>
+                    </div>
+                    <div id="session-analytics-content" style="display: none;">
+                        <!-- Session analytics will be populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Types Breakdown -->
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Message Types Breakdown</h5>
+                </div>
+                <div class="card-body">
+                    <div id="message-types-loading" class="text-center py-4">
+                        <div class="spinner-border text-primary mb-3" role="status"></div>
+                        <p class="text-muted">Loading message types...</p>
+                    </div>
+                    <div id="message-types-content" style="display: none;">
+                        <div class="row" id="message-types-cards">
+                            <!-- Message type cards will be populated dynamically -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -3,6 +3,7 @@ import authRoutes from './auth';
 import whatsappRoutes from './whatsapp';
 import analyticsRoutes from './analytics';
 import dashboardRoutes from './dashboard';
+import webhookRoutes from './webhooks';
 import { authenticateToken, authenticateApiKey } from '../middleware/auth';
 
 const router = express.Router();
@@ -26,6 +27,7 @@ router.get('/', (req, res) => {
       auth: '/api/auth',
       whatsapp: '/api/whatsapp',
       analytics: '/api/analytics',
+      webhooks: '/api/webhooks',
       health: '/api/health'
     },
     documentation: '/api-docs'
@@ -36,6 +38,7 @@ router.get('/', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/whatsapp', authenticateApiKey, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
+router.use('/webhooks', authenticateToken, webhookRoutes);
 router.use('/dashboard', dashboardRoutes);
 
 // 404 handler for API routes

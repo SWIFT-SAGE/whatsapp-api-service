@@ -50,7 +50,7 @@
                             <a href="#" class="nav-link" data-section="messages">
                                 <i class="fas fa-comments me-2"></i>Messages
                             </a>
-                            <a href="#" class="nav-link" data-section="chatbot" id="chatbot-nav" style="display: none;">
+                            <a href="#" class="nav-link" data-section="chatbot" id="chatbot-nav">
                                 <i class="fas fa-robot me-2"></i>Chatbot
                             </a>
                             <a href="#" class="nav-link" data-section="webhooks">
@@ -501,12 +501,18 @@
 
         async function loadWebhooksData() {
             try {
-                showLoading('webhooks');
-                hideLoading('webhooks');
+                console.log('Loading webhooks data...');
+                
+                // Initialize webhook management functionality
+                setTimeout(() => {
+                    window.initializeWebhookButtons();
+                }, 500);
+                
+                // Load existing webhooks
+                await window.loadWebhooks();
+                
             } catch (error) {
                 console.error('Error loading webhooks data:', error);
-                hideLoading('webhooks');
-                showError('webhooks', 'Failed to load webhooks data');
             }
         }
 
@@ -595,7 +601,12 @@
                     await loadSessionsData();
                     break;
                 case 'messages':
-                    await loadMessagesData();
+                    // Messages data will be loaded by initializeMessagesPage()
+                    console.log('Messages section loaded - data will be loaded by initializeMessagesPage()');
+                    break;
+                case 'chatbot':
+                    console.log('Chatbot section loaded - initializing chatbot management');
+                    await loadChatbotData();
                     break;
                 case 'webhooks':
                     await loadWebhooksData();
@@ -669,6 +680,135 @@
                 if (section === 'sessions') {
                     setTimeout(() => {
                         initializeSessionButtons();
+                    }, 100);
+                }
+                
+                // Initialize messages page if we're on the messages section
+                if (section === 'messages') {
+                    console.log('Messages section detected, initializing...');
+                    setTimeout(() => {
+                        console.log('Checking for window.initializeMessagesPage:', typeof window.initializeMessagesPage);
+                        if (window.initializeMessagesPage) {
+                            console.log('Calling window.initializeMessagesPage()');
+                            window.initializeMessagesPage();
+                        } else {
+                            console.error('window.initializeMessagesPage not found!');
+                            // Try to manually call the functions
+                            console.log('Attempting manual initialization...');
+                            
+                            // Try the manual session loader as a fallback
+                            if (typeof window.manualLoadSessions === 'function') {
+                                console.log('Using manual session loader...');
+                                window.manualLoadSessions();
+                            } else {
+                                console.log('Manual session loader not available, creating inline fallback...');
+                                // Create inline fallback function
+                                try {
+                                    console.log('Creating inline session loader...');
+                                    const sessionFilter = document.getElementById('session-filter');
+                                    if (sessionFilter) {
+                                        console.log('Found session filter dropdown');
+                                        sessionFilter.innerHTML = '<option value="">Loading sessions...</option>';
+                                        
+                                        // Make API call directly
+                                        window.makeApiCall('/api/whatsapp/sessions').then(response => {
+                                            console.log('Inline API Response:', response);
+                                            
+                                            sessionFilter.innerHTML = '<option value="">All Sessions</option>';
+                                            
+                                            let sessions = [];
+                                            if (response && response.success) {
+                                                // Handle different response formats
+                                                if (response.sessions && Array.isArray(response.sessions)) {
+                                                    sessions = response.sessions;
+                                                } else if (response.data && Array.isArray(response.data)) {
+                                                    sessions = response.data;
+                                                } else if (response.data && response.data.sessions && Array.isArray(response.data.sessions)) {
+                                                    sessions = response.data.sessions;
+                                                }
+                                            } else if (Array.isArray(response)) {
+                                                sessions = response;
+                                            }
+                                            
+                                            console.log('Response parsing details:', {
+                                                hasSuccess: !!response.success,
+                                                hasSessions: !!response.sessions,
+                                                hasData: !!response.data,
+                                                sessionsIsArray: Array.isArray(response.sessions),
+                                                dataIsArray: Array.isArray(response.data),
+                                                responseKeys: Object.keys(response || {}),
+                                                sessionsLength: response.sessions ? response.sessions.length : 'N/A'
+                                            });
+                                            
+                                            console.log('Inline sessions to add:', sessions);
+                                            
+                                            sessions.forEach(session => {
+                                                const option = document.createElement('option');
+                                                option.value = session.sessionId || session.id;
+                                                
+                                                // Show connection status
+                                                let statusText = '';
+                                                if (session.isConnected === true || session.connected === true || session.status === 'connected' || session.status === 'ready') {
+                                                    statusText = ' ✓ Connected';
+                                                } else {
+                                                    statusText = ' ✗ Disconnected';
+                                                }
+                                                
+                                                const phoneText = session.phoneNumber ? ` (${session.phoneNumber})` : '';
+                                                option.textContent = `${session.sessionId || session.id}${phoneText}${statusText}`;
+                                                sessionFilter.appendChild(option);
+                                            });
+                                            
+                                            console.log(`✅ Inline: Added ${sessions.length} sessions to dropdown`);
+                                            
+                                            // Also load messages data and initialize buttons
+                                            setTimeout(() => {
+                                                loadInlineMessagesData(sessions);
+                                                window.initializeMessageButtons();
+                                            }, 500);
+                                            
+                                        }).catch(error => {
+                                            console.error('❌ Inline API call failed:', error);
+                                            sessionFilter.innerHTML = '<option value="">Error loading sessions</option>';
+                                        });
+                                    } else {
+                                        console.error('Session filter dropdown not found');
+                                    }
+                                } catch (error) {
+                                    console.error('Inline fallback failed:', error);
+                                }
+                            }
+                        }
+                    }, 100);
+                }
+                
+                // Initialize webhooks page if we're on the webhooks section
+                if (section === 'webhooks') {
+                    console.log('Webhooks section detected, initializing...');
+                    setTimeout(() => {
+                        if (window.initializeWebhooksPage) {
+                            console.log('Calling window.initializeWebhooksPage()');
+                            window.initializeWebhooksPage();
+                        } else {
+                            console.log('window.initializeWebhooksPage not found, initializing manually...');
+                            // Initialize webhooks manually
+                            initializeWebhooksManually();
+                        }
+                    }, 100);
+                }
+                
+                // Initialize analytics page if we're on the analytics section
+                if (section === 'analytics') {
+                    console.log('Analytics section detected, initializing...');
+                    setTimeout(() => {
+                        if (window.initializeAnalyticsPage) {
+                            console.log('Calling window.initializeAnalyticsPage()');
+                            window.initializeAnalyticsPage();
+                        } else {
+                            console.log('window.initializeAnalyticsPage not found, initializing manually...');
+                            // Initialize analytics manually
+                            initializeAnalyticsManually();
+                        }
                     }, 100);
                 }
                 
@@ -1202,7 +1342,8 @@
             // Bot configuration form
             const saveBotConfigBtn = document.getElementById('save-bot-config');
             if (saveBotConfigBtn) {
-                saveBotConfigBtn.addEventListener('click', async function() {
+                saveBotConfigBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
                     await saveBotConfiguration();
                 });
             }
@@ -1219,12 +1360,17 @@
             // Refresh sessions button
             const refreshSessionsBtn = document.getElementById('refresh-sessions-btn');
             if (refreshSessionsBtn) {
-                refreshSessionsBtn.addEventListener('click', async function() {
+                refreshSessionsBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
                     const originalContent = this.innerHTML;
                     this.disabled = true;
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
                     try {
                         await loadOverviewSessionDropdowns();
+                        console.log('Sessions refreshed successfully');
+                    } catch (error) {
+                        console.error('Error refreshing sessions:', error);
                     } finally {
                         this.disabled = false;
                         this.innerHTML = originalContent;
@@ -1235,7 +1381,8 @@
             // Fix session status button
             const fixSessionStatusBtn = document.getElementById('fix-session-status-btn');
             if (fixSessionStatusBtn) {
-                fixSessionStatusBtn.addEventListener('click', async function() {
+                fixSessionStatusBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
                     const originalContent = this.innerHTML;
                     this.disabled = true;
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -1325,7 +1472,8 @@
             // Quick action buttons
             const connectNewSessionBtn = document.getElementById('connect-new-session');
             if (connectNewSessionBtn) {
-                connectNewSessionBtn.addEventListener('click', function() {
+                connectNewSessionBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
                     // Navigate to sessions page
                     const sessionsLink = document.querySelector('.sidebar-nav .nav-link[data-section="sessions"]');
                     if (sessionsLink) {
@@ -1338,21 +1486,24 @@
 
             const testWebhookBtn = document.getElementById('test-webhook');
             if (testWebhookBtn) {
-                testWebhookBtn.addEventListener('click', async function() {
+                testWebhookBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
                     await testWebhookConnection();
                 });
             }
 
             const exportContactsBtn = document.getElementById('export-contacts');
             if (exportContactsBtn) {
-                exportContactsBtn.addEventListener('click', async function() {
+                exportContactsBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
                     await exportContactList();
                 });
             }
 
             const backupDataBtn = document.getElementById('backup-data');
             if (backupDataBtn) {
-                backupDataBtn.addEventListener('click', async function() {
+                backupDataBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
                     await backupMessagesData();
                 });
             }
@@ -1744,6 +1895,29 @@
                 
                 // Load the section page dynamically
                 loadSectionPage(targetSection);
+            });
+        });
+
+        // Handle data-view navigation (like API Docs)
+        const viewLinks = document.querySelectorAll('.sidebar-nav .nav-link[data-view]');
+        viewLinks.forEach(link => {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const targetView = this.getAttribute('data-view');
+                console.log('Switching to view:', targetView);
+                
+                // Handle different view types
+                if (targetView === 'api-docs') {
+                    // Remove active class from all sidebar links
+                    document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+                    // Add active class to clicked link
+                    this.classList.add('active');
+                    
+                    // Load API docs section
+                    loadSectionPage('api-docs');
+                }
             });
         });
 
@@ -2168,6 +2342,18 @@
         // Refresh profile button
         document.getElementById('refresh-profile-btn')?.addEventListener('click', function () {
             loadProfileData();
+        });
+
+        // QR code retry button handler - use event delegation
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('[data-action="retry-qr"]')) {
+                e.preventDefault();
+                const button = e.target.closest('[data-action="retry-qr"]');
+                const sessionId = button.getAttribute('data-session-id');
+                if (sessionId && window.startQRCodeGeneration) {
+                    window.startQRCodeGeneration(sessionId);
+                }
+            }
         });
     });
 
@@ -3004,7 +3190,7 @@
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>Error:</strong> ${error.message}
                             <div class="mt-2">
-                                <button class="btn btn-outline-primary btn-sm" onclick="startQRCodeGeneration('${sessionId}')">
+                                <button class="btn btn-outline-primary btn-sm" data-action="retry-qr" data-session-id="${sessionId}">
                                     <i class="fas fa-redo me-1"></i>Try Again
                                 </button>
                             </div>
@@ -3139,7 +3325,7 @@
                         </ol>
                     </div>
                     <div class="mt-2">
-                        <button class="btn btn-outline-primary btn-sm" onclick="startQRCodeGeneration('${sessionId}')">
+                        <button class="btn btn-outline-primary btn-sm" data-action="retry-qr" data-session-id="${sessionId}">
                             <i class="fas fa-redo me-1"></i>Refresh QR Code
                         </button>
                     </div>
@@ -3491,4 +3677,2882 @@
 
     // End of DOMContentLoaded event listener
 };
+
+// Define message loading functions outside DOMContentLoaded so they're globally available
+window.loadInlineMessagesData = async function(sessions) {
+    console.log('=== LOADING MESSAGES DATA INLINE ===');
+    try {
+        const messagesTable = document.getElementById('messages-table');
+        const messagesEmpty = document.getElementById('messages-empty');
+        
+        if (!messagesTable) {
+            console.error('Messages table not found');
+            return;
+        }
+
+        // Show loading state
+        messagesTable.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Loading messages...</div>
+                </td>
+            </tr>
+        `;
+
+        let allMessages = [];
+        
+        // Get messages from all sessions
+        for (const session of sessions) {
+            try {
+                const sessionId = session.sessionId || session.id;
+                console.log(`Loading messages from session: ${sessionId}`);
+                
+                const response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages?page=1&limit=100`);
+                
+                console.log(`API response for session ${sessionId}:`, response);
+                
+                let sessionMessages = [];
+                if (response && response.success) {
+                    // Handle different response formats
+                    if (response.messages && Array.isArray(response.messages)) {
+                        sessionMessages = response.messages;
+                    } else if (response.data && response.data.messages && Array.isArray(response.data.messages)) {
+                        sessionMessages = response.data.messages;
+                    } else if (Array.isArray(response.data)) {
+                        sessionMessages = response.data;
+                    }
+                    
+                    // Add session ID to each message
+                    sessionMessages = sessionMessages.map(msg => ({
+                        ...msg,
+                        sessionId: sessionId
+                    }));
+                    
+                    allMessages = allMessages.concat(sessionMessages);
+                    console.log(`Found ${sessionMessages.length} messages from session ${sessionId}`);
+                }
+            } catch (error) {
+                console.warn(`Failed to get messages from session ${session.sessionId || session.id}:`, error);
+            }
+        }
+
+        console.log('Total messages loaded:', allMessages.length);
+
+        // Sort by creation date (newest first)
+        allMessages.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        if (allMessages.length === 0) {
+            messagesTable.innerHTML = '';
+            if (messagesEmpty) messagesEmpty.style.display = 'block';
+        } else {
+            if (messagesEmpty) messagesEmpty.style.display = 'none';
+            window.renderInlineMessagesTable(allMessages.slice(0, 20)); // Show first 20 messages
+        }
+
+    } catch (error) {
+        console.error('Error loading messages inline:', error);
+        const messagesTable = document.getElementById('messages-table');
+        if (messagesTable) {
+            messagesTable.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error loading messages: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
+    }
+};
+
+// Inline messages table renderer
+window.renderInlineMessagesTable = function(messages) {
+    const messagesTable = document.getElementById('messages-table');
+    
+    messagesTable.innerHTML = messages.map(message => {
+        const messagePreview = message.content ? 
+            (message.content.length > 50 ? message.content.substring(0, 50) + '...' : message.content) : 
+            `[${message.type}]`;
+            
+        const statusBadge = window.getInlineStatusBadge(message.status);
+        const typeBadge = window.getInlineTypeBadge(message.type);
+        const directionIcon = message.direction === 'outbound' ? 
+            '<i class="fas fa-arrow-up text-success"></i>' : 
+            '<i class="fas fa-arrow-down text-primary"></i>';
+            
+        const timeFormatted = new Date(message.createdAt).toLocaleString();
+        const contact = message.direction === 'outbound' ? message.to : message.from;
+        const contactDisplay = contact ? contact.replace('@c.us', '').replace('@g.us', ' (Group)') : 'Unknown';
+        
+        return `
+            <tr>
+                <td>
+                    <small class="text-muted font-monospace">${message.messageId || 'N/A'}</small>
+                </td>
+                <td>
+                    <small class="text-muted">${message.sessionId || 'Unknown'}</small>
+                </td>
+                <td>
+                    ${directionIcon}
+                    <span class="ms-1">${contactDisplay}</span>
+                </td>
+                <td>
+                    <div class="message-preview" title="${message.content || ''}">${messagePreview}</div>
+                </td>
+                <td>${typeBadge}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <small class="text-muted">${timeFormatted}</small>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+// Inline badge functions
+window.getInlineStatusBadge = function(status) {
+    const badges = {
+        'pending': '<span class="badge bg-warning">Pending</span>',
+        'sent': '<span class="badge bg-info">Sent</span>',
+        'delivered': '<span class="badge bg-success">Delivered</span>',
+        'read': '<span class="badge bg-primary">Read</span>',
+        'failed': '<span class="badge bg-danger">Failed</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+};
+
+window.getInlineTypeBadge = function(type) {
+    const badges = {
+        'text': '<span class="badge bg-light text-dark">Text</span>',
+        'chat': '<span class="badge bg-light text-dark">Chat</span>',
+        'image': '<span class="badge bg-info">Image</span>',
+        'video': '<span class="badge bg-primary">Video</span>',
+        'audio': '<span class="badge bg-success">Audio</span>',
+        'document': '<span class="badge bg-warning">Document</span>',
+        'location': '<span class="badge bg-danger">Location</span>',
+        'contact': '<span class="badge bg-secondary">Contact</span>',
+        'sticker': '<span class="badge bg-purple">Sticker</span>',
+        'gif': '<span class="badge bg-pink">GIF</span>'
+    };
+    return badges[type] || '<span class="badge bg-secondary">Unknown</span>';
+};
+
+// Initialize message page buttons when messages section is loaded
+window.initializeMessageButtons = function() {
+    console.log('Initializing message page buttons...');
+    
+    // Compose message button
+    setTimeout(() => {
+        const composeBtn = document.getElementById('compose-message');
+        if (composeBtn) {
+            console.log('Found compose button, attaching event listener');
+            composeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Compose button clicked');
+                
+                // Load sessions for compose modal
+                window.loadSessionsForCompose();
+                
+                // Show the modal
+                const modal = new bootstrap.Modal(document.getElementById('composeMessageModal'));
+                modal.show();
+            });
+        } else {
+            console.error('Compose button not found');
+        }
+        
+        // Export messages button
+        const exportBtn = document.getElementById('export-messages');
+        if (exportBtn) {
+            console.log('Found export button, attaching event listener');
+            exportBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Export button clicked');
+                window.exportMessagesInline();
+            });
+        } else {
+            console.error('Export button not found');
+        }
+        
+        // Send composed message button
+        const sendBtn = document.getElementById('send-composed-message');
+        if (sendBtn) {
+            console.log('Found send button, attaching event listener');
+            sendBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Send message button clicked');
+                window.sendComposedMessageInline();
+            });
+        } else {
+            console.error('Send message button not found');
+        }
+        
+        // Character counter for compose textarea
+        const composeText = document.getElementById('compose-text');
+        if (composeText) {
+            composeText.addEventListener('input', function() {
+                const charCount = document.getElementById('char-count');
+                if (charCount) {
+                    charCount.textContent = this.value.length;
+                    if (this.value.length > 4096) {
+                        charCount.style.color = 'red';
+                    } else {
+                        charCount.style.color = '';
+                    }
+                }
+            });
+        }
+        
+        // Message search functionality
+        const searchInput = document.getElementById('message-search');
+        if (searchInput) {
+            console.log('Found message search input, attaching event listener');
+            let searchTimeout;
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                console.log('Search input changed:', searchTerm);
+                
+                // Debounce search to avoid too many operations
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    window.filterMessagesInTable(searchTerm);
+                }, 300);
+            });
+        } else {
+            console.error('Message search input not found');
+        }
+        
+        // Session filter dropdown functionality
+        const sessionFilter = document.getElementById('session-filter');
+        if (sessionFilter) {
+            console.log('Found session filter dropdown, attaching event listener');
+            sessionFilter.addEventListener('change', function() {
+                const selectedSession = this.value;
+                console.log('Session filter changed:', selectedSession);
+                window.filterMessagesBySession(selectedSession);
+            });
+        } else {
+            console.error('Session filter dropdown not found');
+        }
+        
+        // Refresh session filter button
+        const refreshSessionBtn = document.getElementById('refresh-session-filter');
+        if (refreshSessionBtn) {
+            console.log('Found refresh session filter button, attaching event listener');
+            refreshSessionBtn.addEventListener('click', function() {
+                console.log('Refresh session filter clicked');
+                // Reload sessions and messages
+                window.makeApiCall('/api/whatsapp/sessions').then(response => {
+                    let sessions = [];
+                    if (response && response.success && response.sessions) {
+                        sessions = response.sessions;
+                    }
+                    // Repopulate session dropdown
+                    window.populateSessionFilter(sessions);
+                    // Reload messages
+                    window.loadInlineMessagesData(sessions);
+                }).catch(error => {
+                    console.error('Error refreshing sessions:', error);
+                });
+            });
+        }
+        
+    }, 500);
+};
+
+// Load sessions for compose modal
+window.loadSessionsForCompose = async function() {
+    console.log('Loading sessions for compose modal...');
+    try {
+        const composeSession = document.getElementById('compose-session');
+        if (!composeSession) {
+            console.error('Compose session dropdown not found');
+            return;
+        }
+        
+        composeSession.innerHTML = '<option value="">Loading sessions...</option>';
+        
+        const response = await window.makeApiCall('/api/whatsapp/sessions');
+        console.log('Sessions for compose:', response);
+        
+        let sessions = [];
+        if (response && response.success) {
+            if (response.sessions && Array.isArray(response.sessions)) {
+                sessions = response.sessions;
+            } else if (response.data && Array.isArray(response.data)) {
+                sessions = response.data;
+            }
+        }
+        
+        composeSession.innerHTML = '<option value="">Select a connected session</option>';
+        
+        // Only show connected sessions
+        const connectedSessions = sessions.filter(session => 
+            session.isConnected === true || session.connected === true || 
+            session.status === 'connected' || session.status === 'ready'
+        );
+        
+        if (connectedSessions.length === 0) {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No connected sessions available';
+            option.disabled = true;
+            composeSession.appendChild(option);
+        } else {
+            connectedSessions.forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.sessionId || session.id;
+                const phoneText = session.phoneNumber ? ` (${session.phoneNumber})` : '';
+                option.textContent = `${session.sessionId || session.id}${phoneText}`;
+                composeSession.appendChild(option);
+            });
+        }
+        
+        console.log(`Loaded ${connectedSessions.length} connected sessions for compose`);
+        
+    } catch (error) {
+        console.error('Error loading sessions for compose:', error);
+        const composeSession = document.getElementById('compose-session');
+        if (composeSession) {
+            composeSession.innerHTML = '<option value="">Error loading sessions</option>';
+        }
+    }
+};
+
+// Send composed message
+window.sendComposedMessageInline = async function() {
+    console.log('Sending composed message...');
+    try {
+        const sessionId = document.getElementById('compose-session').value;
+        const phone = document.getElementById('compose-phone').value;
+        const text = document.getElementById('compose-text').value;
+        const mediaFile = document.getElementById('compose-media').files[0];
+        
+        if (!sessionId) {
+            alert('Please select a session');
+            return;
+        }
+        
+        if (!phone) {
+            alert('Please enter a phone number');
+            return;
+        }
+        
+        if (!text && !mediaFile) {
+            alert('Please enter a message or select a media file');
+            return;
+        }
+        
+        const sendBtn = document.getElementById('send-composed-message');
+        const originalText = sendBtn.innerHTML;
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+        
+        let response;
+        
+        if (mediaFile) {
+            // Send media message
+            const formData = new FormData();
+            formData.append('to', phone);
+            formData.append('media', mediaFile);
+            if (text) formData.append('caption', text);
+            
+            response = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
+                method: 'POST',
+                headers: {
+                    'x-api-key': window.getApiKey()
+                },
+                body: formData
+            });
+        } else {
+            // Send text message
+            response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    to: phone,
+                    message: text
+                })
+            });
+        }
+        
+        if (response && (response.success || response.ok)) {
+            alert('Message sent successfully!');
+            
+            // Clear form
+            document.getElementById('compose-phone').value = '';
+            document.getElementById('compose-text').value = '';
+            document.getElementById('compose-media').value = '';
+            document.getElementById('char-count').textContent = '0';
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('composeMessageModal'));
+            if (modal) modal.hide();
+            
+            // Reload messages
+            setTimeout(() => {
+                if (window.loadInlineMessagesData) {
+                    // Get current sessions and reload messages
+                    window.makeApiCall('/api/whatsapp/sessions').then(sessionsResponse => {
+                        let sessions = [];
+                        if (sessionsResponse && sessionsResponse.success && sessionsResponse.sessions) {
+                            sessions = sessionsResponse.sessions;
+                        }
+                        window.loadInlineMessagesData(sessions);
+                    });
+                }
+            }, 1000);
+            
+        } else {
+            throw new Error(response.message || 'Failed to send message');
+        }
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('Error sending message: ' + error.message);
+    } finally {
+        const sendBtn = document.getElementById('send-composed-message');
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fas fa-send me-2"></i>Send Message';
+        }
+    }
+};
+
+// Export messages to CSV
+window.exportMessagesInline = async function() {
+    console.log('Exporting messages to CSV...');
+    try {
+        const exportBtn = document.getElementById('export-messages');
+        const originalText = exportBtn.innerHTML;
+        exportBtn.disabled = true;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Exporting...';
+        
+        // Get all messages from all sessions
+        console.log('Fetching sessions for export...');
+        const sessionsResponse = await window.makeApiCall('/api/whatsapp/sessions');
+        console.log('Sessions response for export:', sessionsResponse);
+        
+        let sessions = [];
+        if (sessionsResponse && sessionsResponse.success) {
+            if (sessionsResponse.sessions && Array.isArray(sessionsResponse.sessions)) {
+                sessions = sessionsResponse.sessions;
+            } else if (sessionsResponse.data && Array.isArray(sessionsResponse.data)) {
+                sessions = sessionsResponse.data;
+            }
+        }
+        
+        console.log(`Found ${sessions.length} sessions for export`);
+        
+        let allMessages = [];
+        for (const session of sessions) {
+            try {
+                const sessionId = session.sessionId || session.id;
+                console.log(`Fetching messages from session ${sessionId} for export...`);
+                
+                const response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages?page=1&limit=1000`);
+                console.log(`Messages response for session ${sessionId}:`, response);
+                
+                let sessionMessages = [];
+                if (response && response.success) {
+                    if (response.messages && Array.isArray(response.messages)) {
+                        sessionMessages = response.messages;
+                    } else if (response.data && response.data.messages && Array.isArray(response.data.messages)) {
+                        sessionMessages = response.data.messages;
+                    }
+                    
+                    sessionMessages = sessionMessages.map(msg => ({
+                        ...msg,
+                        sessionId: sessionId
+                    }));
+                    
+                    allMessages = allMessages.concat(sessionMessages);
+                    console.log(`Added ${sessionMessages.length} messages from session ${sessionId}`);
+                }
+            } catch (error) {
+                console.warn(`Failed to get messages from session ${session.sessionId || session.id}:`, error);
+            }
+        }
+        
+        console.log(`Total messages collected for export: ${allMessages.length}`);
+        
+        if (allMessages.length === 0) {
+            console.log('No messages found via API, trying to export currently displayed messages...');
+            
+            // Fallback: try to export currently displayed messages from the table
+            const messagesTable = document.getElementById('messages-table');
+            if (messagesTable && messagesTable.rows.length > 0) {
+                console.log('Found messages in table, exporting displayed messages...');
+                exportDisplayedMessages();
+                return;
+            }
+            
+            alert('No messages found to export. Please ensure you have messages loaded in the table first.');
+            return;
+        }
+        
+        // Create CSV content
+        const headers = ['Message ID', 'Session', 'Direction', 'Type', 'Status', 'From', 'To', 'Content', 'Created At'];
+        const csvContent = [
+            headers.join(','),
+            ...allMessages.map(msg => {
+                const row = [
+                    msg.messageId || '',
+                    msg.sessionId || '',
+                    msg.direction || '',
+                    msg.type || '',
+                    msg.status || '',
+                    msg.from || '',
+                    msg.to || '',
+                    `"${(msg.content || '').replace(/"/g, '""')}"`, // Escape quotes
+                    msg.createdAt || ''
+                ];
+                return row.join(',');
+            })
+        ].join('\n');
+        
+        // Download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `whatsapp_messages_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert(`Successfully exported ${allMessages.length} messages to CSV`);
+        
+    } catch (error) {
+        console.error('Error exporting messages:', error);
+        alert('Error exporting messages: ' + error.message);
+    } finally {
+        const exportBtn = document.getElementById('export-messages');
+        if (exportBtn) {
+            exportBtn.disabled = false;
+            exportBtn.innerHTML = '<i class="fas fa-file-export me-2"></i>Export CSV';
+        }
+    }
+};
+
+// Export currently displayed messages from table
+window.exportDisplayedMessages = function() {
+    console.log('Exporting currently displayed messages...');
+    try {
+        const messagesTable = document.getElementById('messages-table');
+        if (!messagesTable || messagesTable.rows.length === 0) {
+            alert('No messages currently displayed to export');
+            return;
+        }
+        
+        // Extract data from table rows
+        const messages = [];
+        const rows = messagesTable.querySelectorAll('tr');
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 7) {
+                const messageData = {
+                    messageId: cells[0].textContent.trim(),
+                    sessionId: cells[1].textContent.trim(),
+                    contact: cells[2].textContent.trim().replace(/[↑↓]/g, '').trim(),
+                    content: cells[3].textContent.trim(),
+                    type: cells[4].textContent.trim(),
+                    status: cells[5].textContent.trim(),
+                    timestamp: cells[6].textContent.trim()
+                };
+                messages.push(messageData);
+            }
+        });
+        
+        if (messages.length === 0) {
+            alert('No valid message data found in table');
+            return;
+        }
+        
+        // Create CSV content
+        const headers = ['Message ID', 'Session', 'Contact', 'Content', 'Type', 'Status', 'Timestamp'];
+        const csvContent = [
+            headers.join(','),
+            ...messages.map(msg => {
+                const row = [
+                    msg.messageId || '',
+                    msg.sessionId || '',
+                    `"${(msg.contact || '').replace(/"/g, '""')}"`,
+                    `"${(msg.content || '').replace(/"/g, '""')}"`,
+                    msg.type || '',
+                    msg.status || '',
+                    msg.timestamp || ''
+                ];
+                return row.join(',');
+            })
+        ].join('\n');
+        
+        // Download CSV file
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `displayed_messages_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert(`Successfully exported ${messages.length} displayed messages to CSV`);
+        
+    } catch (error) {
+        console.error('Error exporting displayed messages:', error);
+        alert('Error exporting displayed messages: ' + error.message);
+    }
+};
+
+// Filter messages in table by search term
+window.filterMessagesInTable = function(searchTerm) {
+    console.log('Filtering messages by search term:', searchTerm);
+    
+    const messagesTable = document.getElementById('messages-table');
+    if (!messagesTable) {
+        console.error('Messages table not found for filtering');
+        return;
+    }
+    
+    const rows = messagesTable.querySelectorAll('tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 7) {
+            // Search in message content, contact, and message ID
+            const messageId = cells[0].textContent.toLowerCase();
+            const contact = cells[2].textContent.toLowerCase();
+            const content = cells[3].textContent.toLowerCase();
+            const type = cells[4].textContent.toLowerCase();
+            const status = cells[5].textContent.toLowerCase();
+            
+            const matchesSearch = !searchTerm || 
+                messageId.includes(searchTerm) ||
+                contact.includes(searchTerm) ||
+                content.includes(searchTerm) ||
+                type.includes(searchTerm) ||
+                status.includes(searchTerm);
+            
+            if (matchesSearch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+    
+    console.log(`Search results: ${visibleCount} messages match "${searchTerm}"`);
+    
+    // Show/hide empty state
+    const messagesEmpty = document.getElementById('messages-empty');
+    if (messagesEmpty) {
+        if (visibleCount === 0 && searchTerm) {
+            // Show custom "no results" message
+            messagesTable.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="fas fa-search fa-2x text-muted mb-2"></i>
+                        <h6 class="text-muted">No messages found</h6>
+                        <p class="text-muted">No messages match your search term "${searchTerm}"</p>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('message-search').value=''; window.filterMessagesInTable('');">
+                            Clear Search
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+};
+
+// Filter messages by session
+window.filterMessagesBySession = function(sessionId) {
+    console.log('Filtering messages by session:', sessionId);
+    
+    if (!sessionId) {
+        // Show all messages - reload from API
+        console.log('Showing all messages');
+        window.makeApiCall('/api/whatsapp/sessions').then(response => {
+            let sessions = [];
+            if (response && response.success && response.sessions) {
+                sessions = response.sessions;
+            }
+            window.loadInlineMessagesData(sessions);
+        });
+        return;
+    }
+    
+    // Filter current table by session
+    const messagesTable = document.getElementById('messages-table');
+    if (!messagesTable) {
+        console.error('Messages table not found for session filtering');
+        return;
+    }
+    
+    const rows = messagesTable.querySelectorAll('tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 7) {
+            const messageSessionId = cells[1].textContent.trim();
+            
+            if (messageSessionId === sessionId) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+    
+    console.log(`Session filter results: ${visibleCount} messages from session "${sessionId}"`);
+    
+    if (visibleCount === 0) {
+        messagesTable.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-filter fa-2x text-muted mb-2"></i>
+                    <h6 class="text-muted">No messages found</h6>
+                    <p class="text-muted">No messages found for session "${sessionId}"</p>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('session-filter').value=''; window.filterMessagesBySession('');">
+                        Show All Sessions
+                    </button>
+                </td>
+            </tr>
+        `;
+    }
+};
+
+// Populate session filter dropdown
+window.populateSessionFilter = function(sessions) {
+    console.log('Populating session filter with sessions:', sessions);
+    
+    const sessionFilter = document.getElementById('session-filter');
+    if (!sessionFilter) {
+        console.error('Session filter dropdown not found');
+        return;
+    }
+    
+    sessionFilter.innerHTML = '<option value="">All Sessions</option>';
+    
+    if (sessions.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No sessions found';
+        option.disabled = true;
+        sessionFilter.appendChild(option);
+        return;
+    }
+    
+    sessions.forEach(session => {
+        const option = document.createElement('option');
+        const sessionId = session.sessionId || session.id;
+        option.value = sessionId;
+        
+        // Show connection status
+        let statusText = '';
+        if (session.isConnected === true || session.connected === true || 
+            session.status === 'connected' || session.status === 'ready') {
+            statusText = ' ✓ Connected';
+        } else {
+            statusText = ' ✗ Disconnected';
+        }
+        
+        const phoneText = session.phoneNumber ? ` (${session.phoneNumber})` : '';
+        option.textContent = `${sessionId}${phoneText}${statusText}`;
+        sessionFilter.appendChild(option);
+    });
+    
+    console.log(`Added ${sessions.length} sessions to filter dropdown`);
+};
+
+// Load chatbot data and initialize chatbot management
+window.loadChatbotData = async function() {
+    console.log('Loading chatbot data...');
+    try {
+        // Initialize chatbot management buttons
+        setTimeout(() => {
+            window.initializeChatbotButtons();
+        }, 500);
+        
+        // Load existing chatbot rules
+        await window.loadChatbotRules();
+        
+    } catch (error) {
+        console.error('Error loading chatbot data:', error);
+    }
+};
+
+// Initialize chatbot management buttons
+window.initializeChatbotButtons = function() {
+    console.log('Initializing chatbot management buttons...');
+    
+    // Add chatbot rule button
+    const addRuleBtn = document.getElementById('add-chatbot-rule-btn');
+    if (addRuleBtn) {
+        console.log('Found add chatbot rule button, attaching event listener');
+        addRuleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Add chatbot rule button clicked');
+            window.showAddChatbotRuleModal();
+        });
+    } else {
+        console.error('Add chatbot rule button not found');
+    }
+    
+    // Initialize any existing rule buttons
+    window.initializeChatbotRuleButtons();
+};
+
+// Load existing chatbot rules
+window.loadChatbotRules = async function() {
+    console.log('Loading chatbot rules...');
+    try {
+        const rulesContainer = document.getElementById('chatbot-rules');
+        if (!rulesContainer) {
+            console.error('Chatbot rules container not found');
+            return;
+        }
+        
+        // Show loading state
+        rulesContainer.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted">Loading chatbot rules...</p>
+            </div>
+        `;
+        
+        // Make API call to get chatbot rules
+        const response = await window.makeApiCall('/api/chatbot/rules');
+        console.log('Chatbot rules response:', response);
+        
+        let rules = [];
+        if (response && response.success && response.data) {
+            rules = Array.isArray(response.data) ? response.data : (response.data.rules || []);
+        } else if (Array.isArray(response)) {
+            rules = response;
+        }
+        
+        console.log('Loaded chatbot rules:', rules);
+        
+        if (rules.length === 0) {
+            rulesContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-robot fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No chatbot rules yet</h5>
+                    <p class="text-muted">Create your first chatbot rule to get started</p>
+                    <button class="btn btn-primary" onclick="window.showAddChatbotRuleModal()">
+                        <i class="fas fa-plus me-2"></i>Add First Rule
+                    </button>
+                </div>
+            `;
+        } else {
+            window.renderChatbotRules(rules);
+        }
+        
+    } catch (error) {
+        console.error('Error loading chatbot rules:', error);
+        const rulesContainer = document.getElementById('chatbot-rules');
+        if (rulesContainer) {
+            rulesContainer.innerHTML = `
+                <div class="text-center py-4 text-danger">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <h5>Error loading chatbot rules</h5>
+                    <p>Please try refreshing the page</p>
+                    <button class="btn btn-outline-primary" onclick="window.loadChatbotRules()">
+                        <i class="fas fa-sync-alt me-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        }
+    }
+};
+
+// Render chatbot rules
+window.renderChatbotRules = function(rules) {
+    const rulesContainer = document.getElementById('chatbot-rules');
+    if (!rulesContainer) return;
+    
+    rulesContainer.innerHTML = rules.map(rule => `
+        <div class="card mb-3" data-rule-id="${rule.id || rule._id}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title">${rule.name || 'Unnamed Rule'}</h6>
+                        <p class="card-text text-muted mb-2">
+                            <strong>Trigger:</strong> ${rule.trigger || 'No trigger set'}
+                        </p>
+                        <p class="card-text text-muted mb-2">
+                            <strong>Response:</strong> ${rule.response || 'No response set'}
+                        </p>
+                        <div class="d-flex gap-2">
+                            <span class="badge ${rule.enabled ? 'bg-success' : 'bg-secondary'}">
+                                ${rule.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                            <span class="badge bg-info">
+                                ${rule.type || 'text'} match
+                            </span>
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="window.editChatbotRule('${rule.id || rule._id}')">
+                                <i class="fas fa-edit me-2"></i>Edit
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="window.toggleChatbotRule('${rule.id || rule._id}', ${!rule.enabled})">
+                                <i class="fas fa-${rule.enabled ? 'pause' : 'play'} me-2"></i>${rule.enabled ? 'Disable' : 'Enable'}
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="window.deleteChatbotRule('${rule.id || rule._id}')">
+                                <i class="fas fa-trash me-2"></i>Delete
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    // Initialize rule buttons after rendering
+    setTimeout(() => {
+        window.initializeChatbotRuleButtons();
+    }, 100);
+};
+
+// Initialize chatbot rule buttons
+window.initializeChatbotRuleButtons = function() {
+    console.log('Initializing chatbot rule buttons...');
+    // Additional rule-specific button initialization can go here
+};
+
+// Show add chatbot rule modal
+window.showAddChatbotRuleModal = function() {
+    console.log('Showing add chatbot rule modal...');
+    alert('Chatbot rule creation modal will be implemented soon!\n\nThis feature will allow you to:\n- Create trigger keywords\n- Set automated responses\n- Configure rule conditions\n- Enable/disable rules');
+};
+
+// Edit chatbot rule
+window.editChatbotRule = function(ruleId) {
+    console.log('Editing chatbot rule:', ruleId);
+    alert(`Edit chatbot rule ${ruleId} - Coming soon!`);
+};
+
+// Toggle chatbot rule
+window.toggleChatbotRule = function(ruleId, enable) {
+    console.log('Toggling chatbot rule:', ruleId, 'enable:', enable);
+    alert(`${enable ? 'Enable' : 'Disable'} chatbot rule ${ruleId} - Coming soon!`);
+};
+
+// Delete chatbot rule
+window.deleteChatbotRule = function(ruleId) {
+    console.log('Deleting chatbot rule:', ruleId);
+    if (confirm('Are you sure you want to delete this chatbot rule?')) {
+        alert(`Delete chatbot rule ${ruleId} - Coming soon!`);
+    }
+};
+
+// Initialize webhook management buttons
+window.initializeWebhookButtons = function() {
+    console.log('Initializing webhook management buttons...');
+    
+    // Add webhook button
+    const addWebhookBtn = document.getElementById('add-webhook-btn');
+    if (addWebhookBtn) {
+        console.log('Found add webhook button, attaching event listener');
+        addWebhookBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Add webhook button clicked');
+            window.showAddWebhookModal();
+        });
+    } else {
+        console.error('Add webhook button not found');
+    }
+    
+    // Initialize existing webhook buttons
+    window.initializeWebhookActionButtons();
+};
+
+// ===== COMPREHENSIVE WEBHOOK MANAGEMENT FUNCTIONS =====
+
+// Initialize webhooks page - make it globally available
+window.initializeWebhooksPage = function() {
+    console.log('Initializing webhooks page...');
+    
+    // Load initial data
+    loadWebhooksData();
+    loadSupportedEvents();
+
+    // Initialize event listeners
+    initializeWebhookEventListeners();
+};
+
+// Load webhooks data with comprehensive functionality
+async function loadWebhooksData() {
+    console.log('Loading webhooks data...');
+    try {
+        const response = await makeApiCall('/api/webhooks');
+        
+        if (response && response.success) {
+            const webhooks = response.data || [];
+            renderWebhooksTable(webhooks);
+            updateWebhookStatistics(webhooks);
+            return webhooks;
+        } else {
+            throw new Error(response?.message || 'Failed to load webhooks');
+        }
+    } catch (error) {
+        console.error('Error loading webhooks:', error);
+        showWebhooksError('Failed to load webhooks: ' + error.message);
+        return [];
+    }
+}
+
+// Render webhooks table with all functionality
+function renderWebhooksTable(webhooks) {
+    const tableBody = document.getElementById('webhooks-table-body');
+    if (!tableBody) return;
+
+    if (!webhooks || webhooks.length === 0) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="fas fa-webhook fa-3x mb-3 opacity-50"></i>
+                        <h5>No Webhooks Found</h5>
+                        <p>Create your first webhook to start receiving real-time notifications.</p>
+                        <button class="btn btn-primary" onclick="showAddWebhookModal()">
+                            <i class="fas fa-plus me-2"></i>Add Webhook
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tableBody.innerHTML = webhooks.map((webhook, index) => {
+        const successRate = webhook.successCount + webhook.failureCount > 0 
+            ? Math.round((webhook.successCount / (webhook.successCount + webhook.failureCount)) * 100)
+            : 0;
+        
+        const statusBadge = webhook.isActive 
+            ? '<span class="badge bg-success">Active</span>'
+            : '<span class="badge bg-secondary">Inactive</span>';
+        
+        const lastDelivery = webhook.lastTriggeredAt 
+            ? formatRelativeTime(webhook.lastTriggeredAt)
+            : 'Never';
+
+        const eventBadges = webhook.events.slice(0, 3).map(event => 
+            `<span class="badge bg-primary me-1">${event}</span>`
+        ).join('');
+        
+        const moreEvents = webhook.events.length > 3 
+            ? `<span class="badge bg-light text-dark">+${webhook.events.length - 3} more</span>`
+            : '';
+
+        return `
+            <tr>
+                <td>
+                    <input type="checkbox" class="form-check-input webhook-checkbox" 
+                           value="${webhook._id}" data-webhook-id="${webhook._id}">
+                </td>
+                <td>
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold">${webhook.url}</span>
+                        ${webhook.description ? `<small class="text-muted">${webhook.description}</small>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <div class="d-flex flex-wrap gap-1">
+                        ${eventBadges}
+                        ${moreEvents}
+                    </div>
+                </td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 60px; height: 8px;">
+                            <div class="progress-bar ${successRate >= 80 ? 'bg-success' : successRate >= 50 ? 'bg-warning' : 'bg-danger'}" 
+                                 style="width: ${successRate}%"></div>
+                        </div>
+                        <span class="small">${successRate}%</span>
+                    </div>
+                    <small class="text-muted">${webhook.successCount}/${webhook.successCount + webhook.failureCount}</small>
+                </td>
+                <td>
+                    <span class="small">${lastDelivery}</span>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="showWebhookDetails('${webhook._id}')" 
+                                title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-outline-success" onclick="testWebhookNew('${webhook._id}')" 
+                                title="Test Webhook">
+                            <i class="fas fa-vial"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="editWebhookNew('${webhook._id}')" 
+                                title="Edit Webhook">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteWebhookNew('${webhook._id}')" 
+                                title="Delete Webhook">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Initialize checkbox functionality
+    initializeWebhookCheckboxes();
+}
+
+// Helper function to update DOM elements
+function updateElement(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+            element.value = value;
+        } else {
+            element.textContent = value;
+        }
+        console.log(`Updated ${id}:`, value);
+    } else {
+        console.log(`Element with id '${id}' not found (this is normal if not on webhooks page)`);
+    }
+}
+
+// Helper functions for loading states and notifications
+function showLoading(message) {
+    // Simple loading implementation - you can enhance this with a proper modal
+    console.log('Loading:', message);
+    // You could show a loading spinner or disable buttons here
+}
+
+function hideLoading() {
+    console.log('Loading complete');
+    // Hide loading spinner or re-enable buttons here
+}
+
+function showSuccess(message) {
+    alert('✅ ' + message);
+    console.log('Success:', message);
+}
+
+function showError(message) {
+    alert('❌ ' + message);
+    console.error('Error:', message);
+}
+
+// Helper function to format relative time
+function formatRelativeTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return time.toLocaleDateString();
+}
+
+// Update webhook statistics
+function updateWebhookStatistics(webhooks) {
+    const totalWebhooks = webhooks.length;
+    const activeWebhooks = webhooks.filter(w => w.isActive).length;
+    const totalDeliveries = webhooks.reduce((sum, w) => sum + w.successCount + w.failureCount, 0);
+    const successfulDeliveries = webhooks.reduce((sum, w) => sum + w.successCount, 0);
+    const successRate = totalDeliveries > 0 ? Math.round((successfulDeliveries / totalDeliveries) * 100) : 0;
+
+    updateElement('total-webhooks', totalWebhooks);
+    updateElement('active-webhooks', activeWebhooks);
+    updateElement('total-deliveries', totalDeliveries);
+    updateElement('success-rate', successRate + '%');
+}
+
+// Load supported events
+async function loadSupportedEvents() {
+    try {
+        const response = await makeApiCall('/api/webhooks/events/supported');
+        
+        if (response && response.success) {
+            const events = response.data || [];
+            renderSupportedEvents(events);
+            populateEventFilters(events);
+            return events;
+        }
+    } catch (error) {
+        console.error('Error loading supported events:', error);
+        // Fallback to default events
+        const defaultEvents = [
+            'message.received', 'message.sent', 'message.delivered', 'message.read', 'message.failed',
+            'session.connected', 'session.disconnected', 'session.qr_updated', 'session.error'
+        ];
+        renderSupportedEvents(defaultEvents);
+        populateEventFilters(defaultEvents);
+        return defaultEvents;
+    }
+}
+
+// Render supported events list
+function renderSupportedEvents(events) {
+    const container = document.getElementById('supported-events-list');
+    if (!container) return;
+
+    container.innerHTML = events.map(event => {
+        const eventType = event.split('.')[0];
+        const eventAction = event.split('.')[1];
+        const badgeClass = getEventBadgeClass(eventType);
+        
+        return `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <code class="small">${event}</code>
+                <span class="badge ${badgeClass}">${eventAction}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Populate event filters
+function populateEventFilters(events) {
+    const eventFilter = document.getElementById('event-filter');
+    if (!eventFilter) return;
+
+    const uniqueEventTypes = [...new Set(events.map(event => event.split('.')[0]))];
+    
+    eventFilter.innerHTML = '<option value="">All Events</option>' + 
+        uniqueEventTypes.map(eventType => 
+            `<option value="${eventType}">${eventType.charAt(0).toUpperCase() + eventType.slice(1)}</option>`
+        ).join('');
+}
+
+// Show add webhook modal
+function showAddWebhookModal() {
+    const modal = new bootstrap.Modal(document.getElementById('webhookModal'));
+    document.querySelector('#webhookModal .modal-title').textContent = 'Add Webhook';
+    document.getElementById('webhook-form').reset();
+    
+    // Load events for selection
+    loadSupportedEvents().then(events => {
+        populateWebhookEvents(events);
+    });
+    
+    modal.show();
+}
+
+// Populate webhook events in modal
+function populateWebhookEvents(events) {
+    const container = document.getElementById('webhook-events');
+    if (!container) return;
+
+    container.innerHTML = events.map(event => `
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="${event}" id="event-${event.replace('.', '-')}">
+            <label class="form-check-label" for="event-${event.replace('.', '-')}">
+                ${event}
+            </label>
+        </div>
+    `).join('');
+}
+
+// Populate edit modal with webhook data
+function populateEditModal(webhook) {
+    // Populate form fields
+    document.getElementById('webhook-name').value = webhook.name || '';
+    document.getElementById('webhook-url').value = webhook.url || '';
+    document.getElementById('webhook-timeout').value = webhook.timeout || 30;
+    document.getElementById('webhook-retries').value = webhook.retryPolicy?.maxAttempts || 3;
+    document.getElementById('webhook-secret').value = webhook.secret || '';
+    document.getElementById('webhook-description').value = webhook.description || '';
+    document.getElementById('webhook-active').checked = webhook.isActive || false;
+
+    // Load events and select the webhook's events
+    loadSupportedEvents().then(events => {
+        populateWebhookEvents(events);
+        
+        // Select the webhook's events
+        webhook.events.forEach(event => {
+            const checkbox = document.getElementById(`event-${event.replace('.', '-')}`);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+    });
+}
+
+// Test webhook (new implementation)
+async function testWebhookNew(webhookId) {
+    try {
+        showLoading('Testing webhook...');
+        
+        const response = await makeApiCall(`/api/webhooks/${webhookId}/test`, {
+            method: 'POST'
+        });
+
+        hideLoading();
+
+        if (response && response.success) {
+            showSuccess(`Webhook test successful! Response time: ${response.data.responseTime}ms`);
+        } else {
+            throw new Error(response?.message || 'Webhook test failed');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Error testing webhook:', error);
+        showError('Webhook test failed: ' + error.message);
+    }
+}
+
+// Edit webhook (new implementation)
+function editWebhookNew(webhookId) {
+    // Load webhook details and populate modal
+    loadWebhookDetails(webhookId).then(webhook => {
+        if (webhook) {
+            populateEditModal(webhook);
+            const modal = new bootstrap.Modal(document.getElementById('webhookModal'));
+            document.querySelector('#webhookModal .modal-title').textContent = 'Edit Webhook';
+            modal.show();
+        }
+    });
+}
+
+// Delete webhook (new implementation)
+async function deleteWebhookNew(webhookId) {
+    if (!confirm('Are you sure you want to delete this webhook? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        showLoading('Deleting webhook...');
+        
+        const response = await makeApiCall(`/api/webhooks/${webhookId}`, {
+            method: 'DELETE'
+        });
+
+        hideLoading();
+
+        if (response && response.success) {
+            await loadWebhooksData();
+            showSuccess('Webhook deleted successfully!');
+        } else {
+            throw new Error(response?.message || 'Failed to delete webhook');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Error deleting webhook:', error);
+        showError('Failed to delete webhook: ' + error.message);
+    }
+}
+
+// Load webhook details
+async function loadWebhookDetails(webhookId) {
+    try {
+        const response = await makeApiCall(`/api/webhooks/${webhookId}`);
+        
+        if (response && response.success) {
+            return response.data;
+        } else {
+            throw new Error(response?.message || 'Failed to load webhook details');
+        }
+    } catch (error) {
+        console.error('Error loading webhook details:', error);
+        showError('Failed to load webhook details: ' + error.message);
+        return null;
+    }
+}
+
+// Show webhook details modal
+async function showWebhookDetails(webhookId) {
+    try {
+        const webhook = await loadWebhookDetails(webhookId);
+        if (!webhook) return;
+
+        // Populate details modal
+        document.getElementById('detail-name').textContent = webhook.name || webhook.url;
+        document.getElementById('detail-url').textContent = webhook.url;
+        document.getElementById('detail-status').innerHTML = webhook.isActive 
+            ? '<span class="badge bg-success">Active</span>'
+            : '<span class="badge bg-secondary">Inactive</span>';
+        document.getElementById('detail-created').textContent = new Date(webhook.createdAt).toLocaleString();
+        document.getElementById('detail-success').textContent = webhook.successCount || 0;
+        document.getElementById('detail-failure').textContent = webhook.failureCount || 0;
+        
+        const successRate = webhook.successCount + webhook.failureCount > 0 
+            ? Math.round((webhook.successCount / (webhook.successCount + webhook.failureCount)) * 100)
+            : 0;
+        document.getElementById('detail-rate').textContent = successRate + '%';
+        
+        document.getElementById('detail-last-triggered').textContent = webhook.lastTriggeredAt 
+            ? new Date(webhook.lastTriggeredAt).toLocaleString()
+            : 'Never';
+
+        // Render events
+        const eventsContainer = document.getElementById('detail-events');
+        eventsContainer.innerHTML = webhook.events.map(event => 
+            `<span class="badge bg-primary me-1 mb-1">${event}</span>`
+        ).join('');
+
+        // Load logs
+        loadWebhookLogs(webhookId);
+
+        const modal = new bootstrap.Modal(document.getElementById('webhookDetailsModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Error showing webhook details:', error);
+        showError('Failed to load webhook details: ' + error.message);
+    }
+}
+
+// Load webhook logs
+async function loadWebhookLogs(webhookId) {
+    try {
+        const response = await makeApiCall(`/api/webhooks/${webhookId}/logs?limit=10`);
+        
+        const logsContainer = document.getElementById('detail-logs');
+        
+        if (response && response.success && response.data.length > 0) {
+            logsContainer.innerHTML = response.data.map(log => `
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <span class="badge ${log.success ? 'bg-success' : 'bg-danger'}">${log.event}</span>
+                        ${log.error ? `<small class="text-danger d-block">${log.error}</small>` : ''}
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${new Date(log.timestamp).toLocaleString()}</small>
+                        ${log.responseTime ? `<small class="d-block text-muted">${log.responseTime}ms</small>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            logsContainer.innerHTML = '<div class="text-center text-muted py-3">No logs available</div>';
+        }
+    } catch (error) {
+        console.error('Error loading webhook logs:', error);
+        document.getElementById('detail-logs').innerHTML = 
+            '<div class="text-center text-danger py-3">Failed to load logs</div>';
+    }
+}
+
+// Initialize webhook checkboxes
+function initializeWebhookCheckboxes() {
+    const selectAll = document.getElementById('select-all-webhooks');
+    const checkboxes = document.querySelectorAll('.webhook-checkbox');
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(c => c.checked);
+            const someChecked = Array.from(checkboxes).some(c => c.checked);
+            
+            if (selectAll) {
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = someChecked && !allChecked;
+            }
+        });
+    });
+}
+
+// Initialize webhook event listeners
+function initializeWebhookEventListeners() {
+    // Add webhook button
+    const addWebhookBtn = document.getElementById('add-webhook-btn');
+    if (addWebhookBtn) {
+        addWebhookBtn.addEventListener('click', showAddWebhookModal);
+    }
+
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-webhooks-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            refreshBtn.disabled = true;
+            loadWebhooksData().finally(() => {
+                refreshBtn.disabled = false;
+            });
+        });
+    }
+
+    // Webhook form submission
+    const webhookForm = document.getElementById('webhook-form');
+    if (webhookForm) {
+        webhookForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(webhookForm);
+            await saveWebhook(formData);
+        });
+    }
+
+    // Quick test form
+    const quickTestForm = document.getElementById('quick-test-form');
+    if (quickTestForm) {
+        quickTestForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('test-url').value;
+            await quickTestWebhook(url);
+        });
+    }
+}
+
+// Save webhook
+async function saveWebhook(formData) {
+    try {
+        const selectedEvents = Array.from(document.querySelectorAll('#webhook-events input:checked'))
+            .map(input => input.value);
+
+        if (selectedEvents.length === 0) {
+            throw new Error('Please select at least one event');
+        }
+
+        const webhookData = {
+            name: formData.get('name'),
+            url: formData.get('url'),
+            events: selectedEvents,
+            secret: formData.get('secret') || undefined,
+            timeout: parseInt(formData.get('timeout')) || 30,
+            retryAttempts: parseInt(formData.get('retryAttempts')) || 3,
+            description: formData.get('description') || undefined,
+            isActive: formData.has('isActive')
+        };
+
+        const response = await makeApiCall('/api/webhooks', {
+            method: 'POST',
+            body: JSON.stringify(webhookData)
+        });
+
+        if (response && response.success) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('webhookModal'));
+            modal.hide();
+            
+            await loadWebhooksData();
+            showSuccess('Webhook created successfully!');
+        } else {
+            throw new Error(response?.message || 'Failed to create webhook');
+        }
+    } catch (error) {
+        console.error('Error saving webhook:', error);
+        showError('Failed to create webhook: ' + error.message);
+    }
+}
+
+// Quick test webhook URL
+async function quickTestWebhook(url) {
+    try {
+        showLoading('Testing webhook URL...');
+        
+        const response = await makeApiCall('/api/webhooks/test-url', {
+            method: 'POST',
+            body: JSON.stringify({ webhookUrl: url })
+        });
+
+        hideLoading();
+
+        if (response && response.success) {
+            showSuccess(`Webhook test successful! Response time: ${response.data.responseTime}ms`);
+        } else {
+            throw new Error(response?.message || 'Webhook test failed');
+        }
+    } catch (error) {
+        hideLoading();
+        console.error('Error testing webhook URL:', error);
+        showError('Webhook test failed: ' + error.message);
+    }
+}
+
+// Helper functions for webhooks
+function getEventBadgeClass(eventType) {
+    const badgeClasses = {
+        'message': 'bg-primary',
+        'session': 'bg-info',
+        'contact': 'bg-success',
+        'group': 'bg-warning',
+        'call': 'bg-secondary'
+    };
+    return badgeClasses[eventType] || 'bg-secondary';
+}
+
+function showWebhooksError(message) {
+    const tableBody = document.getElementById('webhooks-table-body');
+    if (tableBody) {
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-4">
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <h5>Error Loading Webhooks</h5>
+                        <p>${message}</p>
+                        <button class="btn btn-outline-primary" onclick="loadWebhooksData()">
+                            <i class="fas fa-retry me-2"></i>Retry
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Make functions globally available
+window.loadWebhooksData = loadWebhooksData;
+window.showAddWebhookModal = showAddWebhookModal;
+window.testWebhookNew = testWebhookNew;
+window.editWebhookNew = editWebhookNew;
+window.deleteWebhookNew = deleteWebhookNew;
+window.showWebhookDetails = showWebhookDetails;
+
+// ===== COMPREHENSIVE ANALYTICS MANAGEMENT FUNCTIONS =====
+
+// Global analytics state
+let currentAnalyticsPeriod = '30d';
+let analyticsCharts = {};
+
+// Initialize analytics page - make it globally available
+window.initializeAnalyticsPage = function() {
+    console.log('Initializing analytics page...');
+    initializeAnalyticsManually();
+};
+
+// Initialize analytics manually when window.initializeAnalyticsPage is not available
+function initializeAnalyticsManually() {
+    console.log('Initializing analytics manually...');
+    
+    // Load initial data
+    loadAnalyticsData();
+    
+    // Initialize event listeners
+    initializeAnalyticsEventListeners();
+}
+
+// Load analytics data with comprehensive functionality
+async function loadAnalyticsData(period = currentAnalyticsPeriod) {
+    console.log('Loading analytics data for period:', period);
+    currentAnalyticsPeriod = period;
+    
+    try {
+        // Load all analytics data in parallel
+        await Promise.all([
+            loadAnalyticsMetrics(period),
+            loadVolumeChart(period),
+            loadStatusChart(),
+            loadTopContacts(period),
+            loadSessionAnalytics(period),
+            loadMessageTypes()
+        ]);
+        
+        console.log('All analytics data loaded successfully');
+    } catch (error) {
+        console.error('Error loading analytics data:', error);
+        showAnalyticsError('Failed to load analytics data: ' + error.message);
+    }
+}
+
+// Load analytics metrics
+async function loadAnalyticsMetrics(period = '30d') {
+    try {
+        const response = await makeApiCall(`/api/analytics/dashboard?period=${period}`);
+        
+        if (response && response.success) {
+            const data = response.data;
+            updateAnalyticsMetrics(data);
+        } else {
+            throw new Error(response?.message || 'Failed to load metrics');
+        }
+    } catch (error) {
+        console.error('Error loading analytics metrics:', error);
+        showMetricsError();
+    }
+}
+
+// Update analytics metrics display
+function updateAnalyticsMetrics(data) {
+    const overview = data.overview || {};
+    const messageStatus = data.messageStatus || {};
+    
+    // Calculate delivery rate
+    const totalSent = overview.sentMessages || 0;
+    const delivered = messageStatus.delivered || 0;
+    const deliveryRate = totalSent > 0 ? ((delivered / totalSent) * 100).toFixed(1) : '0.0';
+    
+    // Update metrics
+    updateElement('delivery-rate', deliveryRate + '%');
+    updateElement('total-messages', formatNumber(overview.totalMessages || 0));
+    updateElement('active-sessions', overview.activeSessions || 0);
+    
+    // Calculate message types count
+    const messageTypes = Object.keys(data.messageTypes || {}).length;
+    updateElement('message-types', messageTypes);
+    
+    // Update change indicators (placeholder for now)
+    updateElement('delivery-rate-change', 'Last ' + currentAnalyticsPeriod);
+    updateElement('total-messages-change', 'Last ' + currentAnalyticsPeriod);
+    updateElement('active-sessions-change', 'Current active');
+    updateElement('message-types-change', 'Types used');
+}
+
+// Load volume chart
+async function loadVolumeChart(period = '7d') {
+    const canvas = document.getElementById('volumeChart');
+    const loadingDiv = document.getElementById('volume-chart-loading');
+    const errorDiv = document.getElementById('volume-chart-error');
+    
+    if (!canvas) return;
+    
+    try {
+        // Show loading
+        loadingDiv.style.display = 'block';
+        canvas.style.display = 'none';
+        errorDiv.style.display = 'none';
+        
+        const response = await makeApiCall(`/api/analytics/messages?period=${period}`);
+        
+        if (response && response.success) {
+            const timeSeries = response.data.timeSeries || [];
+            await createVolumeChart(canvas, timeSeries);
+            
+            // Show chart
+            loadingDiv.style.display = 'none';
+            canvas.style.display = 'block';
+        } else {
+            throw new Error(response?.message || 'Failed to load chart data');
+        }
+    } catch (error) {
+        console.error('Error loading volume chart:', error);
+        loadingDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+    }
+}
+
+// Create volume chart
+async function createVolumeChart(canvas, timeSeries) {
+    // Wait for Chart.js to be available
+    let chartRetries = 0;
+    const maxRetries = 10;
+    
+    while (typeof Chart === 'undefined' && chartRetries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        chartRetries++;
+    }
+    
+    if (typeof Chart === 'undefined') {
+        throw new Error('Chart.js library not available');
+    }
+    
+    // Destroy existing chart
+    if (analyticsCharts.volumeChart) {
+        try {
+            analyticsCharts.volumeChart.destroy();
+        } catch (e) {
+            console.warn('Error destroying volume chart:', e);
+        }
+    }
+    
+    // Prepare data
+    const labels = timeSeries.map(item => {
+        const date = new Date(item._id);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
+    const sentData = timeSeries.map(item => item.sent || 0);
+    const receivedData = timeSeries.map(item => item.received || 0);
+    
+    // Create chart
+    analyticsCharts.volumeChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Sent Messages',
+                    data: sentData,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Received Messages',
+                    data: receivedData,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load status chart
+async function loadStatusChart() {
+    const canvas = document.getElementById('statusChart');
+    const loadingDiv = document.getElementById('status-chart-loading');
+    const errorDiv = document.getElementById('status-chart-error');
+    
+    if (!canvas) return;
+    
+    try {
+        // Show loading
+        loadingDiv.style.display = 'block';
+        canvas.style.display = 'none';
+        errorDiv.style.display = 'none';
+        
+        const response = await makeApiCall(`/api/analytics/dashboard?period=${currentAnalyticsPeriod}`);
+        
+        if (response && response.success) {
+            const messageStatus = response.data.messageStatus || {};
+            await createStatusChart(canvas, messageStatus);
+            
+            // Show chart
+            loadingDiv.style.display = 'none';
+            canvas.style.display = 'block';
+        } else {
+            throw new Error(response?.message || 'Failed to load status data');
+        }
+    } catch (error) {
+        console.error('Error loading status chart:', error);
+        loadingDiv.style.display = 'none';
+        errorDiv.style.display = 'block';
+    }
+}
+
+// Create status chart
+async function createStatusChart(canvas, messageStatus) {
+    // Wait for Chart.js
+    let chartRetries = 0;
+    const maxRetries = 10;
+    
+    while (typeof Chart === 'undefined' && chartRetries < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        chartRetries++;
+    }
+    
+    if (typeof Chart === 'undefined') {
+        throw new Error('Chart.js library not available');
+    }
+    
+    // Destroy existing chart
+    if (analyticsCharts.statusChart) {
+        try {
+            analyticsCharts.statusChart.destroy();
+        } catch (e) {
+            console.warn('Error destroying status chart:', e);
+        }
+    }
+    
+    // Prepare data
+    const labels = Object.keys(messageStatus);
+    const data = Object.values(messageStatus);
+    const colors = [
+        '#198754', // delivered - green
+        '#ffc107', // pending - yellow
+        '#dc3545', // failed - red
+        '#0d6efd', // sent - blue
+        '#6c757d'  // other - gray
+    ];
+    
+    if (labels.length === 0) {
+        // Show empty state
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No status data available', canvas.width / 2, canvas.height / 2);
+        return;
+    }
+    
+    // Create chart
+    analyticsCharts.statusChart = new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+            datasets: [{
+                data: data,
+                backgroundColor: colors.slice(0, labels.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// Load top contacts
+async function loadTopContacts(period = '30d') {
+    const loadingDiv = document.getElementById('top-contacts-loading');
+    const listDiv = document.getElementById('top-contacts-list');
+    const emptyDiv = document.getElementById('top-contacts-empty');
+    
+    try {
+        // Show loading
+        loadingDiv.style.display = 'block';
+        listDiv.style.display = 'none';
+        emptyDiv.style.display = 'none';
+        
+        const response = await makeApiCall(`/api/analytics/contacts?period=${period}&limit=5`);
+        
+        if (response && response.success) {
+            const contacts = response.data.contacts || [];
+            
+            if (contacts.length > 0) {
+                renderTopContacts(contacts);
+                loadingDiv.style.display = 'none';
+                listDiv.style.display = 'block';
+            } else {
+                loadingDiv.style.display = 'none';
+                emptyDiv.style.display = 'block';
+            }
+        } else {
+            throw new Error(response?.message || 'Failed to load contacts');
+        }
+    } catch (error) {
+        console.error('Error loading top contacts:', error);
+        loadingDiv.style.display = 'none';
+        emptyDiv.style.display = 'block';
+    }
+}
+
+// Render top contacts
+function renderTopContacts(contacts) {
+    const listDiv = document.getElementById('top-contacts-list');
+    if (!listDiv) return;
+    
+    const maxMessages = Math.max(...contacts.map(c => c.totalMessages));
+    
+    listDiv.innerHTML = contacts.map(contact => {
+        const percentage = maxMessages > 0 ? (contact.totalMessages / maxMessages) * 100 : 0;
+        const phoneNumber = contact.contact || 'Unknown';
+        const displayName = phoneNumber.includes('@') ? phoneNumber.split('@')[0] : phoneNumber;
+        
+        return `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">${displayName}</div>
+                        <small class="text-muted">${contact.totalMessages} messages</small>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">↑${contact.sentMessages} ↓${contact.receivedMessages}</small>
+                </div>
+            </div>
+            <div class="progress mb-3" style="height: 4px;">
+                <div class="progress-bar bg-primary" style="width: ${percentage}%"></div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Load session analytics
+async function loadSessionAnalytics(period = '30d') {
+    const loadingDiv = document.getElementById('session-analytics-loading');
+    const contentDiv = document.getElementById('session-analytics-content');
+    
+    try {
+        // Show loading
+        loadingDiv.style.display = 'block';
+        contentDiv.style.display = 'none';
+        
+        const response = await makeApiCall(`/api/analytics/sessions?period=${period}`);
+        
+        if (response && response.success) {
+            const data = response.data;
+            renderSessionAnalytics(data);
+            
+            loadingDiv.style.display = 'none';
+            contentDiv.style.display = 'block';
+        } else {
+            throw new Error(response?.message || 'Failed to load session analytics');
+        }
+    } catch (error) {
+        console.error('Error loading session analytics:', error);
+        loadingDiv.style.display = 'none';
+        contentDiv.innerHTML = '<div class="text-center text-danger py-3">Failed to load session data</div>';
+        contentDiv.style.display = 'block';
+    }
+}
+
+// Render session analytics
+function renderSessionAnalytics(data) {
+    const contentDiv = document.getElementById('session-analytics-content');
+    if (!contentDiv) return;
+    
+    const summary = data.summary || {};
+    const sessions = data.sessions || [];
+    
+    contentDiv.innerHTML = `
+        <div class="row g-3 mb-3">
+            <div class="col-4">
+                <div class="text-center">
+                    <div class="h4 text-primary mb-0">${summary.totalSessions || 0}</div>
+                    <small class="text-muted">Total</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center">
+                    <div class="h4 text-success mb-0">${summary.activeSessions || 0}</div>
+                    <small class="text-muted">Active</small>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="text-center">
+                    <div class="h4 text-warning mb-0">${summary.inactiveSessions || 0}</div>
+                    <small class="text-muted">Inactive</small>
+                </div>
+            </div>
+        </div>
+        <div class="border-top pt-3">
+            <h6 class="mb-3">Recent Activity</h6>
+            ${sessions.slice(0, 3).map(session => `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <div class="fw-bold">${session.sessionId}</div>
+                        <small class="text-muted">${session.phoneNumber || 'No phone'}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge ${session.isConnected ? 'bg-success' : 'bg-secondary'}">${session.isConnected ? 'Connected' : 'Disconnected'}</span>
+                        <div><small class="text-muted">${session.messageStats.total} msgs</small></div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Load message types
+async function loadMessageTypes() {
+    const loadingDiv = document.getElementById('message-types-loading');
+    const contentDiv = document.getElementById('message-types-content');
+    
+    try {
+        // Show loading
+        loadingDiv.style.display = 'block';
+        contentDiv.style.display = 'none';
+        
+        const response = await makeApiCall(`/api/analytics/dashboard?period=${currentAnalyticsPeriod}`);
+        
+        if (response && response.success) {
+            const messageTypes = response.data.messageTypes || {};
+            renderMessageTypes(messageTypes);
+            
+            loadingDiv.style.display = 'none';
+            contentDiv.style.display = 'block';
+        } else {
+            throw new Error(response?.message || 'Failed to load message types');
+        }
+    } catch (error) {
+        console.error('Error loading message types:', error);
+        loadingDiv.style.display = 'none';
+        contentDiv.innerHTML = '<div class="text-center text-danger py-3">Failed to load message types</div>';
+        contentDiv.style.display = 'block';
+    }
+}
+
+// Render message types
+function renderMessageTypes(messageTypes) {
+    const cardsDiv = document.getElementById('message-types-cards');
+    if (!cardsDiv) return;
+    
+    const types = Object.entries(messageTypes);
+    const total = types.reduce((sum, [, count]) => sum + count, 0);
+    
+    if (types.length === 0) {
+        cardsDiv.innerHTML = '<div class="col-12 text-center text-muted py-4">No message type data available</div>';
+        return;
+    }
+    
+    cardsDiv.innerHTML = types.map(([type, count]) => {
+        const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+        const icon = getMessageTypeIcon(type);
+        const color = getMessageTypeColor(type);
+        
+        return `
+            <div class="col-md-3 col-sm-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <i class="${icon} fa-2x ${color}"></i>
+                        </div>
+                        <h5 class="card-title">${formatNumber(count)}</h5>
+                        <p class="card-text text-muted">${type.charAt(0).toUpperCase() + type.slice(1)}</p>
+                        <small class="text-muted">${percentage}% of total</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Initialize analytics event listeners
+function initializeAnalyticsEventListeners() {
+    // Period selector buttons
+    const periodButtons = document.querySelectorAll('#period-selector button[data-period]');
+    periodButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Update active state
+            periodButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Load data for new period
+            const period = button.getAttribute('data-period');
+            loadAnalyticsData(period);
+        });
+    });
+    
+    // Chart period buttons
+    const chartPeriodButtons = document.querySelectorAll('button[data-chart-period]');
+    chartPeriodButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Update active state
+            const parent = button.parentElement;
+            parent.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Reload chart with new period
+            const period = button.getAttribute('data-chart-period');
+            loadVolumeChart(period);
+        });
+    });
+    
+    // Refresh button
+    const refreshBtn = document.getElementById('refresh-analytics-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            refreshBtn.disabled = true;
+            loadAnalyticsData(currentAnalyticsPeriod).finally(() => {
+                refreshBtn.disabled = false;
+            });
+        });
+    }
+    
+    // Export button
+    const exportBtn = document.getElementById('export-analytics-btn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            exportAnalyticsData();
+        });
+    }
+    
+    // View all contacts button
+    const viewAllContactsBtn = document.getElementById('view-all-contacts-btn');
+    if (viewAllContactsBtn) {
+        viewAllContactsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Navigate to contacts or show modal with all contacts
+            alert('View all contacts functionality - to be implemented');
+        });
+    }
+}
+
+// Export analytics data
+async function exportAnalyticsData() {
+    try {
+        showLoading('Exporting analytics data...');
+        
+        // Get all analytics data
+        const [dashboardResponse, messagesResponse, contactsResponse, sessionsResponse] = await Promise.all([
+            makeApiCall(`/api/analytics/dashboard?period=${currentAnalyticsPeriod}`),
+            makeApiCall(`/api/analytics/messages?period=${currentAnalyticsPeriod}`),
+            makeApiCall(`/api/analytics/contacts?period=${currentAnalyticsPeriod}&limit=50`),
+            makeApiCall(`/api/analytics/sessions?period=${currentAnalyticsPeriod}`)
+        ]);
+        
+        const exportData = {
+            period: currentAnalyticsPeriod,
+            exportDate: new Date().toISOString(),
+            dashboard: dashboardResponse?.data || {},
+            messages: messagesResponse?.data || {},
+            contacts: contactsResponse?.data || {},
+            sessions: sessionsResponse?.data || {}
+        };
+        
+        // Create and download file
+        const jsonContent = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `analytics_export_${currentAnalyticsPeriod}_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        hideLoading();
+        showSuccess('Analytics data exported successfully!');
+    } catch (error) {
+        hideLoading();
+        console.error('Error exporting analytics:', error);
+        showError('Failed to export analytics data: ' + error.message);
+    }
+}
+
+// Helper functions for analytics
+function getMessageTypeIcon(type) {
+    const icons = {
+        'text': 'fas fa-comment',
+        'image': 'fas fa-image',
+        'video': 'fas fa-video',
+        'audio': 'fas fa-microphone',
+        'document': 'fas fa-file',
+        'location': 'fas fa-map-marker-alt',
+        'contact': 'fas fa-address-card',
+        'sticker': 'fas fa-smile',
+        'gif': 'fas fa-film',
+        'chat': 'fas fa-comments'
+    };
+    return icons[type] || 'fas fa-envelope';
+}
+
+function getMessageTypeColor(type) {
+    const colors = {
+        'text': 'text-primary',
+        'image': 'text-success',
+        'video': 'text-danger',
+        'audio': 'text-warning',
+        'document': 'text-info',
+        'location': 'text-secondary',
+        'contact': 'text-dark',
+        'sticker': 'text-warning',
+        'gif': 'text-success',
+        'chat': 'text-primary'
+    };
+    return colors[type] || 'text-muted';
+}
+
+function formatNumber(num) {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+}
+
+function showAnalyticsError(message) {
+    console.error('Analytics error:', message);
+    // You could show a toast notification or update UI here
+}
+
+function showMetricsError() {
+    // Show error state for metrics
+    document.getElementById('delivery-rate').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+    document.getElementById('total-messages').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+    document.getElementById('active-sessions').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+    document.getElementById('message-types').innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i>';
+    
+    document.getElementById('delivery-rate-change').textContent = 'Error loading';
+    document.getElementById('total-messages-change').textContent = 'Error loading';
+    document.getElementById('active-sessions-change').textContent = 'Error loading';
+    document.getElementById('message-types-change').textContent = 'Error loading';
+}
+
+// Make analytics functions globally available
+window.loadAnalyticsData = loadAnalyticsData;
+window.loadVolumeChart = loadVolumeChart;
+
+// Load webhooks from backend
+window.loadWebhooks = async function() {
+    console.log('Loading webhooks from backend...');
+    try {
+        const webhooksTableBody = document.querySelector('#dashboard-webhooks tbody');
+        if (!webhooksTableBody) {
+            console.error('Webhooks table body not found');
+            return;
+        }
+        
+        // Show loading state
+        webhooksTableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="mt-2">Loading webhooks...</div>
+                </td>
+            </tr>
+        `;
+        
+        let webhooks = [];
+        
+        try {
+            // Try to make API call to get webhooks
+            const response = await window.makeApiCall('/api/webhooks');
+            console.log('Webhooks API response:', response);
+            
+            if (response && response.success && response.data) {
+                webhooks = Array.isArray(response.data) ? response.data : (response.data.webhooks || []);
+            } else if (Array.isArray(response)) {
+                webhooks = response;
+            }
+        } catch (apiError) {
+            console.warn('Webhooks API endpoint not available:', apiError.message);
+            
+            // Check if we have stored webhooks in localStorage as fallback
+            const storedWebhooks = localStorage.getItem('whatsapp_webhooks');
+            if (storedWebhooks) {
+                try {
+                    webhooks = JSON.parse(storedWebhooks);
+                    console.log('Using stored webhooks from localStorage:', webhooks);
+                } catch (parseError) {
+                    console.error('Error parsing stored webhooks:', parseError);
+                    webhooks = [];
+                }
+            }
+        }
+        
+        console.log('Final webhooks to display:', webhooks);
+        
+        if (webhooks.length === 0) {
+            webhooksTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <i class="fas fa-webhook fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No webhooks configured</h5>
+                        <p class="text-muted">Add your first webhook to receive real-time notifications</p>
+                        <div class="alert alert-info mt-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note:</strong> Webhook endpoints are not yet implemented on the backend. 
+                            Webhooks will be stored locally for demonstration purposes.
+                        </div>
+                        <button class="btn btn-primary" onclick="window.showAddWebhookModal()">
+                            <i class="fas fa-plus me-2"></i>Add First Webhook
+                        </button>
+                    </td>
+                </tr>
+            `;
+        } else {
+            window.renderWebhooksTable(webhooks);
+        }
+        
+    } catch (error) {
+        console.error('Error loading webhooks:', error);
+        const webhooksTableBody = document.querySelector('#dashboard-webhooks tbody');
+        if (webhooksTableBody) {
+            webhooksTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4 text-warning">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <h5>Webhook API Not Available</h5>
+                        <p>The webhook endpoints are not yet implemented on the backend.</p>
+                        <div class="alert alert-warning">
+                            <strong>For demonstration:</strong> You can still create webhooks that will be stored locally.
+                        </div>
+                        <button class="btn btn-primary" onclick="window.showAddWebhookModal()">
+                            <i class="fas fa-plus me-2"></i>Add Demo Webhook
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+};
+
+// Render webhooks table
+window.renderWebhooksTable = function(webhooks) {
+    const webhooksTableBody = document.querySelector('#dashboard-webhooks tbody');
+    if (!webhooksTableBody) return;
+    
+    webhooksTableBody.innerHTML = webhooks.map(webhook => {
+        const events = webhook.events || [];
+        const eventBadges = events.map(event => {
+            const badgeClass = getEventBadgeClass(event);
+            return `<span class="badge ${badgeClass} me-1">${event}</span>`;
+        }).join('');
+        
+        const statusBadge = webhook.active ? 
+            '<span class="badge bg-success">Active</span>' : 
+            '<span class="badge bg-secondary">Inactive</span>';
+            
+        const lastDelivery = webhook.lastDelivery ? 
+            formatRelativeTime(webhook.lastDelivery) : 
+            'Never';
+            
+        return `
+            <tr data-webhook-id="${webhook.id || webhook._id}">
+                <td>
+                    <code class="text-break">${webhook.url || 'No URL'}</code>
+                    ${webhook.description ? `<br><small class="text-muted">${webhook.description}</small>` : ''}
+                </td>
+                <td>${eventBadges || '<span class="text-muted">No events</span>'}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <small class="text-muted">${lastDelivery}</small>
+                    ${webhook.deliveryCount ? `<br><small class="text-info">${webhook.deliveryCount} total</small>` : ''}
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-info test-webhook-btn" 
+                                data-webhook-id="${webhook.id || webhook._id}" 
+                                title="Test webhook">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="btn btn-outline-primary edit-webhook-btn" 
+                                data-webhook-id="${webhook.id || webhook._id}" 
+                                title="Edit webhook">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-warning toggle-webhook-btn" 
+                                data-webhook-id="${webhook.id || webhook._id}" 
+                                data-active="${webhook.active}"
+                                title="${webhook.active ? 'Disable' : 'Enable'} webhook">
+                            <i class="fas fa-${webhook.active ? 'pause' : 'play'}"></i>
+                        </button>
+                        <button class="btn btn-outline-danger delete-webhook-btn" 
+                                data-webhook-id="${webhook.id || webhook._id}" 
+                                title="Delete webhook">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    // Initialize action buttons after rendering
+    setTimeout(() => {
+        window.initializeWebhookActionButtons();
+    }, 100);
+};
+
+// Initialize webhook action buttons
+window.initializeWebhookActionButtons = function() {
+    console.log('Initializing webhook action buttons...');
+    
+    // Test webhook buttons
+    document.querySelectorAll('.test-webhook-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const webhookId = this.getAttribute('data-webhook-id');
+            window.testWebhook(webhookId);
+        });
+    });
+    
+    // Edit webhook buttons
+    document.querySelectorAll('.edit-webhook-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const webhookId = this.getAttribute('data-webhook-id');
+            window.editWebhook(webhookId);
+        });
+    });
+    
+    // Toggle webhook buttons
+    document.querySelectorAll('.toggle-webhook-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const webhookId = this.getAttribute('data-webhook-id');
+            const isActive = this.getAttribute('data-active') === 'true';
+            window.toggleWebhook(webhookId, !isActive);
+        });
+    });
+    
+    // Delete webhook buttons
+    document.querySelectorAll('.delete-webhook-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const webhookId = this.getAttribute('data-webhook-id');
+            window.deleteWebhook(webhookId);
+        });
+    });
+};
+
+// Show add webhook modal
+window.showAddWebhookModal = function() {
+    console.log('Showing add webhook modal...');
+    
+    const modalHtml = `
+        <div class="modal fade" id="addWebhookModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Webhook</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="add-webhook-form">
+                            <div class="mb-3">
+                                <label class="form-label">Webhook URL *</label>
+                                <input type="url" class="form-control" id="webhook-url" required 
+                                       placeholder="https://your-domain.com/webhook">
+                                <div class="form-text">The URL where webhook events will be sent</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <input type="text" class="form-control" id="webhook-description" 
+                                       placeholder="Optional description for this webhook">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Events to Subscribe *</label>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="event-message-sent" value="message.sent">
+                                            <label class="form-check-label" for="event-message-sent">
+                                                Message Sent
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="event-message-delivered" value="message.delivered">
+                                            <label class="form-check-label" for="event-message-delivered">
+                                                Message Delivered
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="event-message-failed" value="message.failed">
+                                            <label class="form-check-label" for="event-message-failed">
+                                                Message Failed
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="event-session-connected" value="session.connected">
+                                            <label class="form-check-label" for="event-session-connected">
+                                                Session Connected
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="event-session-disconnected" value="session.disconnected">
+                                            <label class="form-check-label" for="event-session-disconnected">
+                                                Session Disconnected
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="webhook-active" checked>
+                                    <label class="form-check-label" for="webhook-active">
+                                        Enable webhook immediately
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="save-webhook-btn">
+                            <i class="fas fa-save me-2"></i>Create Webhook
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('addWebhookModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('addWebhookModal'));
+    modal.show();
+    
+    // Attach save button event listener
+    document.getElementById('save-webhook-btn').addEventListener('click', function() {
+        window.saveWebhook();
+    });
+};
+
+// Save webhook
+window.saveWebhook = async function() {
+    console.log('Saving webhook...');
+    try {
+        const url = document.getElementById('webhook-url').value.trim();
+        const description = document.getElementById('webhook-description').value.trim();
+        const active = document.getElementById('webhook-active').checked;
+        
+        // Get selected events
+        const events = [];
+        document.querySelectorAll('#addWebhookModal input[type="checkbox"][value]').forEach(checkbox => {
+            if (checkbox.checked) {
+                events.push(checkbox.value);
+            }
+        });
+        
+        if (!url) {
+            alert('Please enter a webhook URL');
+            return;
+        }
+        
+        if (events.length === 0) {
+            alert('Please select at least one event to subscribe to');
+            return;
+        }
+        
+        const saveBtn = document.getElementById('save-webhook-btn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+        
+        const webhookData = {
+            id: 'webhook_' + Date.now(),
+            url: url,
+            description: description,
+            events: events,
+            active: active,
+            createdAt: new Date().toISOString(),
+            lastDelivery: null,
+            deliveryCount: 0
+        };
+        
+        let success = false;
+        
+        try {
+            // Try to save via API first
+            const response = await window.makeApiCall('/api/webhooks', {
+                method: 'POST',
+                body: JSON.stringify(webhookData)
+            });
+            
+            if (response && response.success) {
+                success = true;
+                console.log('Webhook saved via API');
+            }
+        } catch (apiError) {
+            console.warn('API not available, saving to localStorage:', apiError.message);
+            
+            // Fallback to localStorage
+            const existingWebhooks = JSON.parse(localStorage.getItem('whatsapp_webhooks') || '[]');
+            existingWebhooks.push(webhookData);
+            localStorage.setItem('whatsapp_webhooks', JSON.stringify(existingWebhooks));
+            success = true;
+            console.log('Webhook saved to localStorage');
+        }
+        
+        if (success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addWebhookModal'));
+            if (modal) modal.hide();
+            
+            // Reload webhooks
+            await window.loadWebhooks();
+            
+            alert('Webhook created successfully!\n\nNote: Since the webhook API is not yet implemented, this webhook is stored locally for demonstration.');
+        } else {
+            throw new Error('Failed to create webhook');
+        }
+        
+    } catch (error) {
+        console.error('Error saving webhook:', error);
+        alert('Error creating webhook: ' + error.message);
+    } finally {
+        const saveBtn = document.getElementById('save-webhook-btn');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Create Webhook';
+        }
+    }
+};
+
+// Test webhook
+window.testWebhook = async function(webhookId) {
+    console.log('Testing webhook:', webhookId);
+    try {
+        try {
+            // Try API first
+            const response = await window.makeApiCall(`/api/webhooks/${webhookId}/test`, {
+                method: 'POST'
+            });
+            
+            if (response && response.success) {
+                alert('Test webhook sent successfully! Check your endpoint for the test payload.');
+                return;
+            }
+        } catch (apiError) {
+            console.warn('Test webhook API not available:', apiError.message);
+        }
+        
+        // Fallback for demo purposes
+        alert('Test webhook functionality is not yet implemented on the backend.\n\nIn a real implementation, this would send a test payload to your webhook URL to verify it\'s working correctly.');
+        
+    } catch (error) {
+        console.error('Error testing webhook:', error);
+        alert('Error testing webhook: ' + error.message);
+    }
+};
+
+// Edit webhook
+window.editWebhook = function(webhookId) {
+    console.log('Editing webhook:', webhookId);
+    alert(`Edit webhook ${webhookId} - Coming soon!\n\nThis feature will allow you to:\n- Update webhook URL\n- Modify event subscriptions\n- Change webhook settings`);
+};
+
+// Toggle webhook
+window.toggleWebhook = async function(webhookId, enable) {
+    console.log('Toggling webhook:', webhookId, 'enable:', enable);
+    try {
+        let success = false;
+        
+        try {
+            // Try API first
+            const response = await window.makeApiCall(`/api/webhooks/${webhookId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ active: enable })
+            });
+            
+            if (response && response.success) {
+                success = true;
+            }
+        } catch (apiError) {
+            console.warn('Toggle webhook API not available, using localStorage:', apiError.message);
+            
+            // Fallback to localStorage
+            const webhooks = JSON.parse(localStorage.getItem('whatsapp_webhooks') || '[]');
+            const webhookIndex = webhooks.findIndex(w => w.id === webhookId);
+            
+            if (webhookIndex !== -1) {
+                webhooks[webhookIndex].active = enable;
+                localStorage.setItem('whatsapp_webhooks', JSON.stringify(webhooks));
+                success = true;
+            }
+        }
+        
+        if (success) {
+            // Reload webhooks to reflect changes
+            await window.loadWebhooks();
+            alert(`Webhook ${enable ? 'enabled' : 'disabled'} successfully!`);
+        } else {
+            throw new Error('Failed to toggle webhook');
+        }
+    } catch (error) {
+        console.error('Error toggling webhook:', error);
+        alert('Error toggling webhook: ' + error.message);
+    }
+};
+
+// Delete webhook
+window.deleteWebhook = async function(webhookId) {
+    console.log('Deleting webhook:', webhookId);
+    if (!confirm('Are you sure you want to delete this webhook? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        let success = false;
+        
+        try {
+            // Try API first
+            const response = await window.makeApiCall(`/api/webhooks/${webhookId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response && response.success) {
+                success = true;
+            }
+        } catch (apiError) {
+            console.warn('Delete webhook API not available, using localStorage:', apiError.message);
+            
+            // Fallback to localStorage
+            const webhooks = JSON.parse(localStorage.getItem('whatsapp_webhooks') || '[]');
+            const filteredWebhooks = webhooks.filter(w => w.id !== webhookId);
+            
+            if (filteredWebhooks.length !== webhooks.length) {
+                localStorage.setItem('whatsapp_webhooks', JSON.stringify(filteredWebhooks));
+                success = true;
+            }
+        }
+        
+        if (success) {
+            // Reload webhooks to reflect changes
+            await window.loadWebhooks();
+            alert('Webhook deleted successfully!');
+        } else {
+            throw new Error('Failed to delete webhook');
+        }
+    } catch (error) {
+        console.error('Error deleting webhook:', error);
+        alert('Error deleting webhook: ' + error.message);
+    }
+};
+
+// Helper functions
+function getEventBadgeClass(event) {
+    const badgeClasses = {
+        'message.sent': 'bg-primary',
+        'message.delivered': 'bg-success',
+        'message.failed': 'bg-danger',
+        'session.connected': 'bg-info',
+        'session.disconnected': 'bg-warning'
+    };
+    return badgeClasses[event] || 'bg-secondary';
+}
+
+function formatRelativeTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return time.toLocaleDateString();
+}
 </script>

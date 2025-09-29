@@ -45,10 +45,10 @@ class DatabaseManager {
       maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE || '20'),
       minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE || '5'),
       
-      // Timeout settings (reduced for faster failure detection)
-      serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_SELECTION_TIMEOUT || '5000'),
-      socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT || '10000'),
-      connectTimeoutMS: parseInt(process.env.DB_CONNECT_TIMEOUT || '5000'),
+      // Timeout settings (increased for better MongoDB Atlas compatibility)
+      serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_SELECTION_TIMEOUT || '30000'),
+      socketTimeoutMS: parseInt(process.env.DB_SOCKET_TIMEOUT || '45000'),
+      connectTimeoutMS: parseInt(process.env.DB_CONNECT_TIMEOUT || '30000'),
       
       // Buffering settings
       bufferCommands: false,
@@ -69,6 +69,11 @@ class DatabaseManager {
       
       // Authentication
       authSource: process.env.DB_AUTH_SOURCE || 'admin',
+      
+      // Additional resilience options
+      heartbeatFrequencyMS: 10000,
+      retryWrites: true,
+      retryReads: true,
       
       // SSL/TLS settings for production
       ...(environment === 'production' && {

@@ -2,42 +2,148 @@
 <div id="dashboard-webhooks" class="dashboard-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Webhook Configuration</h2>
-        <button class="btn btn-primary" id="add-webhook-btn">
-            <i class="fas fa-plus me-2"></i>Add Webhook
-        </button>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary" id="refresh-webhooks-btn">
+                <i class="fas fa-sync-alt me-2"></i>Refresh
+            </button>
+            <button class="btn btn-success" id="test-all-webhooks-btn">
+                <i class="fas fa-play me-2"></i>Test All
+            </button>
+            <button class="btn btn-primary" id="add-webhook-btn">
+                <i class="fas fa-plus me-2"></i>Add Webhook
+            </button>
+        </div>
     </div>
+
+    <!-- Webhook Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">Total Webhooks</h6>
+                            <h4 class="mb-0" id="total-webhooks">-</h4>
+                        </div>
+                        <i class="fas fa-webhook fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">Active Webhooks</h6>
+                            <h4 class="mb-0" id="active-webhooks">-</h4>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">Total Deliveries</h6>
+                            <h4 class="mb-0" id="total-deliveries">-</h4>
+                        </div>
+                        <i class="fas fa-paper-plane fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title mb-0">Success Rate</h6>
+                            <h4 class="mb-0" id="success-rate">-</h4>
+                        </div>
+                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <div class="col-md-8">
+            <!-- Webhook Filters -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Filter by Status</label>
+                            <select class="form-select" id="status-filter">
+                                <option value="">All Webhooks</option>
+                                <option value="active">Active Only</option>
+                                <option value="inactive">Inactive Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Filter by Event</label>
+                            <select class="form-select" id="event-filter">
+                                <option value="">All Events</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Search</label>
+                            <input type="text" class="form-control" id="webhook-search" placeholder="Search webhooks...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webhooks Table -->
             <div class="card">
-                <div class="card-header">
-                    <h5>Active Webhooks</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Webhooks</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" id="export-webhooks-btn">
+                            <i class="fas fa-download me-1"></i>Export
+                        </button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                Bulk Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" id="bulk-activate-btn"><i class="fas fa-play me-2"></i>Activate Selected</a></li>
+                                <li><a class="dropdown-item" href="#" id="bulk-deactivate-btn"><i class="fas fa-pause me-2"></i>Deactivate Selected</a></li>
+                                <li><a class="dropdown-item" href="#" id="bulk-test-btn"><i class="fas fa-vial me-2"></i>Test Selected</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" id="bulk-delete-btn"><i class="fas fa-trash me-2"></i>Delete Selected</a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th width="30">
+                                        <input type="checkbox" class="form-check-input" id="select-all-webhooks">
+                                    </th>
                                     <th>URL</th>
                                     <th>Events</th>
                                     <th>Status</th>
+                                    <th>Success Rate</th>
                                     <th>Last Delivery</th>
-                                    <th>Actions</th>
+                                    <th width="120">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="webhooks-table-body">
                                 <tr>
-                                    <td><code>https://api.example.com/webhook</code></td>
-                                    <td><span
-                                            class="badge bg-primary me-1">message.sent</span><span
-                                            class="badge bg-success">message.delivered</span>
-                                    </td>
-                                    <td><span class="badge bg-success">Active</span></td>
-                                    <td>2 minutes ago</td>
-                                    <td>
-                                        <button
-                                            class="btn btn-sm btn-outline-primary me-1">Test</button>
-                                        <button
-                                            class="btn btn-sm btn-outline-danger">Delete</button>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <div class="mt-2">Loading webhooks...</div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -46,22 +152,164 @@
                 </div>
             </div>
         </div>
+
         <div class="col-md-4">
-            <div class="card">
+            <!-- Webhook Events -->
+            <div class="card mb-3">
                 <div class="card-header">
-                    <h5>Webhook Events</h5>
+                    <h5>Available Events</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted small">Available webhook events:</p>
-                    <ul class="list-unstyled">
-                        <li><code>message.sent</code> - Message sent successfully</li>
-                        <li><code>message.delivered</code> - Message delivered</li>
-                        <li><code>message.failed</code> - Message delivery failed</li>
-                        <li><code>session.connected</code> - WhatsApp session connected</li>
-                        <li><code>session.disconnected</code> - WhatsApp session disconnected
-                        </li>
-                    </ul>
+                    <p class="text-muted small">Supported webhook events:</p>
+                    <div id="supported-events-list">
+                        <div class="text-center">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Quick Test -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Quick Test</h5>
+                </div>
+                <div class="card-body">
+                    <form id="quick-test-form">
+                        <div class="mb-3">
+                            <label class="form-label">Test URL</label>
+                            <input type="url" class="form-control" id="test-url" placeholder="https://your-webhook-url.com" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-vial me-2"></i>Test Webhook
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Webhook Modal -->
+<div class="modal fade" id="webhookModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Webhook</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="webhook-form">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Webhook Name</label>
+                            <input type="text" class="form-control" id="webhook-name" name="name" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Webhook URL</label>
+                            <input type="url" class="form-control" id="webhook-url" name="url" required>
+                            <div class="form-text">Must be a valid HTTP or HTTPS URL</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Events</label>
+                            <div id="webhook-events" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                <!-- Events will be populated dynamically -->
+                            </div>
+                            <div class="form-text">Select the events you want to receive</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="webhook-timeout" name="timeout" min="1" max="60" value="30">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Retry Attempts</label>
+                            <input type="number" class="form-control" id="webhook-retries" name="retryAttempts" min="0" max="5" value="3">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Secret (Optional)</label>
+                            <input type="text" class="form-control" id="webhook-secret" name="secret" minlength="8" maxlength="128">
+                            <div class="form-text">Used to verify webhook authenticity (min 8 characters)</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" id="webhook-description" name="description" rows="2" maxlength="500"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="webhook-active" name="isActive" checked>
+                                <label class="form-check-label" for="webhook-active">
+                                    Active
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="btn-text">Save Webhook</span>
+                        <span class="btn-spinner d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Saving...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Webhook Details Modal -->
+<div class="modal fade" id="webhookDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Webhook Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <h6>Basic Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Name:</strong></td><td id="detail-name">-</td></tr>
+                            <tr><td><strong>URL:</strong></td><td id="detail-url">-</td></tr>
+                            <tr><td><strong>Status:</strong></td><td id="detail-status">-</td></tr>
+                            <tr><td><strong>Created:</strong></td><td id="detail-created">-</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-12">
+                        <h6>Statistics</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Success Count:</strong></td><td id="detail-success">-</td></tr>
+                            <tr><td><strong>Failure Count:</strong></td><td id="detail-failure">-</td></tr>
+                            <tr><td><strong>Success Rate:</strong></td><td id="detail-rate">-</td></tr>
+                            <tr><td><strong>Last Triggered:</strong></td><td id="detail-last-triggered">-</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-12">
+                        <h6>Events</h6>
+                        <div id="detail-events" class="d-flex flex-wrap gap-1">-</div>
+                    </div>
+                    <div class="col-12">
+                        <h6>Recent Logs</h6>
+                        <div id="detail-logs" style="max-height: 200px; overflow-y: auto;">
+                            <div class="text-center">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="test-webhook-detail">
+                    <i class="fas fa-vial me-2"></i>Test Webhook
+                </button>
             </div>
         </div>
     </div>
