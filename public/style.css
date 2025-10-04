@@ -2414,6 +2414,76 @@ pre {
     position: relative;
     height: auto;
   }
+
+/* Landing Page Professional Styling */
+.security-icon, .resource-icon {
+  transition: transform 0.3s ease;
+}
+
+.security-icon:hover, .resource-icon:hover {
+  transform: translateY(-5px);
+}
+
+.performance-metric {
+  transition: transform 0.3s ease;
+  padding: 1.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.performance-metric:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Professional color scheme */
+.text-professional-blue {
+  color: #3498db !important;
+}
+
+.text-professional-green {
+  color: #27ae60 !important;
+}
+
+.text-professional-orange {
+  color: #f39c12 !important;
+}
+
+.text-professional-purple {
+  color: #9b59b6 !important;
+}
+
+.bg-professional-dark {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+}
+
+.bg-professional-light {
+  background: #f8f9fa !important;
+}
+
+/* Enhanced button styling */
+.btn-outline-light:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* Section spacing improvements */
+.landing-section {
+  padding: 5rem 0;
+}
+
+.landing-section h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.landing-section .lead {
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
 }
 
 /* Animation for page transitions */
