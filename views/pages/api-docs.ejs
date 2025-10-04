@@ -39,7 +39,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h6>Header Format:</h6>
-                        <pre class="bg-light p-3 rounded"><code>Authorization: Bearer YOUR_API_KEY</code></pre>
+                        <pre class="bg-dark text-light p-3 rounded"><code>Authorization: Bearer YOUR_API_KEY</code></pre>
                         <div class="alert alert-warning mt-3">
                             <i class="fas fa-exclamation-triangle me-2"></i>Keep your API key secret. Rotate immediately if exposed.
                         </div>
@@ -63,13 +63,13 @@
                         <p>Creates a new WhatsApp session and returns a QR code for scanning.</p>
                         
                         <h6>Request Body:</h6>
-                        <pre class="bg-light p-3 rounded"><code>{
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
   "name": "My Session",
   "webhook": "https://your-site.com/webhook"
 }</code></pre>
 
                         <h6>Response:</h6>
-                        <pre class="bg-light p-3 rounded"><code>{
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
   "success": true,
   "data": {
     "sessionId": "session_123",
@@ -110,7 +110,7 @@
                         </ul>
 
                         <h6>Request Body:</h6>
-                        <pre class="bg-light p-3 rounded"><code>{
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
   "to": "+1234567890",
   "message": "Hello from WhatsApp API!"
 }</code></pre>
@@ -142,7 +142,7 @@
                         </ul>
 
                         <h6>Sample Webhook Payload:</h6>
-                        <pre class="bg-light p-3 rounded"><code>{
+                        <pre class="bg-dark text-light p-3 rounded"><code>{
   "event": "message.delivered",
   "data": {
     "id": "msg_001",

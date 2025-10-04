@@ -309,7 +309,7 @@ app.get('/pricing', optionalAuth, (req, res) => {
       }
     ]
   };
-  res.render('pages/pricing', pricingData);
+  res.render('pricing', pricingData);
 });
 
 // API docs route with user context

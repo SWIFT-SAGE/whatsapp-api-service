@@ -36,15 +36,130 @@
             position: relative;
             min-height: 200px;
         }
+
+        /* Mobile Sidebar Toggle Button */
+        .sidebar-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1050;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--whatsapp-green) 0%, var(--whatsapp-green-dark) 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(37, 211, 102, 0.5);
+        }
+
+        .sidebar-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* Sidebar Close Button */
+        .sidebar-close {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Mobile Sidebar Styles */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 280px;
+                height: 100vh;
+                z-index: 1045;
+                transition: left 0.3s ease;
+                overflow-y: auto;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .sidebar-header {
+                position: relative;
+                padding-right: 4rem;
+            }
+
+            .dashboard-content {
+                margin-top: 80px;
+            }
+        }
+
+        /* Desktop - Hide mobile controls */
+        @media (min-width: 992px) {
+            .sidebar-toggle,
+            .sidebar-close,
+            .sidebar-overlay {
+                display: none !important;
+            }
+        }
     </style>
     <div class="dashboard-container">
         <div class="container-fluid">
+            <!-- Mobile Toggle Button -->
+            <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle Sidebar">
+                <i class="fas fa-bars"></i>
+            </button>
+
             <div class="row">
                 <!-- Sidebar -->
                 <div class="col-lg-3 col-xl-2 px-0">
-                    <div class="sidebar">
+                    <div class="sidebar" id="dashboardSidebar">
                         <div class="sidebar-header">
-                            <h5><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h5>
+                            <h5>Dashboard</h5>
+                            <button class="sidebar-close d-lg-none" id="sidebarClose" aria-label="Close Sidebar">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                         <nav class="sidebar-nav">
                             <a href="#" class="nav-link active" data-section="overview">
@@ -60,10 +175,10 @@
                                 <i class="fas fa-robot me-2"></i>Chatbot
                             </a>
                             <a href="#" class="nav-link" data-section="webhooks">
-                                <i class="fas fa-webhook me-2"></i>Webhooks
+                                <i class="fas fa-project-diagram me-2"></i>Webhooks
                             </a>
                             <a href="#" class="nav-link" data-section="analytics">
-                                <i class="fas fa-chart-bar me-2"></i>Analytics
+                                <i class="fas fa-chart-pie me-2"></i>Analytics
                             </a>
                             <a href="#" class="nav-link" data-section="billing">
                                 <i class="fas fa-credit-card me-2"></i>Billing
@@ -77,6 +192,9 @@
                         </nav>
                     </div>
                 </div>
+
+                <!-- Sidebar Overlay for Mobile -->
+                <div class="sidebar-overlay d-lg-none" id="sidebarOverlay"></div>
 
                 <!-- Main Content -->
                 <div class="col-lg-9 col-xl-10">
@@ -283,6 +401,46 @@
                 console.warn('Session expired, redirecting to login');
             }
         }, 30000);
+        
+        // Mobile Sidebar Toggle Functionality
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarClose = document.getElementById('sidebarClose');
+        const sidebar = document.getElementById('dashboardSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        function openSidebar() {
+            sidebar.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeSidebar() {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', openSidebar);
+        }
+        
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', closeSidebar);
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+        
+        // Close sidebar when clicking on a nav link (mobile only)
+        const sidebarNavLinks = document.querySelectorAll('.sidebar-nav .nav-link');
+        sidebarNavLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 992) {
+                    closeSidebar();
+                }
+            });
+        });
         
         // Global cleanup function for modal backdrops
         window.cleanupModalBackdrops = function cleanupModalBackdrops() {

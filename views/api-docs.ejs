@@ -305,8 +305,13 @@
         }
         
         .nav-pills .nav-link.active {
-            background-color: var(--color-teal-500);
-            color: var(--color-cream-50);
+            background-color: var(--color-teal-500) !important;
+            color: var(--color-cream-50) !important;
+        }
+        
+        .nav-pills .nav-link:hover {
+            background-color: rgba(33, 128, 141, 0.1);
+            color: var(--color-teal-600);
         }
         
         footer {
@@ -399,7 +404,7 @@
     <section class="hero-section">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-lg-7">
+                <div class="col-lg-12">
                     <h1>Developer Documentation</h1>
                     <p class="lead">Enterprise-grade WhatsApp Business API integration for modern applications</p>
                     <div class="row mt-4">
@@ -423,24 +428,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-5">
-                    <div class="text-end">
-                        <div style="background: rgba(252, 252, 249, 0.08); border: 1px solid rgba(252, 252, 249, 0.12); border-radius: 8px; padding: 1.5rem;">
-                            <div class="mb-2" style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7;">API Endpoint</div>
-                            <code style="color: var(--color-cream-50); font-family: var(--font-family-mono); font-size: 14px; background: none;"><%= baseUrl || 'https://api.messingin.com/v1' %></code>
-                            <button class="btn btn-sm mt-3" style="background: rgba(252, 252, 249, 0.1); border: 1px solid rgba(252, 252, 249, 0.2); color: var(--color-cream-50); font-size: 12px;" onclick="copyToClipboard('base-url-hero')">
-                                Copy URL
-                            </button>
-                            <div id="base-url-hero" style="display: none;"><%= baseUrl || 'https://api.messingin.com/v1' %></div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
 
     <!-- Main Content -->
-    <div class="container">
+    <div class="container mt-5 pt-4">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-lg-3">
