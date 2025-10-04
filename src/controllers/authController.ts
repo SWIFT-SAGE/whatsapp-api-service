@@ -629,17 +629,49 @@ export class AuthController {
    */
   async logout(req: Request, res: Response): Promise<void> {
     try {
-      req.session!.destroy((err) => {
-        if (err) {
-          logger.error('Logout error:', err);
-          res.status(500).json({ error: 'Logout failed' });
-          return;
-        }
-        res.json({ success: true, message: 'Logged out successfully' });
+      // For JWT-based authentication, logout is handled client-side by removing the token
+      // We can optionally blacklist the token here if needed
+      
+      // Clear all possible auth cookies
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict' as const
+      };
+
+      // Clear the main auth cookie (this is the one we use)
+      res.clearCookie('authToken', cookieOptions);
+      
+      // Clear other possible cookie names for backward compatibility
+      res.clearCookie('token', cookieOptions);
+      res.clearCookie('jwt', cookieOptions);
+      
+      // Also clear without httpOnly flag in case they were set differently
+      res.clearCookie('authToken');
+      res.clearCookie('token');
+      res.clearCookie('jwt');
+
+      // If session exists (for backward compatibility), destroy it
+      if (req.session && typeof req.session.destroy === 'function') {
+        req.session.destroy((err) => {
+          if (err) {
+            logger.error('Session destroy error:', err);
+          }
+        });
+      }
+
+      logger.info('User logged out successfully', { userId: req.user?._id });
+
+      res.json({ 
+        success: true, 
+        message: 'Logged out successfully' 
       });
     } catch (error) {
       logger.error('Logout error:', error);
-      res.status(500).json({ error: 'Logout failed' });
+      res.status(500).json({ 
+        success: false,
+        error: 'Logout failed' 
+      });
     }
   }
 }

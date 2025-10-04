@@ -20,7 +20,94 @@ interface JwtPayload {
 }
 
 /**
- * Middleware to authenticate JWT tokens
+ * Middleware to authenticate JWT tokens for web routes (redirects to login)
+ */
+export const authenticateWeb = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    let token: string | undefined;
+    
+    // Check Authorization header first
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      token = authHeader.split(' ')[1]; // Bearer TOKEN
+    }
+    
+    // If no token in header, check cookies
+    if (!token) {
+      token = req.cookies?.authToken;
+    }
+    
+    logger.info('Web authentication check', {
+      hasAuthHeader: !!authHeader,
+      hasCookieToken: !!req.cookies?.authToken,
+      tokenLength: token?.length || 0,
+      url: req.url
+    });
+    
+    if (!token) {
+      logger.info('No token found, redirecting to login');
+      // Clear any invalid cookies
+      res.clearCookie('authToken');
+      // Set cache control headers to prevent caching
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.redirect('/login');
+      return;
+    }
+
+    // Validate token format
+    if (typeof token !== 'string' || token.length < 10) {
+      logger.warn('Invalid token format received for web route', { 
+        tokenLength: token?.length || 0,
+        tokenType: typeof token,
+        tokenPreview: token ? token.substring(0, 10) + '...' : 'undefined'
+      });
+      // Clear invalid cookie
+      res.clearCookie('authToken');
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.redirect('/login');
+      return;
+    }
+
+    const decoded = jwt.verify(token, config.jwt.secret) as JwtPayload;
+    const user = await User.findById(decoded.userId).select('-password');
+
+    if (!user) {
+      logger.warn('User not found for token, redirecting to login');
+      res.clearCookie('authToken');
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.redirect('/login');
+      return;
+    }
+
+    logger.info('Web authentication successful', { userId: user._id });
+    req.user = user;
+    next();
+  } catch (error) {
+    logger.error('Web authentication error:', error);
+    res.clearCookie('authToken');
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    res.redirect('/login');
+  }
+};
+
+/**
+ * Middleware to authenticate JWT tokens for API routes (returns JSON)
  */
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

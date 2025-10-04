@@ -461,8 +461,10 @@ class SessionService {
         return 1;
       case 'basic':
         return 5;
-      case 'premium':
-        return 50;
+      case 'pro':
+        return 25;
+      case 'enterprise':
+        return -1; // Unlimited
       default:
         return 1;
     }

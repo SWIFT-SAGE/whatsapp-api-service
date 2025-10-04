@@ -5,6 +5,7 @@ import User from '../models/User';
 class RateLimitService {
   private freePlanLimiter!: RateLimiterMemory;
   private basicPlanLimiter!: RateLimiterMemory;
+  private proPlanLimiter!: RateLimiterMemory;
   private apiLimiter!: RateLimiterMemory;
 
   constructor() {
@@ -14,20 +15,28 @@ class RateLimitService {
   }
 
   private initializeLimiters(): void {
-    // Free plan: 3 messages per day
+    // Free plan: 100 messages per day
     this.freePlanLimiter = new RateLimiterMemory({
       keyPrefix: 'free_plan',
-      points: 3, // Number of requests
+      points: 100, // Number of requests
       duration: 86400, // Per 24 hours (in seconds)
       blockDuration: 86400, // Block for 24 hours if limit exceeded
     });
 
-    // Basic plan: 10,000 messages per month
+    // Basic plan: 10,000 messages per day
     this.basicPlanLimiter = new RateLimiterMemory({
       keyPrefix: 'basic_plan',
       points: 10000,
-      duration: 2592000, // Per 30 days (in seconds)
+      duration: 86400, // Per 24 hours (in seconds)
       blockDuration: 3600, // Block for 1 hour if limit exceeded
+    });
+
+    // Pro plan: 100,000 messages per day
+    this.proPlanLimiter = new RateLimiterMemory({
+      keyPrefix: 'pro_plan',
+      points: 100000,
+      duration: 86400, // Per 24 hours (in seconds)
+      blockDuration: 1800, // Block for 30 minutes if limit exceeded
     });
 
     // API rate limiting: 100 requests per 15 minutes
@@ -49,12 +58,20 @@ class RateLimitService {
         return { allowed: false, error: 'User not found' };
       }
 
-      // Premium users have unlimited messages
-      if (user.subscription.plan === 'premium') {
+      // Enterprise users have unlimited messages
+      if (user.subscription.plan === 'enterprise') {
         return { allowed: true };
       }
 
-      const limiter = user.subscription.plan === 'basic' ? this.basicPlanLimiter : this.freePlanLimiter;
+      const getLimiter = (plan: string) => {
+        switch (plan) {
+          case 'pro': return this.proPlanLimiter;
+          case 'basic': return this.basicPlanLimiter;
+          case 'free':
+          default: return this.freePlanLimiter;
+        }
+      };
+      const limiter = getLimiter(user.subscription.plan);
       const key = `${user.subscription.plan}_${userId}`;
 
       try {
@@ -103,11 +120,27 @@ class RateLimitService {
    */
   async getRemainingPoints(userId: string, plan: string): Promise<number> {
     try {
-      const limiter = plan === 'basic' ? this.basicPlanLimiter : this.freePlanLimiter;
+      const getLimiter = (planName: string) => {
+        switch (planName) {
+          case 'pro': return this.proPlanLimiter;
+          case 'basic': return this.basicPlanLimiter;
+          case 'free':
+          default: return this.freePlanLimiter;
+        }
+      };
+      const limiter = getLimiter(plan);
       const key = `${plan}_${userId}`;
 
       const result = await limiter.get(key);
-      return result ? result.remainingPoints || 0 : (plan === 'basic' ? 10000 : 3);
+      const getDefaultLimit = (planName: string) => {
+        switch (planName) {
+          case 'pro': return 100000;
+          case 'basic': return 10000;
+          case 'free':
+          default: return 100;
+        }
+      };
+      return result ? result.remainingPoints || 0 : getDefaultLimit(plan);
     } catch (error) {
       logger.error('Error getting remaining points:', error);
       return 0;
@@ -119,7 +152,15 @@ class RateLimitService {
    */
   async resetUserLimit(userId: string, plan: string): Promise<boolean> {
     try {
-      const limiter = plan === 'basic' ? this.basicPlanLimiter : this.freePlanLimiter;
+      const getLimiter = (planName: string) => {
+        switch (planName) {
+          case 'pro': return this.proPlanLimiter;
+          case 'basic': return this.basicPlanLimiter;
+          case 'free':
+          default: return this.freePlanLimiter;
+        }
+      };
+      const limiter = getLimiter(plan);
       const key = `${plan}_${userId}`;
 
       await limiter.delete(key);
@@ -136,9 +177,25 @@ class RateLimitService {
    */
   async getUserStats(userId: string, plan: string): Promise<{ used: number; limit: number; resetTime?: Date }> {
     try {
-      const limiter = plan === 'basic' ? this.basicPlanLimiter : this.freePlanLimiter;
+      const getLimiter = (planName: string) => {
+        switch (planName) {
+          case 'pro': return this.proPlanLimiter;
+          case 'basic': return this.basicPlanLimiter;
+          case 'free':
+          default: return this.freePlanLimiter;
+        }
+      };
+      const limiter = getLimiter(plan);
       const key = `${plan}_${userId}`;
-      const limit = plan === 'basic' ? 10000 : 3;
+      const getLimit = (planName: string) => {
+        switch (planName) {
+          case 'pro': return 100000;
+          case 'basic': return 10000;
+          case 'free':
+          default: return 100;
+        }
+      };
+      const limit = getLimit(plan);
 
       const result = await limiter.get(key);
       if (!result) {
@@ -152,7 +209,15 @@ class RateLimitService {
       };
     } catch (error) {
       logger.error('Error getting user stats:', error);
-      return { used: 0, limit: plan === 'basic' ? 10000 : 3 };
+      const getLimit = (planName: string) => {
+        switch (planName) {
+          case 'pro': return 100000;
+          case 'basic': return 10000;
+          case 'free':
+          default: return 100;
+        }
+      };
+      return { used: 0, limit: getLimit(plan) };
     }
   }
 

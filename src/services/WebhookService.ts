@@ -477,8 +477,11 @@ class WebhookService {
       case 'basic':
         maxWebhooks = 5;
         break;
-      case 'premium':
-        maxWebhooks = 50;
+      case 'pro':
+        maxWebhooks = 25;
+        break;
+      case 'enterprise':
+        maxWebhooks = -1; // Unlimited
         break;
       default:
         maxWebhooks = 1;

@@ -190,23 +190,50 @@ document.addEventListener('DOMContentLoaded', function() {
     currentUser: !!currentUser,
     isLoggedIn: isUserLoggedIn(),
     hasToken: !!sessionStorage.getItem('authToken'),
-    currentView: currentView
+    currentView: currentView,
+    currentPath: window.location.pathname
   });
-  
-  // Show landing page by default
-  showView('landing');
 });
 
 function initializeApp() {
   // Authentication state is handled by checkAuthState()
   updateAuthUI();
   
-  // Ensure landing page is visible initially
-  const landingView = document.getElementById('landing-view');
-  if (landingView) {
-    landingView.style.display = 'block';
-    landingView.classList.add('active');
+  // Determine which view to show based on current URL path
+  const path = window.location.pathname;
+  let viewToShow = 'landing';
+  
+  console.log('initializeApp - Current path:', path);
+  
+  // Map URL paths to view names
+  if (path === '/login') {
+    viewToShow = 'login';
+    hideNavbarAndFooter();
+  } else if (path === '/register') {
+    viewToShow = 'register';
+    hideNavbarAndFooter();
+  } else if (path === '/pricing') {
+    viewToShow = 'pricing';
+  } else if (path === '/dashboard') {
+    // Dashboard has its own page, don't handle here
+    console.log('Dashboard page detected, skipping view initialization');
+    return;
+  } else if (path === '/' || path === '') {
+    viewToShow = 'landing';
   }
+  
+  console.log('initializeApp - Will show view:', viewToShow);
+  
+  // Show the appropriate view
+  showView(viewToShow);
+}
+
+// Hide navbar and footer on auth pages
+function hideNavbarAndFooter() {
+  const navbar = document.getElementById('main-navbar');
+  const footer = document.getElementById('main-footer');
+  if (navbar) navbar.style.display = 'none';
+  if (footer) footer.style.display = 'none';
 }
 
 function setupFieldValidation() {
@@ -550,10 +577,7 @@ function checkAuthState() {
       
       console.log('checkAuthState - User loaded from session:', currentUser);
       
-      // If we're on dashboard page, show it
-      if (window.location.pathname === '/dashboard' || window.location.hash === '#dashboard') {
-        showView('dashboard');
-      }
+      // Dashboard is handled by server-side routing, no need to show view here
     } catch (error) {
       console.error('Error parsing stored user data:', error);
       // Clear invalid data
@@ -571,7 +595,7 @@ function checkAuthState() {
 
 // Navigation Functions
 function showView(viewName) {
-  console.log('Showing view:', viewName);
+  console.log('showView called with:', viewName);
   
   // Handle API docs redirection
   if (viewName === 'api-docs') {
@@ -581,6 +605,7 @@ function showView(viewName) {
   
   // Hide all views
   const views = document.querySelectorAll('.view');
+  console.log('Found views:', views.length);
   views.forEach(view => {
     view.style.display = 'none';
     view.classList.remove('active');
@@ -591,7 +616,10 @@ function showView(viewName) {
 
   // Show target view
   const targetView = document.getElementById(viewName + '-view');
+  console.log('Target view element:', targetView ? 'Found' : 'NOT FOUND', viewName + '-view');
+  
   if (targetView) {
+    console.log('Showing view:', viewName);
     targetView.style.display = 'block';
     setTimeout(() => {
       targetView.classList.add('active');
@@ -604,8 +632,8 @@ function showView(viewName) {
       window.scrollTo(0, 0);
     }
     
-    // Update URL hash
-    window.history.pushState({}, '', `#${viewName}`);
+    // Don't update URL with hash - we use proper server-side routing
+    // The server handles /login, /register, etc. routes directly
   } else {
     console.error('View not found:', viewName + '-view');
   }
@@ -885,17 +913,39 @@ async function logout() {
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
+    // Clear all user data
     currentUser = null;
-    sessionStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('currentUser');
-    sessionStorage.removeItem('authToken');
     
-    // Clear auth cookie
-    document.cookie = 'authToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    // Clear session storage
+    sessionStorage.clear();
     
+    // Clear local storage
+    localStorage.clear();
+    
+    // Clear all possible auth cookies with multiple attempts for thorough cleanup
+    const cookiesToClear = ['authToken', 'token', 'jwt', 'connect.sid'];
+    cookiesToClear.forEach(cookieName => {
+      // Clear with path=/
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      // Clear with domain
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+      // Clear with leading dot domain (for subdomains)
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${window.location.hostname};`;
+      // Clear with SameSite attributes
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict;`;
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax;`;
+    });
+    
+    // Update UI
     updateAuthUI();
-    showView('landing');
+    
+    // Show success message
     showToast('Logged out successfully', 'success');
+    
+    // Force redirect to login page (use replace to prevent back button)
+    setTimeout(() => {
+      window.location.replace('/login?logout=true');
+    }, 500);
   }
 }
 
@@ -1852,38 +1902,12 @@ function processPlanUpgrade(plan) {
 // Handle browser back/forward buttons
 window.addEventListener('popstate', function(e) {
   const pathname = window.location.pathname;
-  const hash = window.location.hash.substring(1);
   
-  if (pathname === '/dashboard') {
-    showView('dashboard');
-  } else if (pathname === '/login') {
-    showView('login');
-  } else if (pathname === '/register') {
-    showView('register');
-  } else if (pathname === '/pricing') {
-    showView('pricing');
-  } else if (hash && document.getElementById(hash + '-view')) {
-    showView(hash);
+  // Use server-side routing - reload the page for proper navigation
+  if (pathname === '/dashboard' || pathname === '/login' || pathname === '/register' || pathname === '/pricing') {
+    window.location.reload();
   } else {
     showView('landing');
-  }
-});
-
-// Handle initial hash on page load
-window.addEventListener('load', function() {
-  const pathname = window.location.pathname;
-  const hash = window.location.hash.substring(1);
-  
-  if (pathname === '/dashboard') {
-    showView('dashboard');
-  } else if (pathname === '/login') {
-    showView('login');
-  } else if (pathname === '/register') {
-    showView('register');
-  } else if (pathname === '/pricing') {
-    showView('pricing');
-  } else if (hash && document.getElementById(hash + '-view')) {
-    showView(hash);
   }
 });
 

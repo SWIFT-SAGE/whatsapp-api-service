@@ -1,5 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body>
 <!-- Dashboard View -->
-<div id="dashboard-view" class="view" style="display: none;">
+<div id="dashboard-view" class="view">
     <style>
         .loading-overlay {
             position: absolute;
@@ -65,7 +71,7 @@
                             <a href="#" class="nav-link" data-section="profile">
                                 <i class="fas fa-user me-2"></i>Profile
                             </a>
-                            <a href="#" class="nav-link" data-view="api-docs">
+                            <a href="/api-docs" class="nav-link" target="_blank">
                                 <i class="fas fa-code me-2"></i>API Docs
                             </a>
                         </nav>
@@ -245,6 +251,39 @@
 
     // Dashboard functionality
     document.addEventListener('DOMContentLoaded', function () {
+        // Only run dashboard initialization if we're on the dashboard page
+        if (window.location.pathname !== '/dashboard') {
+            console.log('Not on dashboard page, skipping dashboard initialization');
+            return;
+        }
+        
+        // Check authentication before initializing dashboard
+        function checkAuthentication() {
+            const authToken = sessionStorage.getItem('authToken');
+            const cookieAuthToken = document.cookie.split('; ').find(row => row.startsWith('authToken='));
+            
+            // If no token in sessionStorage or cookies, redirect to login
+            if (!authToken && !cookieAuthToken) {
+                console.warn('No authentication token found, redirecting to login');
+                window.location.replace('/login?session=expired');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Verify authentication on page load
+        if (!checkAuthentication()) {
+            return; // Stop dashboard initialization if not authenticated
+        }
+        
+        // Re-check authentication periodically (every 30 seconds)
+        setInterval(() => {
+            if (!checkAuthentication()) {
+                console.warn('Session expired, redirecting to login');
+            }
+        }, 30000);
+        
         // Global cleanup function for modal backdrops
         window.cleanupModalBackdrops = function cleanupModalBackdrops() {
             const backdrops = document.querySelectorAll('.modal-backdrop');
@@ -1910,13 +1949,9 @@
                 
                 // Handle different view types
                 if (targetView === 'api-docs') {
-                    // Remove active class from all sidebar links
-                    document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
-                    // Add active class to clicked link
-                    this.classList.add('active');
-                    
-                    // Load API docs section
-                    loadSectionPage('api-docs');
+                    // Redirect to standalone API docs page
+                    window.open('/api-docs', '_blank');
+                    return;
                 }
             });
         });
@@ -6556,3 +6591,10 @@ function formatRelativeTime(timestamp) {
     return time.toLocaleDateString();
 }
 </script>
+
+<%- include('../partials/navbar') %>
+<%- include('../partials/modals') %>
+<%- include('../partials/toast') %>
+<%- include('../partials/scripts') %>
+</body>
+</html>

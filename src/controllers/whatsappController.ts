@@ -23,8 +23,16 @@ export class WhatsAppController {
 
       // Check if user already has maximum sessions (based on plan)
       const existingSessions = await WhatsappSession.countDocuments({ userId });
-      const maxSessions = req.user!.subscription.plan === 'premium' ? 10 : 
-                         req.user!.subscription.plan === 'basic' ? 3 : 1;
+      const getMaxSessions = (plan: string) => {
+        switch (plan) {
+          case 'enterprise': return -1; // Unlimited
+          case 'pro': return 25;
+          case 'basic': return 5;
+          case 'free': 
+          default: return 1;
+        }
+      };
+      const maxSessions = getMaxSessions(req.user!.subscription.plan);
 
       if (existingSessions >= maxSessions) {
         res.status(403).json({

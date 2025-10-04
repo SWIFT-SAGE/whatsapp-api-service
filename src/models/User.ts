@@ -11,13 +11,15 @@ export interface IUser extends Document {
   apiKey: string;
   active: boolean;
   subscription: {
-    plan: 'free' | 'basic' | 'premium';
+    plan: 'free' | 'basic' | 'pro' | 'enterprise';
     messageCount: number;
     messageLimit: number;
     isActive: boolean;
     expiresAt?: Date;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
+    razorpayCustomerId?: string;
+    razorpaySubscriptionId?: string;
     billingCycle: 'monthly' | 'yearly';
     nextBillingDate?: Date;
     cancelAtPeriodEnd: boolean;
@@ -109,7 +111,7 @@ const userSchema = new Schema<IUser>({
   subscription: {
     plan: {
       type: String,
-      enum: ['free', 'basic', 'premium'],
+      enum: ['free', 'basic', 'pro', 'enterprise'],
       default: 'free',
       index: true
     },
@@ -132,6 +134,14 @@ const userSchema = new Schema<IUser>({
       sparse: true
     },
     stripeSubscriptionId: {
+      type: String,
+      sparse: true
+    },
+    razorpayCustomerId: {
+      type: String,
+      sparse: true
+    },
+    razorpaySubscriptionId: {
       type: String,
       sparse: true
     },
@@ -280,12 +290,15 @@ userSchema.pre('save', function(next) {
   if (this.isModified('subscription.plan')) {
     switch (this.subscription.plan) {
       case 'free':
-        this.subscription.messageLimit = 3;
+        this.subscription.messageLimit = 100; // 100 messages/day
         break;
       case 'basic':
-        this.subscription.messageLimit = 10000;
+        this.subscription.messageLimit = 10000; // 10,000 messages/day
         break;
-      case 'premium':
+      case 'pro':
+        this.subscription.messageLimit = 100000; // 100,000 messages/day
+        break;
+      case 'enterprise':
         this.subscription.messageLimit = -1; // Unlimited
         break;
     }
@@ -306,12 +319,12 @@ userSchema.methods.generateApiKey = function(): string {
 };
 
 userSchema.methods.canSendMessage = function(): boolean {
-  if (this.subscription.plan === 'premium') return true;
+  if (this.subscription.plan === 'enterprise') return true;
   return this.subscription.messageCount < this.subscription.messageLimit;
 };
 
 userSchema.methods.incrementMessageCount = async function(): Promise<void> {
-  if (this.subscription.plan !== 'premium') {
+  if (this.subscription.plan !== 'enterprise') {
     this.subscription.messageCount += 1;
     await this.save();
   }

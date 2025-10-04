@@ -6,7 +6,7 @@ export interface IMessageLog extends Document {
   sessionId: mongoose.Types.ObjectId;
   messageId?: string;
   direction: 'inbound' | 'outbound';
-  type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'location' | 'contact' | 'sticker' | 'gif' | 'chat';
+  type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'location' | 'contact' | 'sticker' | 'gif' | 'chat' | 'interactive' | 'ptt';
   from: string;
   to: string;
   content?: string;
@@ -71,7 +71,7 @@ const messageLogSchema = new Schema<IMessageLog>({
   },
   type: {
     type: String,
-    enum: ['text', 'image', 'audio', 'video', 'document', 'location', 'contact', 'sticker', 'gif', 'chat'],
+    enum: ['text', 'image', 'audio', 'video', 'document', 'location', 'contact', 'sticker', 'gif', 'chat', 'interactive', 'ptt'],
     required: true,
     index: true
   },

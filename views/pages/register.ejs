@@ -1,5 +1,11 @@
-<!-- Register View -->
-    <div id="register-view" class="view" style="display: none;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body>
+    <!-- Register View -->
+    <div id="register-view" class="view">
         <div class="auth-container">
             <div class="container">
                 <div class="row justify-content-center">
@@ -83,7 +89,7 @@
                             </form>
                             <div class="text-center">
                                 <p>Already have an account? 
-                                    <a href="#" class="text-decoration-none" data-view="login">Sign in</a>
+                                    <a href="/login" class="text-decoration-none">Sign in</a>
                                 </p>
                             </div>
                         </div>
@@ -566,4 +572,8 @@
             };
         }
     </script>
+
+    <%- include('../partials/scripts') %>
+</body>
+</html>
 

@@ -1,5 +1,11 @@
-<!-- Login View -->
-    <div id="login-view" class="view" style="display: none;">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+</head>
+<body>
+    <!-- Login View -->
+    <div id="login-view" class="view">
         <div class="auth-container">
             <div class="container">
                 <div class="row justify-content-center">
@@ -57,7 +63,7 @@
                             </form>
                             <div class="text-center">
                                 <p>Don't have an account? 
-                                    <a href="#" class="text-decoration-none" data-view="register">Sign up</a>
+                                    <a href="/register" class="text-decoration-none">Sign up</a>
                                 </p>
                             </div>
                         </div>
@@ -359,3 +365,6 @@
         });
     </script>
 
+    <%- include('../partials/scripts') %>
+</body>
+</html>

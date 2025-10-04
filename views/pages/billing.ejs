@@ -3,8 +3,9 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Billing & Usage</h2>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-primary">Download Invoice</button>
-            <button class="btn btn-primary" data-view="pricing">Upgrade Plan</button>
+            <button class="btn btn-outline-primary" id="download-invoice-btn">Download Invoice</button>
+            <button class="btn btn-success" id="upgrade-plan-btn">Upgrade Plan</button>
+            <button class="btn btn-outline-danger" id="cancel-subscription-btn" style="display: none;">Cancel Subscription</button>
         </div>
     </div>
 
@@ -13,29 +14,22 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5>Current Plan: Basic</h5>
-                    <span class="badge bg-success fs-6">Active</span>
+                    <h5 id="current-plan-name">Current Plan: <span id="plan-loading">Loading...</span></h5>
+                    <span id="plan-status-badge" class="badge bg-secondary fs-6">Loading...</span>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
                             <h6>Plan Details</h6>
-                            <ul class="list-unstyled">
-                                <li><i class="fas fa-check text-success me-2"></i>10,000
-                                    messages/month</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Priority
-                                    support</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Advanced
-                                    analytics</li>
-                                <li><i class="fas fa-check text-success me-2"></i>Webhook
-                                    support</li>
+                            <ul class="list-unstyled" id="plan-features">
+                                <li><i class="fas fa-spinner fa-spin me-2"></i>Loading plan details...</li>
                             </ul>
                         </div>
                         <div class="col-md-6">
-                            <h6>Billing Cycle</h6>
-                            <p><strong>Next billing date:</strong> January 15, 2025</p>
-                            <p><strong>Amount:</strong> $29.00</p>
-                            <p><strong>Payment method:</strong> •••• 4242</p>
+                            <h6>Billing Information</h6>
+                            <div id="billing-info">
+                                <p><i class="fas fa-spinner fa-spin me-2"></i>Loading billing information...</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -46,26 +40,11 @@
                 <div class="card-header">
                     <h5>Usage This Month</h5>
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>Messages</span>
-                            <span>1,250 / 10,000</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar" style="width: 12.5%"></div>
-                        </div>
+                <div class="card-body" id="usage-stats">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                        <p>Loading usage statistics...</p>
                     </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>API Calls</span>
-                            <span>3,420 / ∞</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar bg-success" style="width: 100%"></div>
-                        </div>
-                    </div>
-                    <small class="text-muted">Resets on January 15, 2025</small>
                 </div>
             </div>
         </div>
@@ -85,36 +64,110 @@
                             <th>Description</th>
                             <th>Amount</th>
                             <th>Status</th>
-                            <th>Invoice</th>
+                            <th>Payment Method</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="payment-history">
                         <tr>
-                            <td>Dec 15, 2024</td>
-                            <td>Basic Plan - Monthly</td>
-                            <td>$29.00</td>
-                            <td><span class="badge bg-success">Paid</span></td>
-                            <td><a href="#" class="btn btn-sm btn-outline-primary">Download</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Nov 15, 2024</td>
-                            <td>Basic Plan - Monthly</td>
-                            <td>$29.00</td>
-                            <td><span class="badge bg-success">Paid</span></td>
-                            <td><a href="#" class="btn btn-sm btn-outline-primary">Download</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Oct 15, 2024</td>
-                            <td>Basic Plan - Monthly</td>
-                            <td>$29.00</td>
-                            <td><span class="badge bg-success">Paid</span></td>
-                            <td><a href="#" class="btn btn-sm btn-outline-primary">Download</a>
+                            <td colspan="6" class="text-center">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Loading payment history...
                             </td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Modal -->
+    <div class="modal fade" id="pricingModal" tabindex="-1" aria-labelledby="pricingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pricingModalLabel">Choose Your Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- Basic Plan -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-white text-center">
+                                    <h5 class="mb-0">Basic Plan</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <span class="h2">$29.99</span>
+                                        <small class="text-muted">/month</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="h4">$299.99</span>
+                                        <small class="text-muted">/year</small>
+                                        <span class="badge bg-success ms-2">Save 17%</span>
+                                    </div>
+                                    <ul class="list-unstyled mb-4">
+                                        <li><i class="fas fa-check text-success me-2"></i>10,000 messages/month</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Priority support</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Advanced analytics</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Webhook support</li>
+                                    </ul>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" data-plan="basic" data-cycle="monthly">
+                                            Choose Monthly
+                                        </button>
+                                        <button class="btn btn-outline-primary" data-plan="basic" data-cycle="yearly">
+                                            Choose Yearly
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Premium Plan -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-white text-center">
+                                    <h5 class="mb-0">Premium Plan</h5>
+                                    <small>Most Popular</small>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="mb-3">
+                                        <span class="h2">$99.99</span>
+                                        <small class="text-muted">/month</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <span class="h4">$999.99</span>
+                                        <small class="text-muted">/year</small>
+                                        <span class="badge bg-success ms-2">Save 17%</span>
+                                    </div>
+                                    <ul class="list-unstyled mb-4">
+                                        <li><i class="fas fa-check text-success me-2"></i>Unlimited messages</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>24/7 priority support</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Advanced analytics & reports</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>Custom webhooks</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>API rate limit boost</li>
+                                        <li><i class="fas fa-check text-success me-2"></i>White-label options</li>
+                                    </ul>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success" data-plan="premium" data-cycle="monthly">
+                                            Choose Monthly
+                                        </button>
+                                        <button class="btn btn-outline-success" data-plan="premium" data-cycle="yearly">
+                                            Choose Yearly
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <small class="text-muted">
+                        <i class="fab fa-paypal me-1"></i>
+                        Secure payments powered by PayPal. Cancel anytime.
+                    </small>
+                </div>
             </div>
         </div>
     </div>

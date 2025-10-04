@@ -26,8 +26,12 @@ export const generalRateLimit = rateLimit({
     // Skip rate limiting for health checks
     return req.path === '/health' || req.path === '/ping';
   },
-  onLimitReached: (req: Request) => {
+  handler: (req: Request, res: Response) => {
     logger.warn(`Rate limit exceeded for ${req.user?.id || req.ip} on ${req.path}`);
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
+    });
   }
 });
 
@@ -44,8 +48,12 @@ export const authRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => `auth:${req.ip}`,
-  onLimitReached: (req: Request) => {
+  handler: (req: Request, res: Response) => {
     logger.warn(`Auth rate limit exceeded for IP ${req.ip}`);
+    res.status(429).json({
+      error: 'Too many authentication attempts, please try again later.',
+      retryAfter: '15 minutes'
+    });
   }
 });
 
@@ -59,14 +67,15 @@ export const messageRateLimit = rateLimit({
     if (!req.user) return 10;
     
     switch (req.user.subscription.plan) {
-      case 'premium':
-        return 1000;
-      case 'premium':
-        return 500;
+      case 'enterprise':
+        return 10000; // Unlimited messages
+      case 'pro':
+        return 5000; // High limit for pro
       case 'basic':
-        return 100;
+        return 500; // Moderate limit for basic
+      case 'free':
       default:
-        return 10;
+        return 50; // Conservative limit for free
     }
   },
   message: {
@@ -76,8 +85,12 @@ export const messageRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => `messages:${req.user?.id || req.ip}`,
-  onLimitReached: (req: Request) => {
+  handler: (req: Request, res: Response) => {
     logger.warn(`Message rate limit exceeded for user ${req.user?.id}`);
+    res.status(429).json({
+      error: 'Message rate limit exceeded for your subscription plan.',
+      retryAfter: '1 minute'
+    });
   }
 });
 
@@ -95,8 +108,12 @@ export const webhookRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => `webhook:${req.user?.id || req.ip}`,
-  onLimitReached: (req: Request) => {
+  handler: (req: Request, res: Response) => {
     logger.warn(`Webhook rate limit exceeded for user ${req.user?.id}`);
+    res.status(429).json({
+      error: 'Webhook rate limit exceeded.',
+      retryAfter: '1 minute'
+    });
   }
 });
 
@@ -111,14 +128,15 @@ export const apiKeyRateLimit = rateLimit({
     if (!req.user) return 50;
     
     switch (req.user.subscription.plan) {
-      case 'premium':
-        return 2000;
-      case 'premium':
-        return 1000;
+      case 'enterprise':
+        return 20000; // Very high API limit
+      case 'pro':
+        return 10000; // High API limit
       case 'basic':
-        return 200;
+        return 1000; // Moderate API limit
+      case 'free':
       default:
-        return 50;
+        return 100; // Basic API limit
     }
   },
   message: {
@@ -128,8 +146,12 @@ export const apiKeyRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: Request) => `api:${req.user?.id || req.ip}`,
-  onLimitReached: (req: Request) => {
+  handler: (req: Request, res: Response) => {
     logger.warn(`API rate limit exceeded for user ${req.user?.id}`);
+    res.status(429).json({
+      error: 'API rate limit exceeded for your subscription plan.',
+      retryAfter: '1 minute'
+    });
   }
 });
 
@@ -156,8 +178,12 @@ export const createCustomRateLimit = (options: {
       const prefix = options.keyPrefix || 'custom';
       return `${prefix}:${req.user?.id || req.ip}`;
     },
-    onLimitReached: (req: Request) => {
+    handler: (req: Request, res: Response) => {
       logger.warn(`Custom rate limit exceeded for ${req.user?.id || req.ip}`);
+      res.status(429).json({
+        error: options.message || 'Rate limit exceeded.',
+        retryAfter: `${Math.ceil(options.windowMs / 1000)} seconds`
+      });
     }
   });
 };

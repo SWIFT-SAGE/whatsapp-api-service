@@ -87,7 +87,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Import controllers for web routes
 import AuthController from './controllers/authController';
-import { authenticateToken, optionalAuth } from './middleware/auth';
+import { authenticateToken, authenticateWeb, optionalAuth } from './middleware/auth';
 import WhatsappSession from './models/WhatsappSession';
 import MessageLog from './models/MessageLog';
 import User from './models/User';
@@ -138,53 +138,11 @@ app.get('/', optionalAuth, (req, res) => {
   res.render('index', defaultData);
 });
 
-// Dashboard route with optional authentication
-app.get('/dashboard', optionalAuth, async (req, res) => {
+// Dashboard route - requires authentication
+app.get('/dashboard', authenticateWeb, async (req, res) => {
   try {
-    // If no user is authenticated, render with default data
-    if (!req.user) {
-      const defaultData = {
-        user: null,
-        stats: {
-          totalMessages: 0,
-          activeSessions: 0,
-          totalSessions: 0,
-          deliveryRate: '0'
-        },
-        sessions: [],
-        recentAnalytics: [],
-        plans: [
-          {
-            name: 'Free',
-            price: 0,
-            features: ['1 WhatsApp Session', '100 Messages/day', 'Basic Support', 'API Access'],
-            popular: false
-          },
-          {
-            name: 'Basic',
-            price: 29,
-            features: ['5 WhatsApp Sessions', '10,000 Messages/day', 'Priority Support', 'Advanced API', 'Webhooks'],
-            popular: true
-          },
-          {
-            name: 'Pro',
-            price: 99,
-            features: ['25 WhatsApp Sessions', '100,000 Messages/day', '24/7 Support', 'Full API Access', 'Custom Webhooks', 'Analytics'],
-            popular: false
-          },
-          {
-            name: 'Enterprise',
-            price: 299,
-            features: ['Unlimited Sessions', 'Unlimited Messages', 'Dedicated Support', 'Custom Integration', 'SLA Guarantee'],
-            popular: false
-          }
-        ],
-        baseUrl: `${req.protocol}://${req.get('host')}`
-      };
-      return res.render('index', defaultData);
-    }
-
-    const user = req.user;
+    // authenticateWeb middleware ensures user exists and redirects if not
+    const user = req.user!;
     const userId = user._id;
     
     // Get user sessions
@@ -263,13 +221,13 @@ app.get('/dashboard', optionalAuth, async (req, res) => {
           features: ['Unlimited Sessions', 'Unlimited Messages', 'Dedicated Support', 'Custom Integration', 'SLA Guarantee'],
           popular: false
         }
-      ]
+      ],
+      authToken: req.cookies.authToken // Add auth token for client-side use
     };
-    
-    res.render('index', dashboardData);
+    res.render('pages/dashboard', dashboardData);
   } catch (error) {
     logger.error('Dashboard error:', error);
-    res.render('index', {
+    res.render('pages/dashboard', {
       user: { name: 'User', email: '', subscription: { plan: 'free' }, apiKey: '' },
       stats: { totalSessions: 0, activeSessions: 0, totalMessages: 0, deliveryRate: '0%' },
       sessions: [],
@@ -362,7 +320,7 @@ app.get('/api-docs', optionalAuth, (req, res) => {
     version: '1.0.0',
     currentPage: 'overview'
   };
-  res.render('pages/api-docs', apiDocsData);
+  res.render('api-docs', apiDocsData);
 });
 
 // API documentation pages routes
@@ -446,6 +404,31 @@ app.get('/auth/verify-email/:token', async (req, res) => {
       message: 'Email verification failed'
     });
   }
+});
+
+// Logout route to clear all authentication
+app.get('/logout', (req, res) => {
+  // Clear the authentication cookie with all possible options
+  res.clearCookie('authToken', { 
+    path: '/',
+    httpOnly: true,
+    secure: false, // Set to true in production with HTTPS
+    sameSite: 'lax'
+  });
+  
+  // Also clear any other potential auth cookies
+  res.clearCookie('token');
+  res.clearCookie('jwt');
+  
+  // Set cache control headers to prevent caching
+  res.set({
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  
+  // Redirect to login with a query parameter to indicate logout
+  res.redirect('/login?logout=true');
 });
 
 // API routes for AJAX calls from frontend
