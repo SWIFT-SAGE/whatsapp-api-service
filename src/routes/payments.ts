@@ -9,8 +9,8 @@ const router = express.Router();
 // Validation schemas
 const createPaymentValidation = [
   body('plan')
-    .isIn(['basic', 'pro', 'enterprise'])
-    .withMessage('Plan must be one of: basic, pro, enterprise'),
+    .isIn(['basic', 'pro'])
+    .withMessage('Plan must be one of: basic, pro'),
   body('billingCycle')
     .isIn(['monthly', 'yearly'])
     .withMessage('Billing cycle must be either monthly or yearly'),

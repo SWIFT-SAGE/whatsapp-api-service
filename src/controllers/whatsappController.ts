@@ -25,7 +25,6 @@ export class WhatsAppController {
       const existingSessions = await WhatsappSession.countDocuments({ userId });
       const getMaxSessions = (plan: string) => {
         switch (plan) {
-          case 'enterprise': return -1; // Unlimited
           case 'pro': return 25;
           case 'basic': return 5;
           case 'free': 
@@ -239,7 +238,7 @@ export class WhatsAppController {
       }
 
       // Check rate limit
-      const rateLimitResult = await RateLimitService.canSendMessage(userId);
+      const rateLimitResult = await RateLimitService.canSendMessage(userId, req.user!.subscription.plan);
       if (!rateLimitResult.allowed) {
         res.status(429).json({
           error: 'Message limit exceeded',
@@ -362,7 +361,7 @@ export class WhatsAppController {
       }
 
       // Check rate limit
-      const rateLimitResult = await RateLimitService.canSendMessage(userId);
+      const rateLimitResult = await RateLimitService.canSendMessage(userId, req.user!.subscription.plan);
       if (!rateLimitResult.allowed) {
         res.status(429).json({
           error: 'Message limit exceeded',

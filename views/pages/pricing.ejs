@@ -22,8 +22,18 @@
                             <div class="pricing-header">
                                 <h4><%= plan.name %></h4>
                                 <div class="price">
-                                    <span class="amount">$<%= plan.price %></span>
-                                    <span class="period"><%= plan.name === 'Free' ? 'forever' : 'per month' %></span>
+                                    <% if (plan.name === 'Free') { %>
+                                        <span class="amount">Free</span>
+                                        <span class="period">Forever</span>
+                                    <% } else { %>
+                                        <span class="amount monthly-price">$<%= plan.monthlyPrice %></span>
+                                        <span class="amount yearly-price" style="display: none;">$<%= Math.round(plan.yearlyPrice / 12) %></span>
+                                        <span class="period monthly-period">/month</span>
+                                        <span class="period yearly-period" style="display: none;">/month (billed yearly)</span>
+                                        <div class="yearly-savings" style="display: none;">
+                                            <small class="text-success">Save $<%= (plan.monthlyPrice * 12) - plan.yearlyPrice %>/year</small>
+                                        </div>
+                                    <% } %>
                                 </div>
                             </div>
                             <ul class="pricing-features">
@@ -121,7 +131,7 @@
                                 </h2>
                                 <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#pricingFAQ">
                                     <div class="accordion-body">
-                                        Yes! We offer custom enterprise plans for teams with higher volume needs. Enterprise plans include dedicated support, custom integrations, SLA guarantees, and volume discounts. Contact our sales team for a custom quote.
+                                        Yes! We offer custom solutions for teams with higher volume needs. Our Pro plan supports up to 2 chatbots and unlimited API messages. For larger teams requiring more chatbots or custom integrations, please contact our sales team for a custom quote.
                                     </div>
                                 </div>
                             </div>
@@ -155,35 +165,36 @@
                                         <th class="text-center">Free</th>
                                         <th class="text-center">Basic</th>
                                         <th class="text-center">Pro</th>
-                                        <th class="text-center">Enterprise</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>WhatsApp Sessions</strong></td>
+                                        <td><strong>API Messages</strong></td>
+                                        <td class="text-center">5 total</td>
+                                        <td class="text-center">100,000/month</td>
+                                        <td class="text-center">Unlimited</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Bot Messages</strong></td>
+                                        <td class="text-center">0</td>
+                                        <td class="text-center">100,000/month</td>
+                                        <td class="text-center">10,000/month</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Chatbots</strong></td>
                                         <td class="text-center">1</td>
+                                        <td class="text-center">1</td>
+                                        <td class="text-center">2</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>API Requests/minute</strong></td>
                                         <td class="text-center">5</td>
-                                        <td class="text-center">25</td>
-                                        <td class="text-center">Unlimited</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>Daily Messages</strong></td>
-                                        <td class="text-center">100</td>
-                                        <td class="text-center">10,000</td>
-                                        <td class="text-center">100,000</td>
-                                        <td class="text-center">Unlimited</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>API Requests/month</strong></td>
                                         <td class="text-center">1,000</td>
-                                        <td class="text-center">50,000</td>
-                                        <td class="text-center">500,000</td>
-                                        <td class="text-center">Unlimited</td>
+                                        <td class="text-center">10,000</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Webhook Support</strong></td>
                                         <td class="text-center"><i class="fas fa-times text-danger"></i></td>
-                                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
                                         <td class="text-center"><i class="fas fa-check text-success"></i></td>
                                         <td class="text-center"><i class="fas fa-check text-success"></i></td>
                                     </tr>
@@ -192,20 +203,17 @@
                                         <td class="text-center">Basic</td>
                                         <td class="text-center">Advanced</td>
                                         <td class="text-center">Premium + Export</td>
-                                        <td class="text-center">Custom + Export</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Support</strong></td>
                                         <td class="text-center">Community</td>
                                         <td class="text-center">Email (24h)</td>
                                         <td class="text-center">Priority (4h)</td>
-                                        <td class="text-center">Dedicated</td>
                                     </tr>
                                     <tr>
                                         <td><strong>Custom Integrations</strong></td>
                                         <td class="text-center"><i class="fas fa-times text-danger"></i></td>
                                         <td class="text-center"><i class="fas fa-times text-danger"></i></td>
-                                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
                                         <td class="text-center"><i class="fas fa-check text-success"></i></td>
                                     </tr>
                                 </tbody>
@@ -227,7 +235,7 @@
                     const planPrice = this.textContent.includes('$') ? this.textContent.match(/\$([0-9]+)/)?.[1] : '0';
                     
                     // Check if user is logged in
-                    const userLoggedIn = user ? 'true' : 'false' 
+                    const isLoggedIn = <%= user ? 'true' : 'false' %>;
                     if (!isLoggedIn) {
                         if (confirm(`Please login to select the ${planName} plan. Redirect to login?`)) {
                             window.location.href = '/login?redirect=/pricing';
@@ -282,7 +290,7 @@
             document.querySelectorAll('.btn-outline-primary').forEach(button => {
                 if (button.textContent.includes('Get Started')) {
                     button.addEventListener('click', function() {
-                        const isLoggedIn =user ? 'true' : 'false' ;
+                        const isLoggedIn = <%= user ? 'true' : 'false' %>;
                         if (!isLoggedIn) {
                             window.location.href = '/register';
                         } else {
@@ -293,8 +301,8 @@
             });
             
             // Billing toggle (monthly/yearly)
-            const monthlyBtn = document.querySelector('.btn-outline-primary.active');
-            const yearlyBtn = document.querySelector('.btn-outline-secondary');
+            const monthlyBtn = document.querySelector('.d-flex.justify-content-center .btn-outline-primary.active');
+            const yearlyBtn = document.querySelector('.d-flex.justify-content-center .btn-outline-secondary');
             
             if (monthlyBtn && yearlyBtn) {
                 monthlyBtn.addEventListener('click', function() {
@@ -317,14 +325,41 @@
             }
             
             function updatePricing(cycle) {
-                // This would update pricing display based on monthly/yearly selection
-                // For now, just update the period text
-                document.querySelectorAll('.period').forEach(period => {
+                // Update pricing display based on monthly/yearly selection
+                document.querySelectorAll('.monthly-price, .yearly-price').forEach(element => {
                     if (cycle === 'yearly') {
-                        period.textContent = period.textContent.replace('per month', 'per year');
+                        if (element.classList.contains('monthly-price')) {
+                            element.style.display = 'none';
+                        } else {
+                            element.style.display = 'inline';
+                        }
                     } else {
-                        period.textContent = period.textContent.replace('per year', 'per month');
+                        if (element.classList.contains('monthly-price')) {
+                            element.style.display = 'inline';
+                        } else {
+                            element.style.display = 'none';
+                        }
                     }
+                });
+                
+                document.querySelectorAll('.monthly-period, .yearly-period').forEach(element => {
+                    if (cycle === 'yearly') {
+                        if (element.classList.contains('monthly-period')) {
+                            element.style.display = 'none';
+                        } else {
+                            element.style.display = 'inline';
+                        }
+                    } else {
+                        if (element.classList.contains('monthly-period')) {
+                            element.style.display = 'inline';
+                        } else {
+                            element.style.display = 'none';
+                        }
+                    }
+                });
+                
+                document.querySelectorAll('.yearly-savings').forEach(element => {
+                    element.style.display = cycle === 'yearly' ? 'block' : 'none';
                 });
             }
             

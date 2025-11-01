@@ -82,7 +82,7 @@ export class RazorpayController {
       }
 
       // Prevent downgrading (optional business logic)
-      const planHierarchy = { 'free': 0, 'basic': 1, 'pro': 2, 'enterprise': 3 };
+      const planHierarchy = { 'free': 0, 'basic': 1, 'pro': 2 };
       const currentPlanLevel = planHierarchy[user.subscription.plan as keyof typeof planHierarchy] || 0;
       const newPlanLevel = planHierarchy[plan as keyof typeof planHierarchy] || 0;
       
@@ -96,7 +96,7 @@ export class RazorpayController {
 
       const paymentOptions = {
         userId,
-        plan: plan as 'basic' | 'pro' | 'enterprise',
+        plan: plan as 'basic' | 'pro',
         billingCycle: billingCycle as 'monthly' | 'yearly',
         type: type as 'one_time' | 'subscription' | 'upgrade' | 'renewal',
         promoCode

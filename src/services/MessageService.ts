@@ -71,7 +71,7 @@ class MessageService {
       // Check rate limits
       const rateLimitResult = await rateLimitService.canSendMessage(userId);
       if (!rateLimitResult.allowed) {
-        throw new ValidationError(`Rate limit exceeded: ${rateLimitResult.error}`);
+        throw new ValidationError(`Rate limit exceeded. Reset time: ${rateLimitResult.resetTime}`);
       }
 
       // Validate recipient

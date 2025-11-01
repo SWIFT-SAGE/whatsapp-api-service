@@ -286,26 +286,26 @@ app.get('/pricing', optionalAuth, (req, res) => {
       {
         name: 'Free',
         price: 0,
-        features: ['1 WhatsApp Session', '100 Messages/day', 'Basic Support', 'API Access'],
-        limits: { sessions: 1, messages: 100, apiCalls: 1000 }
+        monthlyPrice: 0,
+        yearlyPrice: 0,
+        features: ['5 Messages Total', '1 Chatbot', 'Basic Support', 'API Access'],
+        limits: { messages: 5, botMessages: 0, chatbots: 1, apiCalls: 10 }
       },
       {
         name: 'Basic',
-        price: 29,
-        features: ['5 WhatsApp Sessions', '1,000 Messages/day', 'Email Support', 'Webhooks', 'Analytics'],
-        limits: { sessions: 5, messages: 1000, apiCalls: 10000 }
+        price: 25,
+        monthlyPrice: 25,
+        yearlyPrice: 270,
+        features: ['100,000 Messages/month', '1 Chatbot', 'Email Support', 'Webhooks', 'Analytics'],
+        limits: { messages: 100000, botMessages: 100000, chatbots: 1, apiCalls: 2000 }
       },
       {
         name: 'Pro',
-        price: 99,
-        features: ['25 WhatsApp Sessions', '10,000 Messages/day', 'Priority Support', 'Advanced Analytics', 'Custom Webhooks'],
-        limits: { sessions: 25, messages: 10000, apiCalls: 100000 }
-      },
-      {
-        name: 'Enterprise',
-        price: 299,
-        features: ['Unlimited Sessions', 'Unlimited Messages', '24/7 Support', 'Custom Integration', 'Dedicated Manager'],
-        limits: { sessions: -1, messages: -1, apiCalls: -1 }
+        price: 40,
+        monthlyPrice: 40,
+        yearlyPrice: 432,
+        features: ['Unlimited API Messages', '10,000 Bot Messages/month', '2 Chatbots', 'Priority Support', 'Advanced Analytics'],
+        limits: { messages: -1, botMessages: 10000, chatbots: 2, apiCalls: 20000 }
       }
     ]
   };

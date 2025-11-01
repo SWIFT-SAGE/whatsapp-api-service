@@ -10,7 +10,7 @@ export interface IPayment extends Document {
   currency: string;
   status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded';
   type: 'one_time' | 'subscription' | 'upgrade' | 'renewal';
-  plan: 'basic' | 'pro' | 'enterprise';
+  plan: 'basic' | 'pro';
   billingCycle: 'monthly' | 'yearly';
   description?: string;
   razorpayResponse?: any;
@@ -87,7 +87,7 @@ const paymentSchema = new Schema<IPayment>({
   },
   plan: {
     type: String,
-    enum: ['basic', 'pro', 'enterprise'],
+    enum: ['basic', 'pro'],
     required: true,
     index: true
   },
@@ -127,11 +127,11 @@ const paymentSchema = new Schema<IPayment>({
   metadata: {
     previousPlan: {
       type: String,
-      enum: ['free', 'basic', 'pro', 'enterprise']
+      enum: ['free', 'basic', 'pro']
     },
     upgradeFrom: {
       type: String,
-      enum: ['free', 'basic', 'pro', 'enterprise']
+      enum: ['free', 'basic', 'pro']
     },
     promoCode: {
       type: String,

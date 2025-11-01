@@ -11,9 +11,13 @@ export interface IUser extends Document {
   apiKey: string;
   active: boolean;
   subscription: {
-    plan: 'free' | 'basic' | 'pro' | 'enterprise';
+    plan: 'free' | 'basic' | 'pro';
     messageCount: number;
     messageLimit: number;
+    botMessageCount: number;
+    botMessageLimit: number;
+    chatbotCount: number;
+    chatbotLimit: number;
     isActive: boolean;
     expiresAt?: Date;
     stripeCustomerId?: string;
@@ -111,7 +115,7 @@ const userSchema = new Schema<IUser>({
   subscription: {
     plan: {
       type: String,
-      enum: ['free', 'basic', 'pro', 'enterprise'],
+      enum: ['free', 'basic', 'pro'],
       default: 'free',
       index: true
     },
@@ -122,7 +126,25 @@ const userSchema = new Schema<IUser>({
     },
     messageLimit: {
       type: Number,
-      default: 3 // Free plan limit
+      default: 5 // Free plan limit - 5 messages
+    },
+    botMessageCount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    botMessageLimit: {
+      type: Number,
+      default: 0 // Free plan has no bot access
+    },
+    chatbotCount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    chatbotLimit: {
+      type: Number,
+      default: 0 // Free plan has no chatbot access
     },
     isActive: {
       type: Boolean,
@@ -290,16 +312,19 @@ userSchema.pre('save', function(next) {
   if (this.isModified('subscription.plan')) {
     switch (this.subscription.plan) {
       case 'free':
-        this.subscription.messageLimit = 100; // 100 messages/day
+        this.subscription.messageLimit = 5; // 5 messages total
+        this.subscription.botMessageLimit = 0; // No bot access
+        this.subscription.chatbotLimit = 0; // No chatbot access
         break;
       case 'basic':
-        this.subscription.messageLimit = 10000; // 10,000 messages/day
+        this.subscription.messageLimit = 100000; // 100,000 messages from API
+        this.subscription.botMessageLimit = 0; // No bot messages
+        this.subscription.chatbotLimit = 1; // 1 chatbot
         break;
       case 'pro':
-        this.subscription.messageLimit = 100000; // 100,000 messages/day
-        break;
-      case 'enterprise':
-        this.subscription.messageLimit = -1; // Unlimited
+        this.subscription.messageLimit = -1; // Unlimited messages from API
+        this.subscription.botMessageLimit = 10000; // 10,000 messages from bot
+        this.subscription.chatbotLimit = 2; // 2 chatbots
         break;
     }
   }
@@ -319,12 +344,12 @@ userSchema.methods.generateApiKey = function(): string {
 };
 
 userSchema.methods.canSendMessage = function(): boolean {
-  if (this.subscription.plan === 'enterprise') return true;
+  if (this.subscription.plan === 'pro' && this.subscription.messageLimit === -1) return true;
   return this.subscription.messageCount < this.subscription.messageLimit;
 };
 
 userSchema.methods.incrementMessageCount = async function(): Promise<void> {
-  if (this.subscription.plan !== 'enterprise') {
+  if (this.subscription.plan !== 'pro' || this.subscription.messageLimit !== -1) {
     this.subscription.messageCount += 1;
     await this.save();
   }

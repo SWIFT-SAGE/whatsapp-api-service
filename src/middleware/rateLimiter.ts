@@ -67,15 +67,13 @@ export const messageRateLimit = rateLimit({
     if (!req.user) return 10;
     
     switch (req.user.subscription.plan) {
-      case 'enterprise':
-        return 10000; // Unlimited messages
       case 'pro':
-        return 5000; // High limit for pro
+        return 10000; // Very high limit for pro (unlimited API messages)
       case 'basic':
-        return 500; // Moderate limit for basic
+        return 1000; // High limit for basic (100k messages/month)
       case 'free':
       default:
-        return 50; // Conservative limit for free
+        return 5; // Very conservative limit for free (5 messages total)
     }
   },
   message: {
@@ -128,15 +126,13 @@ export const apiKeyRateLimit = rateLimit({
     if (!req.user) return 50;
     
     switch (req.user.subscription.plan) {
-      case 'enterprise':
-        return 20000; // Very high API limit
       case 'pro':
-        return 10000; // High API limit
+        return 20000; // Very high API limit (unlimited messages)
       case 'basic':
-        return 1000; // Moderate API limit
+        return 2000; // High API limit (100k messages/month)
       case 'free':
       default:
-        return 100; // Basic API limit
+        return 10; // Very low API limit (5 messages total)
     }
   },
   message: {

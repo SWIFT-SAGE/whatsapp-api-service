@@ -22,7 +22,7 @@ interface PaymentPlan {
 
 interface CreatePaymentOptions {
   userId: mongoose.Types.ObjectId;
-  plan: 'basic' | 'pro' | 'enterprise';
+  plan: 'basic' | 'pro';
   billingCycle: 'monthly' | 'yearly';
   type: 'one_time' | 'subscription' | 'upgrade' | 'renewal';
   promoCode?: string;
@@ -56,50 +56,34 @@ export class RazorpayService {
     'basic_monthly': {
       id: 'basic_monthly',
       name: 'Basic Plan - Monthly',
-      price: 2900, // Amount in paise ($29.00)
+      price: 2500, // Amount in cents ($25.00)
       currency: 'USD',
       interval: 'month',
-      messageLimit: 10000
+      messageLimit: 100000 // 100,000 messages from API + 1 chatbot
     },
     'basic_yearly': {
       id: 'basic_yearly',
       name: 'Basic Plan - Yearly',
-      price: 34800, // Amount in cents ($348.00 - 12 months)
+      price: 27000, // Amount in cents ($270.00 - 10% discount)
       currency: 'USD',
       interval: 'year',
-      messageLimit: 10000
+      messageLimit: 100000 // 100,000 messages from API + 1 chatbot
     },
     'pro_monthly': {
       id: 'pro_monthly',
       name: 'Pro Plan - Monthly',
-      price: 9900, // Amount in cents ($99.00)
+      price: 4000, // Amount in cents ($40.00)
       currency: 'USD',
       interval: 'month',
-      messageLimit: 100000
+      messageLimit: -1 // Unlimited messages from API + 10,000 bot messages + 2 chatbots
     },
     'pro_yearly': {
       id: 'pro_yearly',
       name: 'Pro Plan - Yearly',
-      price: 118800, // Amount in cents ($1188.00 - 12 months)
+      price: 43200, // Amount in cents ($432.00 - 10% discount)
       currency: 'USD',
       interval: 'year',
-      messageLimit: 100000
-    },
-    'enterprise_monthly': {
-      id: 'enterprise_monthly',
-      name: 'Enterprise Plan - Monthly',
-      price: 29900, // Amount in cents ($299.00)
-      currency: 'USD',
-      interval: 'month',
-      messageLimit: -1 // Unlimited
-    },
-    'enterprise_yearly': {
-      id: 'enterprise_yearly',
-      name: 'Enterprise Plan - Yearly',
-      price: 358800, // Amount in cents ($3588.00 - 12 months)
-      currency: 'USD',
-      interval: 'year',
-      messageLimit: -1 // Unlimited
+      messageLimit: -1 // Unlimited messages from API + 10,000 bot messages + 2 chatbots
     }
   };
 
@@ -136,7 +120,7 @@ export class RazorpayService {
   /**
    * Get payment plan details
    */
-  getPaymentPlan(plan: 'basic' | 'pro' | 'enterprise', billingCycle: 'monthly' | 'yearly'): PaymentPlan | null {
+  getPaymentPlan(plan: 'basic' | 'pro', billingCycle: 'monthly' | 'yearly'): PaymentPlan | null {
     const planKey = `${plan}_${billingCycle}`;
     return this.PAYMENT_PLANS[planKey] || null;
   }

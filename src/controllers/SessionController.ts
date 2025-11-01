@@ -31,7 +31,6 @@ export class SessionController {
       const existingSessions = await WhatsappSession.countDocuments({ userId });
       const getMaxSessions = (plan: string) => {
         switch (plan) {
-          case 'enterprise': return -1; // Unlimited
           case 'pro': return 25;
           case 'basic': return 5;
           case 'free': 

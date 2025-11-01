@@ -66,7 +66,7 @@ interface AuthResult {
 }
 
 interface SubscriptionUpdate {
-  plan: 'free' | 'basic' | 'pro' | 'enterprise';
+  plan: 'free' | 'basic' | 'pro';
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
 }
