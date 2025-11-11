@@ -12,349 +12,8 @@
     <!-- Prism.js for syntax highlighting -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
     
-    <style>
-        :root {
-            /* Use your professional color tokens */
-            --color-cream-50: rgba(252, 252, 249, 1);
-            --color-cream-100: rgba(255, 255, 253, 1);
-            --color-slate-500: rgba(98, 108, 113, 1);
-            --color-slate-900: rgba(19, 52, 59, 1);
-            --color-teal-500: rgba(33, 128, 141, 1);
-            --color-teal-600: rgba(29, 116, 128, 1);
-            --color-brown-600: rgba(94, 82, 64, 1);
-            --color-charcoal-700: rgba(31, 33, 33, 1);
-            --color-charcoal-800: rgba(38, 40, 40, 1);
-            
-            /* Professional typography */
-            --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --font-family-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            
-            /* Refined spacing and borders */
-            --radius-sm: 6px;
-            --radius-base: 8px;
-            --radius-lg: 12px;
-            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-        }
+    <link rel="stylesheet" href="/style.css">
 
-        body {
-            font-family: var(--font-family-base);
-            background-color: var(--color-cream-50);
-            color: var(--color-slate-900);
-            line-height: 1.6;
-            font-size: 14px;
-        }
-        
-        .navbar {
-            background: var(--color-cream-100) !important;
-            border-bottom: 1px solid rgba(94, 82, 64, 0.12);
-            backdrop-filter: blur(12px);
-        }
-        
-        .navbar-brand {
-            font-weight: 600;
-            color: var(--color-teal-500) !important;
-            font-size: 18px;
-            letter-spacing: -0.01em;
-        }
-        
-        .nav-link {
-            color: var(--color-slate-500) !important;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: var(--color-teal-500) !important;
-        }
-        
-        .hero-section {
-            background: linear-gradient(135deg, var(--color-slate-900) 0%, var(--color-charcoal-700) 100%);
-            color: var(--color-cream-50);
-            padding: 5rem 0;
-            margin-bottom: 0;
-            position: relative;
-        }
-        
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.4;
-        }
-        
-        .hero-section .container {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .hero-section h1 {
-            font-size: 2.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            letter-spacing: -0.02em;
-        }
-        
-        .hero-section p {
-            font-size: 16px;
-            opacity: 0.85;
-            font-weight: 400;
-        }
-        
-        .sidebar {
-            background: var(--color-cream-100);
-            border: 1px solid rgba(94, 82, 64, 0.12);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            padding: 1.5rem;
-            position: sticky;
-            top: 20px;
-        }
-        
-        .sidebar h5 {
-            color: var(--color-slate-900);
-            font-weight: 600;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 1rem;
-        }
-        
-        .sidebar .nav-link {
-            color: var(--color-slate-500) !important;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(94, 82, 64, 0.08);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.15s ease;
-        }
-        
-        .sidebar .nav-link:hover {
-            color: var(--color-teal-500) !important;
-            padding-left: 0.5rem;
-        }
-        
-        .sidebar .nav-link.active {
-            color: var(--color-teal-500) !important;
-            font-weight: 600;
-            padding-left: 0.5rem;
-            border-left: 2px solid var(--color-teal-500);
-        }
-        
-        .section-title {
-            color: var(--color-slate-900);
-            font-weight: 600;
-            font-size: 20px;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid rgba(94, 82, 64, 0.12);
-            letter-spacing: -0.01em;
-        }
-        
-        .card {
-            background: var(--color-cream-100);
-            border: 1px solid rgba(94, 82, 64, 0.12);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            margin-bottom: 1.5rem;
-        }
-        
-        .card-header {
-            background: var(--color-slate-900);
-            color: var(--color-cream-50);
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
-            border: none;
-            padding: 1rem 1.5rem;
-        }
-        
-        .card-header h5 {
-            margin: 0;
-            font-weight: 600;
-            font-size: 16px;
-        }
-        
-        .card-body {
-            padding: 1.5rem;
-        }
-        
-        .api-endpoint {
-            background: rgba(33, 128, 141, 0.08);
-            border: 1px solid rgba(33, 128, 141, 0.2);
-            border-radius: var(--radius-base);
-            padding: 0.5rem 0.75rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: var(--font-family-mono);
-            font-size: 13px;
-            margin-top: 0.5rem;
-        }
-        
-        .badge {
-            font-family: var(--font-family-mono);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 0.25rem 0.5rem;
-            border-radius: var(--radius-sm);
-        }
-        
-        .badge.bg-success {
-            background-color: var(--color-teal-500) !important;
-        }
-        
-        pre {
-            background: var(--color-charcoal-800) !important;
-            color: var(--color-cream-50);
-            border: 1px solid rgba(94, 82, 64, 0.2);
-            border-radius: var(--radius-base);
-            padding: 1rem;
-            font-family: var(--font-family-mono);
-            font-size: 13px;
-            line-height: 1.5;
-            overflow-x: auto;
-        }
-        
-        .code-block {
-            background: var(--color-charcoal-800);
-            color: var(--color-cream-50);
-            padding: 1rem;
-            border-radius: var(--radius-base);
-            font-family: var(--font-family-mono);
-            font-size: 13px;
-            line-height: 1.5;
-            overflow-x: auto;
-        }
-        
-        .alert {
-            border: 1px solid rgba(94, 82, 64, 0.2);
-            border-radius: var(--radius-base);
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .alert-info {
-            background: rgba(33, 128, 141, 0.08);
-            border-color: rgba(33, 128, 141, 0.2);
-            color: var(--color-slate-900);
-        }
-        
-        .alert-warning {
-            background: rgba(168, 75, 47, 0.08);
-            border-color: rgba(168, 75, 47, 0.2);
-            color: var(--color-slate-900);
-        }
-        
-        .btn {
-            border-radius: var(--radius-base);
-            font-weight: 500;
-            font-size: 14px;
-            padding: 0.5rem 1rem;
-            transition: all 0.15s ease;
-        }
-        
-        .btn-primary {
-            background-color: var(--color-teal-500);
-            border-color: var(--color-teal-500);
-            color: var(--color-cream-50);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--color-teal-600);
-            border-color: var(--color-teal-600);
-        }
-        
-        .btn-outline-secondary {
-            border-color: rgba(94, 82, 64, 0.3);
-            color: var(--color-slate-500);
-        }
-        
-        .btn-outline-secondary:hover {
-            background-color: rgba(94, 82, 64, 0.08);
-            border-color: rgba(94, 82, 64, 0.4);
-        }
-        
-        .table {
-            font-size: 14px;
-        }
-        
-        .table th {
-            background: rgba(94, 82, 64, 0.04);
-            color: var(--color-slate-900);
-            font-weight: 600;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-color: rgba(94, 82, 64, 0.12);
-        }
-        
-        .table td {
-            border-color: rgba(94, 82, 64, 0.08);
-            color: var(--color-slate-500);
-        }
-        
-        .nav-pills .nav-link {
-            border-radius: var(--radius-base);
-            color: var(--color-slate-500);
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .nav-pills .nav-link.active {
-            background-color: var(--color-teal-500) !important;
-            color: var(--color-cream-50) !important;
-        }
-        
-        .nav-pills .nav-link:hover {
-            background-color: rgba(33, 128, 141, 0.1);
-            color: var(--color-teal-600);
-        }
-        
-        footer {
-            background: var(--color-slate-900);
-            color: var(--color-cream-50);
-        }
-        
-        footer a {
-            color: rgba(252, 252, 249, 0.7);
-        }
-        
-        footer a:hover {
-            color: var(--color-cream-50);
-        }
-        
-        /* Professional spacing */
-        .container {
-            max-width: 1200px;
-        }
-        
-        section {
-            margin-bottom: 3rem;
-        }
-        
-        /* Refined scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: rgba(94, 82, 64, 0.08);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: rgba(94, 82, 64, 0.3);
-            border-radius: 3px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(94, 82, 64, 0.5);
-        }
-    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -401,27 +60,27 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="container">
+    <section class="hero-section py-5">
+        <div class="container py-4">
             <div class="row align-items-center">
                 <div class="col-lg-12">
-                    <h1>Developer Documentation</h1>
-                    <p class="lead">Enterprise-grade WhatsApp Business API integration for modern applications</p>
+                    <h1 class="mb-3">Developer Documentation</h1>
+                    <p class="lead mb-4">Enterprise-grade WhatsApp Business API integration for modern applications</p>
                     <div class="row mt-4">
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center mb-2">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="d-flex align-items-center">
                                 <div class="me-3" style="width: 2px; height: 20px; background: rgba(252, 252, 249, 0.3);"></div>
                                 <span style="font-size: 13px; font-weight: 500;">RESTful Architecture</span>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center mb-2">
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="d-flex align-items-center">
                                 <div class="me-3" style="width: 2px; height: 20px; background: rgba(252, 252, 249, 0.3);"></div>
                                 <span style="font-size: 13px; font-weight: 500;">Webhook Events</span>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="d-flex align-items-center mb-2">
+                            <div class="d-flex align-items-center">
                                 <div class="me-3" style="width: 2px; height: 20px; background: rgba(252, 252, 249, 0.3);"></div>
                                 <span style="font-size: 13px; font-weight: 500;">Rate Limiting</span>
                             </div>
@@ -433,29 +92,29 @@
     </section>
 
     <!-- Main Content -->
-    <div class="container mt-5 pt-4">
-        <div class="row">
+    <div class="container py-5 my-4">
+        <div class="row g-4">
             <!-- Sidebar -->
             <div class="col-lg-3">
-                <div class="sidebar">
-                    <h5 class="mb-3"><i class="fas fa-book me-2"></i>Documentation</h5>
+                <div class="sidebar sticky-top" style="top: 2rem;">
+                    <h5 class="mb-4"><i class="fas fa-book me-2"></i>Documentation</h5>
                     <nav class="nav flex-column">
-                        <a class="nav-link active" href="#quick-start">Quick Start</a>
-                        <a class="nav-link" href="#authentication">Authentication</a>
-                        <a class="nav-link" href="#sessions">Sessions</a>
-                        <a class="nav-link" href="#messages">Messages</a>
-                        <a class="nav-link" href="#webhooks">Webhooks</a>
-                        <a class="nav-link" href="#rate-limits">Rate Limits</a>
-                        <a class="nav-link" href="#errors">Error Codes</a>
-                        <a class="nav-link" href="#examples">Code Examples</a>
+                        <a class="nav-link active py-2 px-3 mb-1" href="#quick-start">Quick Start</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#authentication">Authentication</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#sessions">Sessions</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#messages">Messages</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#webhooks">Webhooks</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#rate-limits">Rate Limits</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#errors">Error Codes</a>
+                        <a class="nav-link py-2 px-3 mb-1" href="#examples">Code Examples</a>
                     </nav>
                     
                     <% if (user) { %>
-                    <div class="mt-4 p-3 bg-light rounded">
-                        <h6><i class="fas fa-key me-2"></i>Your API Key</h6>
-                        <code class="small"><%= user.apiKey ? user.apiKey.substring(0, 12) + '...' : 'Not generated' %></code>
+                    <div class="mt-4 p-4 bg-light rounded-3 shadow-sm">
+                        <h6 class="mb-3"><i class="fas fa-key me-2"></i>Your API Key</h6>
+                        <code class="small d-block mb-2"><%= user.apiKey ? user.apiKey.substring(0, 12) + '...' : 'Not generated' %></code>
                         <% if (!user.apiKey) { %>
-                            <br><small class="text-muted">
+                            <small class="text-muted">
                                 <a href="/dashboard" class="text-decoration-none">Generate in dashboard</a>
                             </small>
                         <% } %>
@@ -473,19 +132,74 @@
     </div>
 
     <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>WhatsApp API Service</h5>
-                    <p class="text-muted">Professional WhatsApp integration for businesses</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="d-flex justify-content-md-end gap-3">
-                        <a href="/" class="text-light text-decoration-none">Home</a>
-                        <a href="/api-docs" class="text-light text-decoration-none">API Docs</a>
-                        <a href="/dashboard" class="text-light text-decoration-none">Dashboard</a>
+    <footer style="background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%); border-top: 3px solid var(--color-teal-500);">
+        <div class="container py-5">
+            <div class="row g-4 py-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fab fa-whatsapp me-2" style="font-size: 28px; color: var(--color-teal-500);"></i>
+                        <h5 class="mb-0 text-white" style="font-weight: 600;">WhatsApp API Service</h5>
                     </div>
+                    <p class="text-muted mb-3" style="line-height: 1.7;">Professional WhatsApp Business API integration for modern applications. Scale your messaging with confidence.</p>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-light" style="font-size: 20px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color=''">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-light" style="font-size: 20px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color=''">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="text-light" style="font-size: 20px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color=''">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="#" class="text-light" style="font-size: 20px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color=''">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white mb-3" style="font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Product</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="/pricing" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Pricing</a></li>
+                        <li class="mb-2"><a href="/api-docs" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">API Docs</a></li>
+                        <li class="mb-2"><a href="/features" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Features</a></li>
+                        <li class="mb-2"><a href="/changelog" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white mb-3" style="font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Company</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="/about" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">About Us</a></li>
+                        <li class="mb-2"><a href="/contact" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Contact</a></li>
+                        <li class="mb-2"><a href="/blog" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Blog</a></li>
+                        <li class="mb-2"><a href="/careers" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Careers</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white mb-3" style="font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Support</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="/help" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Help Center</a></li>
+                        <li class="mb-2"><a href="/status" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Status</a></li>
+                        <li class="mb-2"><a href="/community" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Community</a></li>
+                        <li class="mb-2"><a href="/security" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Security</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="text-white mb-3" style="font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">Legal</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="/privacy" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Privacy</a></li>
+                        <li class="mb-2"><a href="/terms" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Terms</a></li>
+                        <li class="mb-2"><a href="/cookies" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Cookies</a></li>
+                        <li class="mb-2"><a href="/licenses" class="text-muted text-decoration-none" style="font-size: 14px; transition: color 0.3s;" onmouseover="this.style.color='var(--color-teal-500)'" onmouseout="this.style.color='#6c757d'">Licenses</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 2rem 0;">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                    <p class="text-muted mb-0" style="font-size: 13px;">&copy; 2025 WhatsApp API Service. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <p class="text-muted mb-0" style="font-size: 13px;">Made with <i class="fas fa-heart" style="color: var(--color-teal-500);"></i> for developers</p>
                 </div>
             </div>
         </div>

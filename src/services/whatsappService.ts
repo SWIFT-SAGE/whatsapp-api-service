@@ -44,22 +44,51 @@ class WhatsAppService {
 
     try {
       // Wait a bit to ensure database connection is fully ready
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Check if mongoose connection is ready
+      // Check if mongoose connection is ready with timeout
       const mongoose = require('mongoose');
+      const maxWaitTime = 10000; // Wait max 10 seconds for database
+      const startTime = Date.now();
+      
+      while (mongoose.connection.readyState !== 1 && (Date.now() - startTime) < maxWaitTime) {
+        logger.info('Waiting for database connection to be ready...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
       if (mongoose.connection.readyState !== 1) {
-        logger.warn('Database connection not ready, skipping WhatsApp session initialization');
+        logger.warn('Database connection not ready after waiting, skipping WhatsApp session initialization');
         this.initialized = true;
         return;
       }
 
-      const sessions = await WhatsappSession.find({ isConnected: true });
+      logger.info('Database connection ready, initializing WhatsApp sessions...');
+      
+      // Find sessions with a timeout
+      const sessions = await Promise.race([
+        WhatsappSession.find({ isConnected: true }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database query timeout')), 5000)
+        )
+      ]) as any[];
+      
+      logger.info(`Found ${sessions.length} active sessions to initialize`);
+      
+      // Initialize sessions sequentially with delays to avoid overwhelming the system
       for (const session of sessions) {
-        await this.createClient(session.sessionId, session.userId.toString());
+        try {
+          logger.info(`Initializing session: ${session.sessionId}`);
+          await this.createClient(session.sessionId, session.userId.toString());
+          // Add delay between initializations
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (sessionError) {
+          logger.error(`Failed to initialize session ${session.sessionId}:`, sessionError);
+          // Continue with next session
+        }
       }
+      
       this.initialized = true;
-      logger.info(`Initialized ${sessions.length} existing WhatsApp sessions`);
+      logger.info(`WhatsApp service initialized with ${sessions.length} sessions`);
     } catch (error) {
       logger.error('Error initializing existing sessions:', error);
       // Don't throw error to prevent server startup failure
@@ -125,10 +154,10 @@ class WhatsAppService {
       logger.info(`Initializing WhatsApp client for session: ${sessionId}`);
       
       try {
-        // Set a timeout for client initialization
+        // Set a timeout for client initialization (increased to 60 seconds)
         const initPromise = client.initialize();
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Client initialization timeout')), 30000); // 30 seconds
+          setTimeout(() => reject(new Error('Client initialization timeout')), 60000); // 60 seconds
         });
         
         await Promise.race([initPromise, timeoutPromise]);
@@ -138,7 +167,7 @@ class WhatsAppService {
         setTimeout(async () => {
           const qrSession = QRCodeManager.getSession(sessionId);
           if (qrSession && qrSession.status === 'initializing') {
-            logger.warn(`QR code not generated after 10 seconds for session ${sessionId}, checking client status`);
+            logger.warn(`QR code not generated after 15 seconds for session ${sessionId}, checking client status`);
             
             // Check if client is still valid
             const client = this.clients[sessionId];
@@ -146,7 +175,7 @@ class WhatsAppService {
               logger.info(`Client exists but no QR generated for ${sessionId}, this is normal during initialization`);
             }
           }
-        }, 10000); // Check after 10 seconds
+        }, 15000); // Check after 15 seconds
         
         return { success: true, message: 'Client initialization started' };
       } catch (initError) {
@@ -155,11 +184,30 @@ class WhatsAppService {
         // Clean up failed client
         if (this.clients[sessionId]) {
           try {
-            await this.clients[sessionId].destroy();
+            // Check if client has a pupeteer instance before destroying
+            if (this.clients[sessionId].pupBrowser || this.clients[sessionId].pupPage) {
+              await this.clients[sessionId].destroy();
+            }
           } catch (destroyError) {
             logger.warn(`Error destroying failed client for ${sessionId}:`, destroyError);
+            // Force cleanup even if destroy fails
           }
           delete this.clients[sessionId];
+        }
+        
+        // Update session status in database
+        try {
+          await WhatsappSession.findOneAndUpdate(
+            { sessionId },
+            { 
+              status: 'disconnected',
+              isConnected: false,
+              'errorLog.lastError': initError instanceof Error ? initError.message : String(initError),
+              'errorLog.lastErrorAt': new Date()
+            }
+          );
+        } catch (dbError) {
+          logger.error(`Failed to update session status for ${sessionId}:`, dbError);
         }
         
         return { success: false, message: `Client initialization failed: ${initError instanceof Error ? initError.message : String(initError)}` };

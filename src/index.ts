@@ -589,20 +589,42 @@ const startServer = async () => {
     logger.info('📋 Validating configuration...');
     // config validation would happen here
     
-    // Connect to database
+    // Connect to database with timeout
     logger.info('🔌 Connecting to database...');
+    let databaseConnected = false;
     try {
-      await connectDatabase();
+      // Add timeout for database connection
+      await Promise.race([
+        connectDatabase(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database connection timeout (60s)')), 60000)
+        )
+      ]);
       logger.info('✅ Database connected successfully');
+      databaseConnected = true;
       
       // Initialize WhatsApp service after database connection
       logger.info('📱 Initializing WhatsApp service...');
-      await whatsappService.initialize();
-      logger.info('✅ WhatsApp service initialized successfully');
+      try {
+        await whatsappService.initialize();
+        logger.info('✅ WhatsApp service initialized successfully');
+      } catch (whatsappError) {
+        logger.error('❌ WhatsApp service initialization failed:', whatsappError);
+        logger.warn('⚠️  Server will continue without WhatsApp sessions');
+        logger.warn('⚠️  You can manually initialize sessions later through the dashboard');
+      }
     } catch (error) {
       logger.error('❌ Database connection failed:', error);
       logger.warn('⚠️  Server will start without database connectivity');
       logger.warn('⚠️  Some features may not work properly');
+      logger.warn('⚠️  Please check your MONGODB_URI and network connection');
+      
+      // If it's a timeout error, provide specific guidance
+      if (error instanceof Error && error.message.includes('timeout')) {
+        logger.warn('💡 Tip: Check if MongoDB server is running and accessible');
+        logger.warn('💡 Tip: Increase timeout values in .env if using MongoDB Atlas');
+        logger.warn('💡 Current timeout settings can be found in your .env file');
+      }
     }
     
     // Start monitoring services

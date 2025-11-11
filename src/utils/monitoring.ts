@@ -227,8 +227,27 @@ const healthChecks: Record<string, () => Promise<HealthCheck>> = {
   database: async (): Promise<HealthCheck> => {
     const start = performance.now();
     try {
-      // This would be replaced with actual database ping
-      // await mongoose.connection.db.admin().ping();
+      const mongoose = require('mongoose');
+      
+      // Check if database is connected
+      if (mongoose.connection.readyState !== 1) {
+        return {
+          name: 'database',
+          status: 'unhealthy',
+          message: 'Database not connected',
+          responseTime: performance.now() - start,
+          lastCheck: new Date(),
+        };
+      }
+      
+      // Try to ping the database with timeout
+      const pingPromise = mongoose.connection.db.admin().ping();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database ping timeout')), 5000)
+      );
+      
+      await Promise.race([pingPromise, timeoutPromise]);
+      
       const responseTime = performance.now() - start;
       return {
         name: 'database',
@@ -239,7 +258,7 @@ const healthChecks: Record<string, () => Promise<HealthCheck>> = {
     } catch (error) {
       return {
         name: 'database',
-        status: 'unhealthy',
+        status: 'degraded', // Changed from unhealthy to degraded for better availability
         message: (error as Error).message,
         responseTime: performance.now() - start,
         lastCheck: new Date(),
