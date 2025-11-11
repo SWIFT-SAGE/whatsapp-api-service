@@ -8,7 +8,63 @@
     <%- include('../partials/navbar') %>
 
     <!-- Contact Page -->
-    <div class="contact-page">
+    <div class="contact-page" style="color: #e0e0e0;">
+        <style>
+            /* Inline emergency dark mode fix */
+            @media (prefers-color-scheme: dark) {
+                .contact-page * { color: #e0e0e0 !important; }
+                .contact-page .card { background: #2a2a2a !important; }
+                .contact-page .form-control,
+                .contact-page .form-select { 
+                    background: #1a1a1a !important; 
+                    color: #e0e0e0 !important; 
+                    border-color: #444 !important;
+                }
+                .contact-page .form-control::placeholder {
+                    color: #888 !important;
+                    opacity: 1 !important;
+                }
+                .contact-page .form-control::-webkit-input-placeholder {
+                    color: #888 !important;
+                    opacity: 1 !important;
+                }
+                .contact-page .form-control:-ms-input-placeholder {
+                    color: #888 !important;
+                    opacity: 1 !important;
+                }
+                .contact-page .form-control::-ms-input-placeholder {
+                    color: #888 !important;
+                    opacity: 1 !important;
+                }
+                .contact-page .btn-primary { color: white !important; }
+                
+                /* FAQ Accordion */
+                .contact-page .accordion-item { 
+                    background: #2a2a2a !important; 
+                    border-color: #444 !important; 
+                }
+                .contact-page .accordion-button { 
+                    background: #2a2a2a !important; 
+                    color: #e0e0e0 !important; 
+                }
+                .contact-page .accordion-button:not(.collapsed) { 
+                    background: #1e1e1e !important; 
+                    color: #25d366 !important; 
+                }
+                .contact-page .accordion-body { 
+                    background: #2a2a2a !important; 
+                    color: #e0e0e0 !important; 
+                }
+                .contact-page h1,
+                .contact-page h2,
+                .contact-page h3,
+                .contact-page h4,
+                .contact-page h5,
+                .contact-page h6 { 
+                    color: #e0e0e0 !important; 
+                }
+            }
+        </style>
         <!-- Hero Section -->
         <section class="hero-section">
             <div class="container">
@@ -33,23 +89,23 @@
                     <div class="col-lg-8">
                         <div class="card shadow-sm">
                             <div class="card-body p-4">
-                                <h3 class="mb-4">Send us a Message</h3>
+                                <h3 class="mb-4" >Send us a Message</h3>
                                 <form id="contactForm">
                                     <div class="row g-3">
                                         <div class="col-md-6">
-                                            <label for="name" class="form-label">Full Name *</label>
+                                            <label for="name" >Full Name *</label>
                                             <input type="text" class="form-control" id="name" name="name" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="email" class="form-label">Email Address *</label>
+                                            <label for="email" >Email Address *</label>
                                             <input type="email" class="form-control" id="email" name="email" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="phone" class="form-label">Phone Number</label>
+                                            <label for="phone" >Phone Number</label>
                                             <input type="tel" class="form-control" id="phone" name="phone">
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="subject" class="form-label">Subject *</label>
+                                            <label for="subject" >Subject *</label>
                                             <select class="form-select" id="subject" name="subject" required>
                                                 <option value="">Choose a subject</option>
                                                 <option value="general">General Inquiry</option>
@@ -62,13 +118,13 @@
                                             </select>
                                         </div>
                                         <div class="col-12">
-                                            <label for="message" class="form-label">Message *</label>
+                                            <label for="message" >Message *</label>
                                             <textarea class="form-control" id="message" name="message" rows="6" required></textarea>
                                         </div>
                                         <div class="col-12">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
-                                                <label class="form-check-label" for="newsletter">
+                                                <label class="form-check-label" for="newsletter" style="color: inherit;">
                                                     Subscribe to our newsletter for updates and tips
                                                 </label>
                                             </div>
@@ -89,7 +145,7 @@
                     <div class="col-lg-4">
                         <div class="card shadow-sm mb-4">
                             <div class="card-body p-4">
-                                <h4 class="mb-4">Contact Information</h4>
+                                <h4 class="mb-4" style="color: inherit;">Contact Information</h4>
                                 
                                 <div class="d-flex mb-4">
                                     <div class="flex-shrink-0">
@@ -99,8 +155,8 @@
                                         </div>
                                     </div>
                                     <div class="flex-grow-1 ms-3">
-                                        <h6 class="mb-1">Email</h6>
-                                        <a href="mailto:support@apimessaging.com" class="text-muted text-decoration-none">
+                                        <h6 class="mb-1" style="color: inherit;">Email</h6>
+                                        <a href="mailto:support@apimessaging.com" class="text-decoration-none" style="color: #25d366;">
                                             support@apimessaging.com
                                         </a>
                                     </div>
@@ -158,7 +214,7 @@
                         <!-- Business Hours -->
                         <div class="card shadow-sm">
                             <div class="card-body p-4">
-                                <h4 class="mb-4">Business Hours</h4>
+                                <h4 class="mb-4" style="color: inherit;">Business Hours</h4>
                                 <div class="mb-2">
                                     <div class="d-flex justify-content-between">
                                         <span class="text-muted">Monday - Friday:</span>
@@ -190,65 +246,65 @@
         </section>
 
         <!-- FAQ Section -->
-        <section class="py-5 bg-light">
+        <section class="py-5 bg-light" style="background: var(--color-background) !important;">
             <div class="container">
                 <div class="row text-center mb-5">
                     <div class="col-lg-8 mx-auto">
-                        <h2 class="h1 fw-bold">Frequently Asked Questions</h2>
-                        <p class="lead text-muted">Quick answers to common questions</p>
+                        <h2 class="h1 fw-bold" style="color: #e0e0e0 !important;">Frequently Asked Questions</h2>
+                        <p class="lead" style="color: #bbb !important;">Quick answers to common questions</p>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-lg-8 mx-auto">
                         <div class="accordion" id="faqAccordion">
-                            <div class="accordion-item">
+                            <div class="accordion-item" style="background: var(--color-surface); border-color: var(--color-border);">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" style="color: inherit; background: var(--color-surface);">
                                         How quickly will I receive a response?
                                     </button>
                                 </h2>
                                 <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
+                                    <div class="accordion-body" style="color: inherit; background: var(--color-surface);">
                                         We typically respond to all inquiries within 24 hours during business days. For urgent technical support, 
                                         Premium and Enterprise customers have access to priority support with faster response times.
                                     </div>
                                 </div>
                             </div>
-                            <div class="accordion-item">
+                            <div class="accordion-item" style="background: var(--color-surface); border-color: var(--color-border);">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" style="color: inherit; background: var(--color-surface);">
                                         Can I schedule a demo or consultation call?
                                     </button>
                                 </h2>
                                 <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
+                                    <div class="accordion-body" style="color: inherit; background: var(--color-surface);">
                                         Yes! Please use the contact form above and select "Sales & Pricing" as the subject. 
                                         Our sales team will reach out to schedule a personalized demo at your convenience.
                                     </div>
                                 </div>
                             </div>
-                            <div class="accordion-item">
+                            <div class="accordion-item" style="background: var(--color-surface); border-color: var(--color-border);">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" style="color: inherit; background: var(--color-surface);">
                                         Do you offer enterprise support?
                                     </button>
                                 </h2>
                                 <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
+                                    <div class="accordion-body" style="color: inherit; background: var(--color-surface);">
                                         Absolutely! Our Enterprise plan includes dedicated account management, priority support, 
                                         custom integrations, and SLA guarantees. Contact us to discuss your specific requirements.
                                     </div>
                                 </div>
                             </div>
-                            <div class="accordion-item">
+                            <div class="accordion-item" style="background: var(--color-surface); border-color: var(--color-border);">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" style="color: inherit; background: var(--color-surface);">
                                         Where can I find technical documentation?
                                     </button>
                                 </h2>
                                 <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                    <div class="accordion-body">
-                                        Our comprehensive API documentation is available at <a href="/api-docs">/api-docs</a>. 
+                                    <div class="accordion-body" style="color: inherit; background: var(--color-surface);">
+                                        Our comprehensive API documentation is available at <a href="/api-docs" style="color: #25d366;">/api-docs</a>. 
                                         You'll find detailed guides, code examples, and integration tutorials for all our features.
                                     </div>
                                 </div>
