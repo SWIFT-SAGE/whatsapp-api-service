@@ -354,6 +354,51 @@ app.get('/api-docs/docs/:page', optionalAuth, (req, res) => {
   res.render(`pages/docs/${page}`, docData);
 });
 
+// Static pages routes
+app.get('/about', optionalAuth, (req, res) => {
+  res.render('pages/about', { user: req.user || null });
+});
+
+app.get('/blog', optionalAuth, (req, res) => {
+  res.render('pages/blog', { user: req.user || null });
+});
+
+app.get('/careers', optionalAuth, (req, res) => {
+  res.render('pages/careers', { user: req.user || null });
+});
+
+app.get('/help', optionalAuth, (req, res) => {
+  res.render('pages/help', { user: req.user || null });
+});
+
+app.get('/community', optionalAuth, (req, res) => {
+  res.render('pages/community', { user: req.user || null });
+});
+
+app.get('/security', optionalAuth, (req, res) => {
+  res.render('pages/security', { user: req.user || null });
+});
+
+app.get('/privacy', optionalAuth, (req, res) => {
+  res.render('pages/privacy', { user: req.user || null });
+});
+
+app.get('/terms', optionalAuth, (req, res) => {
+  res.render('pages/terms', { user: req.user || null });
+});
+
+app.get('/cookies', optionalAuth, (req, res) => {
+  res.render('pages/cookies', { user: req.user || null });
+});
+
+app.get('/licenses', optionalAuth, (req, res) => {
+  res.render('pages/licenses', { user: req.user || null });
+});
+
+app.get('/changelog', optionalAuth, (req, res) => {
+  res.render('pages/changelog', { user: req.user || null });
+});
+
 // Authentication routes for form submissions
 app.post('/auth/login', AuthController.login);
 app.post('/auth/register', AuthController.register);

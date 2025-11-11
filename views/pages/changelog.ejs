@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <title>Changelog - API Messaging</title>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container py-5 my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="mb-4">Changelog</h1>
+                <p class="lead">Track the latest updates and improvements to our platform</p>
+                
+                <div class="mt-5">
+                    <div class="border-start border-3 border-primary ps-4 mb-4">
+                        <h4>Version 1.0.0 <span class="badge bg-primary">Latest</span></h4>
+                        <p class="text-muted mb-2"><small><%= new Date().toLocaleDateString() %></small></p>
+                        <ul>
+                            <li>Initial release of API Messaging platform</li>
+                            <li>WhatsApp Business API integration</li>
+                            <li>Session management dashboard</li>
+                            <li>Real-time message analytics</li>
+                            <li>Webhook support for events</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+</body>
+</html>
+

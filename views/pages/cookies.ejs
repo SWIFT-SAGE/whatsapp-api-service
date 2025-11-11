@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <title>Cookie Policy - API Messaging</title>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container py-5 my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="mb-4">Cookie Policy</h1>
+                <p class="text-muted">Last updated: <%= new Date().toLocaleDateString() %></p>
+                
+                <div class="mt-5">
+                    <h2>What Are Cookies</h2>
+                    <p>Cookies are small text files stored on your device to enhance your experience.</p>
+                </div>
+
+                <div class="mt-4">
+                    <h2>How We Use Cookies</h2>
+                    <ul>
+                        <li><strong>Essential Cookies:</strong> Required for the website to function properly</li>
+                        <li><strong>Analytics Cookies:</strong> Help us understand how you use our service</li>
+                        <li><strong>Preference Cookies:</strong> Remember your settings and preferences</li>
+                    </ul>
+                </div>
+
+                <div class="mt-4">
+                    <h2>Managing Cookies</h2>
+                    <p>You can control cookies through your browser settings. Note that disabling cookies may affect functionality.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+</body>
+</html>
+

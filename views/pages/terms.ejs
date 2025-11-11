@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <title>Terms of Service - API Messaging</title>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container py-5 my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="mb-4">Terms of Service</h1>
+                <p class="text-muted">Last updated: <%= new Date().toLocaleDateString() %></p>
+                
+                <div class="mt-5">
+                    <h2>1. Acceptance of Terms</h2>
+                    <p>By accessing and using API Messaging services, you accept and agree to be bound by these Terms of Service.</p>
+                </div>
+
+                <div class="mt-4">
+                    <h2>2. Service Description</h2>
+                    <p>API Messaging provides WhatsApp Business API integration services subject to these terms.</p>
+                </div>
+
+                <div class="mt-4">
+                    <h2>3. User Obligations</h2>
+                    <p>You agree to use our services in compliance with all applicable laws and WhatsApp Business API policies.</p>
+                </div>
+
+                <div class="mt-4">
+                    <h2>4. Payment Terms</h2>
+                    <p>Fees are billed according to your chosen plan. You agree to pay all applicable fees.</p>
+                </div>
+
+                <div class="mt-4">
+                    <h2>5. Termination</h2>
+                    <p>We reserve the right to suspend or terminate your account for violations of these terms.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+</body>
+</html>
+

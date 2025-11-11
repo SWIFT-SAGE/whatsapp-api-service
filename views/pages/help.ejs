@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <title>Help Center - API Messaging</title>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <div class="container py-5 my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h1 class="mb-4 text-center">Help Center</h1>
+                <p class="lead text-center mb-5">Find answers to common questions and get support</p>
+                
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                                <h5>Documentation</h5>
+                                <p class="text-muted">Comprehensive API guides and tutorials</p>
+                                <a href="/api-docs" class="btn btn-outline-primary btn-sm">View Docs</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-question-circle fa-3x text-primary mb-3"></i>
+                                <h5>FAQs</h5>
+                                <p class="text-muted">Quick answers to common questions</p>
+                                <a href="/pricing#faq" class="btn btn-outline-primary btn-sm">View FAQs</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-envelope fa-3x text-primary mb-3"></i>
+                                <h5>Contact Support</h5>
+                                <p class="text-muted">Get help from our support team</p>
+                                <a href="/contact" class="btn btn-outline-primary btn-sm">Contact Us</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+</body>
+</html>
+
