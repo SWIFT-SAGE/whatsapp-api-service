@@ -9,18 +9,144 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Prism.js for syntax highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
+    <!-- Prism.js for syntax highlighting - Dark theme -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     
     <link rel="stylesheet" href="/style.css">
+    
+    <style>
+        :root {
+            --api-docs-bg: #fcfcf9;
+            --api-docs-card-bg: #ffffff;
+            --api-docs-text: #13343b;
+            --api-docs-text-muted: #626c71;
+            --api-docs-border: rgba(0,0,0,0.1);
+            --api-docs-sidebar-bg: #f8f9fa;
+            --api-docs-code-bg: #f5f5f5;
+            --api-docs-hero-gradient: linear-gradient(135deg, #21808d 0%, #1d7480 100%);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --api-docs-bg: #0d1117;
+                --api-docs-card-bg: #161b22;
+                --api-docs-text: #e6edf3;
+                --api-docs-text-muted: #8b949e;
+                --api-docs-border: rgba(255,255,255,0.1);
+                --api-docs-sidebar-bg: #0d1117;
+                --api-docs-code-bg: #161b22;
+                --api-docs-hero-gradient: linear-gradient(135deg, #1a5c66 0%, #16525c 100%);
+            }
+        }
+
+        body {
+            background-color: var(--api-docs-bg);
+            color: var(--api-docs-text);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+       
+        .navbar-brand {
+            color: white !important;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .navbar-brand i {
+            font-size: 1.5rem;
+        }
+
+        .navbar-nav .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            color: white !important;
+            background: rgba(255,255,255,0.15);
+            border-radius: 6px;
+        }
+
+        .hero-section {
+            color: white;
+            border-bottom: 3px solid var(--color-teal-500);
+        }
+
+        .sidebar {
+            background: var(--api-docs-card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--api-docs-border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .sidebar .nav-link {
+            color: var(--api-docs-text);
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .sidebar .nav-link:hover {
+            background: rgba(33, 128, 141, 0.1);
+            color: var(--color-teal-500);
+            transform: translateX(4px);
+        }
+
+        .sidebar .nav-link.active {
+            background: rgba(33, 128, 141, 0.15);
+            color: var(--color-teal-500);
+            font-weight: 600;
+        }
+
+        .sidebar h5 {
+            color: var(--api-docs-text);
+            font-weight: 600;
+        }
+
+        .bg-light {
+            background-color: var(--api-docs-card-bg) !important;
+            border: 1px solid var(--api-docs-border) !important;
+        }
+
+        code {
+            background: var(--api-docs-code-bg);
+            color: var(--color-teal-600);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        pre code {
+            background: transparent;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .navbar-toggler-icon {
+                filter: invert(1);
+            }
+            
+            pre[class*="language-"] {
+                background: #1e1e1e !important;
+            }
+            
+            :not(pre) > code[class*="language-"],
+            pre[class*="language-"] {
+                background: #1e1e1e !important;
+            }
+        }
+    </style>
 
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-code me-2"></i>WhatsApp API
+            <a class="navbar-brand text-white" href="/">
+                <i class="fas fa-code me-2"></i>
+                <strong >API MESSAGING</strong>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -64,7 +190,7 @@
         <div class="container py-4">
             <div class="row align-items-center">
                 <div class="col-lg-12">
-                    <h1 class="mb-3">Developer Documentation</h1>
+                    <h1 class="mb-3 text-white">Developer Documentation</h1>
                     <p class="lead mb-4">Enterprise-grade WhatsApp Business API integration for modern applications</p>
                     <div class="row mt-4">
                         <div class="col-md-4 mb-3 mb-md-0">
