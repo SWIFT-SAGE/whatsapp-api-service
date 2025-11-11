@@ -10,7 +10,7 @@
         <div class="container">
             <a class="navbar-brand" href="/">
                 <i class="fab fa-whatsapp me-2"></i>
-                <strong>API MESSINGIN</strong>
+                <strong>API MESSAGING</strong>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -100,7 +100,7 @@
 const client = new WhatsAppClient({
   apiKey: 'YOUR_API_KEY',
   // Optional: specify environment
-  baseUrl: 'https://api.messingin.com/v1' // Default is production
+  baseUrl: 'https://api.messaging.com/v1' // Default is production
 });</code></pre>
                             
                             <h3>Complete Messaging Workflow</h3>
@@ -317,7 +317,7 @@ app.listen(PORT, () => {
 client = WhatsAppClient(
     api_key='YOUR_API_KEY',
     # Optional: specify environment
-    base_url='https://api.messingin.com/v1'  # Default is production
+    base_url='https://api.messaging.com/v1'  # Default is production
 )</code></pre>
                             
                             <h3>Complete Messaging Workflow</h3>
@@ -527,26 +527,26 @@ def send_message_with_retry(session_id, to, text, max_retries=3):
                         </div>
                         <div class="card-body">
                             <h3>Installation</h3>
-                            <pre><code>composer require messingin/whatsapp-api-php</code></pre>
+                            <pre><code>composer require messaging/whatsapp-api-php</code></pre>
                             
                             <h3>Basic Setup</h3>
                             <pre><code>&lt;?php
 require_once 'vendor/autoload.php';
 
-use MessingIn\WhatsAppApi\Client;
+use Messaging\WhatsAppApi\Client;
 
 // Initialize the client
 $client = new Client(
     'YOUR_API_KEY',
     // Optional: specify environment
-    'https://api.messingin.com/v1' // Default is production
+    'https://api.messaging.com/v1' // Default is production
 );</code></pre>
                             
                             <h3>Complete Messaging Workflow</h3>
                             <pre><code>&lt;?php
 require_once 'vendor/autoload.php';
 
-use MessingIn\WhatsAppApi\Client;
+use Messaging\WhatsAppApi\Client;
 
 function completeWorkflow() {
     $client = new Client('YOUR_API_KEY');
@@ -796,28 +796,28 @@ function sendMessageWithRetry($client, $sessionId, $to, $text, $maxRetries = 3)
                             <h3>Installation</h3>
                             <p>Maven:</p>
                             <pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;com.messingin&lt;/groupId&gt;
+    &lt;groupId&gt;com.messaging&lt;/groupId&gt;
     &lt;artifactId&gt;whatsapp-api-java&lt;/artifactId&gt;
     &lt;version&gt;1.0.0&lt;/version&gt;
 &lt;/dependency&gt;</code></pre>
                             
                             <p>Gradle:</p>
-                            <pre><code>implementation 'com.messingin:whatsapp-api-java:1.0.0'</code></pre>
+                            <pre><code>implementation 'com.messaging:whatsapp-api-java:1.0.0'</code></pre>
                             
                             <h3>Basic Setup</h3>
-                            <pre><code>import com.messingin.whatsapp.WhatsAppClient;
+                            <pre><code>import com.messaging.whatsapp.WhatsAppClient;
 
 // Initialize the client
 WhatsAppClient client = new WhatsAppClient(
     "YOUR_API_KEY",
     // Optional: specify environment
-    "https://api.messingin.com/v1" // Default is production
+    "https://api.messaging.com/v1" // Default is production
 );</code></pre>
                             
                             <h3>Complete Messaging Workflow</h3>
-                            <pre><code>import com.messingin.whatsapp.WhatsAppClient;
-import com.messingin.whatsapp.models.*;
-import com.messingin.whatsapp.responses.*;
+                            <pre><code>import com.messaging.whatsapp.WhatsAppClient;
+import com.messaging.whatsapp.models.*;
+import com.messaging.whatsapp.responses.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -1053,10 +1053,10 @@ public class WebhookController {
 }</code></pre>
                             
                             <h3>Error Handling with Retry Logic</h3>
-                            <pre><code>import com.messingin.whatsapp.WhatsAppClient;
-import com.messingin.whatsapp.models.TextMessage;
-import com.messingin.whatsapp.responses.MessageResponse;
-import com.messingin.whatsapp.exceptions.ApiException;
+                            <pre><code>import com.messaging.whatsapp.WhatsAppClient;
+import com.messaging.whatsapp.models.TextMessage;
+import com.messaging.whatsapp.responses.MessageResponse;
+import com.messaging.whatsapp.exceptions.ApiException;
 
 public class RetryExample {
     
@@ -1117,12 +1117,12 @@ public class RetryExample {
                         <div class="card-body">
                             <h3>Authentication</h3>
                             <pre><code>curl -X GET \
-  "https://api.messingin.com/v1/health" \
+  "https://api.messaging.com/v1/health" \
   -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
                             
                             <h3>Create a Session</h3>
                             <pre><code>curl -X POST \
-  "https://api.messingin.com/v1/sessions" \
+  "https://api.messaging.com/v1/sessions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -1131,12 +1131,12 @@ public class RetryExample {
                             
                             <h3>Check Session Status</h3>
                             <pre><code>curl -X GET \
-  "https://api.messingin.com/v1/sessions/SESSION_ID/status" \
+  "https://api.messaging.com/v1/sessions/SESSION_ID/status" \
   -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
                             
                             <h3>Send a Text Message</h3>
                             <pre><code>curl -X POST \
-  "https://api.messingin.com/v1/messages/text" \
+  "https://api.messaging.com/v1/messages/text" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -1147,7 +1147,7 @@ public class RetryExample {
                             
                             <h3>Send a Media Message</h3>
                             <pre><code>curl -X POST \
-  "https://api.messingin.com/v1/messages/media" \
+  "https://api.messaging.com/v1/messages/media" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -1160,7 +1160,7 @@ public class RetryExample {
                             
                             <h3>Send a Button Message</h3>
                             <pre><code>curl -X POST \
-  "https://api.messingin.com/v1/messages/buttons" \
+  "https://api.messaging.com/v1/messages/buttons" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -d '{
@@ -1176,12 +1176,12 @@ public class RetryExample {
                             
                             <h3>Delete a Session</h3>
                             <pre><code>curl -X DELETE \
-  "https://api.messingin.com/v1/sessions/SESSION_ID" \
+  "https://api.messaging.com/v1/sessions/SESSION_ID" \
   -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
                             
                             <h3>List All Sessions</h3>
                             <pre><code>curl -X GET \
-  "https://api.messingin.com/v1/sessions" \
+  "https://api.messaging.com/v1/sessions" \
   -H "Authorization: Bearer YOUR_API_KEY"</code></pre>
                         </div>
                     </div>

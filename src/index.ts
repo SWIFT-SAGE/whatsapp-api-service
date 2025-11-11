@@ -312,6 +312,14 @@ app.get('/pricing', optionalAuth, (req, res) => {
   res.render('pricing', pricingData);
 });
 
+// Contact route with optional user data
+app.get('/contact', optionalAuth, (req, res) => {
+  const contactData = {
+    user: req.user || null
+  };
+  res.render('pages/contact', contactData);
+});
+
 // API docs route with user context
 app.get('/api-docs', optionalAuth, (req, res) => {
   const apiDocsData = {
@@ -461,6 +469,57 @@ app.get('/api/billing/subscription-status', authenticateToken, (req, res) => {
       nextBillingDate: null
     }
   });
+});
+
+// Contact form submission endpoint
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, phone, subject, message, newsletter } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please fill in all required fields'
+      });
+    }
+
+    // Log the contact form submission
+    logger.info('Contact form submission:', { name, email, subject });
+
+    // Save to database
+    try {
+      const Contact = require('./models/Contact').default;
+      const newContact = new Contact({
+        name,
+        email,
+        phone: phone || undefined,
+        subject,
+        message,
+        newsletter: newsletter || false
+      });
+      
+      await newContact.save();
+      logger.info('Contact form saved to database:', { id: newContact._id });
+    } catch (dbError) {
+      logger.error('Failed to save contact form to database:', dbError);
+      // Continue even if database save fails
+    }
+
+    // TODO: Send email notification to admin
+    // TODO: Send confirmation email to user
+
+    res.json({
+      success: true,
+      message: 'Your message has been sent successfully. We will get back to you soon!'
+    });
+  } catch (error) {
+    logger.error('Contact form error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send message. Please try again later.'
+    });
+  }
 });
 
 // Health check routes (before other routes for quick access)

@@ -78,6 +78,7 @@
     "express-slow-down": "^1.6.0",
     "express-validator": "^7.0.1",
     "helmet": "^7.0.0",
+    "install": "^0.13.0",
     "jsonwebtoken": "^9.0.2",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",

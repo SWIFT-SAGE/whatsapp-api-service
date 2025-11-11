@@ -10,7 +10,7 @@
         <div class="container">
             <a class="navbar-brand" href="/">
                 <i class="fab fa-whatsapp me-2"></i>
-                <strong>API MESSINGIN</strong>
+                <strong>API MESSAGING</strong>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -138,7 +138,7 @@
     "events": ["message.received", "message.status"],
     "secret": "your-webhook-secret"
   }' \
-  https://api.messingin.com/v1/webhooks/config</code></pre>
+  https://api.messaging.com/v1/webhooks/config</code></pre>
                 </div>
             </div>
             
@@ -182,7 +182,7 @@
     "content": {
       "caption": "Check this out!",
       "mimeType": "image/jpeg",
-      "mediaUrl": "https://api.messingin.com/v1/media/img_abc123"
+      "mediaUrl": "https://api.messaging.com/v1/media/img_abc123"
     },
     "timestamp": "2025-09-14T16:49:55Z",
     "isGroup": false
@@ -435,7 +435,7 @@ if (hash_equals($signature, $computedSignature)) {
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"event": "message.received"}' \
-  https://api.messingin.com/v1/webhooks/test</code></pre>
+  https://api.messaging.com/v1/webhooks/test</code></pre>
                 </div>
             </div>
         </div>

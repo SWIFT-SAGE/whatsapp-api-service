@@ -10,7 +10,7 @@
         <div class="container">
             <a class="navbar-brand" href="/">
                 <i class="fab fa-whatsapp me-2"></i>
-                <strong>API MESSINGIN</strong>
+                <strong>API MESSAGING</strong>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -80,7 +80,7 @@
                             <tbody>
                                 <tr>
                                     <td><span class="badge badge-primary">Sandbox</span></td>
-                                    <td><code>https://sandbox-api.messingin.com/v1</code></td>
+                                    <td><code>https://sandbox-api.messaging.com/v1</code></td>
                                     <td>Development and initial testing</td>
                                     <td>
                                         <ul>
@@ -92,7 +92,7 @@
                                 </tr>
                                 <tr>
                                     <td><span class="badge badge-warning">Staging</span></td>
-                                    <td><code>https://staging-api.messingin.com/v1</code></td>
+                                    <td><code>https://staging-api.messaging.com/v1</code></td>
                                     <td>Pre-production testing</td>
                                     <td>
                                         <ul>
@@ -104,7 +104,7 @@
                                 </tr>
                                 <tr>
                                     <td><span class="badge badge-success">Production</span></td>
-                                    <td><code>https://api.messingin.com/v1</code></td>
+                                    <td><code>https://api.messaging.com/v1</code></td>
                                     <td>Live environment</td>
                                     <td>
                                         <ul>
@@ -238,7 +238,7 @@
 test('sends a text message successfully', async () => {
   const client = new WhatsAppClient({
     apiKey: 'test_api_key',
-    baseUrl: 'https://sandbox-api.messingin.com/v1'
+    baseUrl: 'https://sandbox-api.messaging.com/v1'
   });
   
   const mockResponse = {
@@ -283,7 +283,7 @@ from whatsapp_api import WhatsAppClient
 def client():
     return WhatsAppClient(
         api_key='sandbox_test_key',
-        base_url='https://sandbox-api.messingin.com/v1'
+        base_url='https://sandbox-api.messaging.com/v1'
     )
 
 def test_session_workflow(client):
@@ -477,7 +477,7 @@ describe('Webhook Handler', () => {
                     </ol>
                     
                     <div class="alert alert-success">
-                        <strong>Need help?</strong> Our support team is available to assist with your production deployment. Contact us through the <a href="https://support.messingin.com" target="_blank">Support Portal</a> for assistance.
+                        <strong>Need help?</strong> Our support team is available to assist with your production deployment. Contact us through the <a href="https://support.messaging.com" target="_blank">Support Portal</a> for assistance.
                     </div>
                 </div>
             </div>

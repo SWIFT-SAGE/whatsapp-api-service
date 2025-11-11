@@ -7,7 +7,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <strong>Base URL:</strong><br>
-                <code id="base-url">https://api.messingin.com/v1</code>
+                <code id="base-url">https://api.messaging.com/v1</code>
             </div>
             <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('base-url')">
                 <i class="fas fa-copy"></i>
@@ -82,7 +82,7 @@
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name":"My Session"}' \
-  https://api.messingin.com/api/whatsapp/sessions</code></pre>
+  https://api.messaging.com/api/whatsapp/sessions</code></pre>
                     </div>
                 </div>
             </section>
@@ -120,7 +120,7 @@
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"to":"+1234567890","message":"Hello World!"}' \
-  https://api.messingin.com/api/whatsapp/sessions/session_123/messages</code></pre>
+  https://api.messaging.com/api/whatsapp/sessions/session_123/messages</code></pre>
                     </div>
                 </div>
             </section>
@@ -303,7 +303,7 @@ console.log(result);</code></pre>
                     <pre class="code-block"><code>import requests
 
 # Send a WhatsApp message
-url = "https://api.messingin.com/api/whatsapp/sessions/session_123/messages"
+url = "https://api.messaging.com/api/whatsapp/sessions/session_123/messages"
 headers = {
     "Authorization": "Bearer YOUR_API_KEY",
     "Content-Type": "application/json"
@@ -320,7 +320,7 @@ print(response.json())</code></pre>
                 <div class="tab-pane fade" id="php-example">
                     <pre class="code-block"><code><?php
 // Send a WhatsApp message
-$url = "https://api.messingin.com/api/whatsapp/sessions/session_123/messages";
+$url = "https://api.messaging.com/api/whatsapp/sessions/session_123/messages";
 $headers = [
     "Authorization: Bearer YOUR_API_KEY",
     "Content-Type: application/json"
@@ -349,7 +349,7 @@ echo $response;
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"to":"+1234567890","message":"Hello from cURL!"}' \
-  https://api.messingin.com/api/whatsapp/sessions/session_123/messages</code></pre>
+  https://api.messaging.com/api/whatsapp/sessions/session_123/messages</code></pre>
                 </div>
             </div>
         </div>

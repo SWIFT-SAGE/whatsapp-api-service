@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head') %>
+    <title>Contact Us - WhatsApp API Service</title>
+</head>
+<body>
+    <%- include('../partials/navbar') %>
+
+    <!-- Contact Page -->
+    <div class="contact-page">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="row text-center">
+                    <div class="col-lg-8 mx-auto">
+                        <h1 class="display-4 fw-bold text-white mb-3">
+                            <i class="fas fa-envelope me-3"></i>Get in Touch
+                        </h1>
+                        <p class="lead text-white mb-0">
+                            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Form & Info Section -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row g-4">
+                    <!-- Contact Form -->
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
+                                <h3 class="mb-4">Send us a Message</h3>
+                                <form id="contactForm">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="name" class="form-label">Full Name *</label>
+                                            <input type="text" class="form-control" id="name" name="name" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="email" class="form-label">Email Address *</label>
+                                            <input type="email" class="form-control" id="email" name="email" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="phone" class="form-label">Phone Number</label>
+                                            <input type="tel" class="form-control" id="phone" name="phone">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="subject" class="form-label">Subject *</label>
+                                            <select class="form-select" id="subject" name="subject" required>
+                                                <option value="">Choose a subject</option>
+                                                <option value="general">General Inquiry</option>
+                                                <option value="sales">Sales & Pricing</option>
+                                                <option value="support">Technical Support</option>
+                                                <option value="billing">Billing Question</option>
+                                                <option value="partnership">Partnership Opportunity</option>
+                                                <option value="feedback">Feedback & Suggestions</option>
+                                                <option value="other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="message" class="form-label">Message *</label>
+                                            <textarea class="form-control" id="message" name="message" rows="6" required></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="newsletter" name="newsletter">
+                                                <label class="form-check-label" for="newsletter">
+                                                    Subscribe to our newsletter for updates and tips
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-primary btn-lg px-5" id="submitBtn">
+                                                <i class="fas fa-paper-plane me-2"></i>Send Message
+                                            </button>
+                                            <div id="formMessage" class="mt-3"></div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-body p-4">
+                                <h4 class="mb-4">Contact Information</h4>
+                                
+                                <div class="d-flex mb-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fas fa-envelope text-primary fa-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Email</h6>
+                                        <a href="mailto:support@apimessaging.com" class="text-muted text-decoration-none">
+                                            support@apimessaging.com
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex mb-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fab fa-whatsapp text-success fa-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">WhatsApp</h6>
+                                        <a href="https://wa.me/1234567890" class="text-muted text-decoration-none" target="_blank">
+                                            +1 (234) 567-890
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex mb-4">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fab fa-discord text-info fa-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Discord Community</h6>
+                                        <a href="#" class="text-muted text-decoration-none">
+                                            Join our community
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fas fa-map-marker-alt text-warning fa-lg"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Office</h6>
+                                        <p class="text-muted mb-0">
+                                            123 Tech Street<br>
+                                            San Francisco, CA 94102<br>
+                                            United States
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Business Hours -->
+                        <div class="card shadow-sm">
+                            <div class="card-body p-4">
+                                <h4 class="mb-4">Business Hours</h4>
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Monday - Friday:</span>
+                                        <span class="fw-bold">9:00 AM - 6:00 PM</span>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Saturday:</span>
+                                        <span class="fw-bold">10:00 AM - 4:00 PM</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="text-muted">Sunday:</span>
+                                        <span class="fw-bold">Closed</span>
+                                    </div>
+                                </div>
+                                <hr class="my-3">
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    We typically respond within 24 hours during business days
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="py-5 bg-light">
+            <div class="container">
+                <div class="row text-center mb-5">
+                    <div class="col-lg-8 mx-auto">
+                        <h2 class="h1 fw-bold">Frequently Asked Questions</h2>
+                        <p class="lead text-muted">Quick answers to common questions</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-8 mx-auto">
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                        How quickly will I receive a response?
+                                    </button>
+                                </h2>
+                                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        We typically respond to all inquiries within 24 hours during business days. For urgent technical support, 
+                                        Premium and Enterprise customers have access to priority support with faster response times.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                        Can I schedule a demo or consultation call?
+                                    </button>
+                                </h2>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes! Please use the contact form above and select "Sales & Pricing" as the subject. 
+                                        Our sales team will reach out to schedule a personalized demo at your convenience.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                        Do you offer enterprise support?
+                                    </button>
+                                </h2>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Absolutely! Our Enterprise plan includes dedicated account management, priority support, 
+                                        custom integrations, and SLA guarantees. Contact us to discuss your specific requirements.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                        Where can I find technical documentation?
+                                    </button>
+                                </h2>
+                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Our comprehensive API documentation is available at <a href="/api-docs">/api-docs</a>. 
+                                        You'll find detailed guides, code examples, and integration tutorials for all our features.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Social Media & Alternative Channels -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row text-center">
+                    <div class="col-lg-8 mx-auto">
+                        <h2 class="h1 fw-bold mb-4">Connect With Us</h2>
+                        <p class="lead text-muted mb-5">Follow us on social media for updates, tips, and community support</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            <a href="#" class="btn btn-outline-dark btn-lg" style="width: 60px; height: 60px;">
+                                <i class="fab fa-github fa-2x"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-primary btn-lg" style="width: 60px; height: 60px;">
+                                <i class="fab fa-twitter fa-2x"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-info btn-lg" style="width: 60px; height: 60px;">
+                                <i class="fab fa-linkedin fa-2x"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-info btn-lg" style="width: 60px; height: 60px;">
+                                <i class="fab fa-discord fa-2x"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-danger btn-lg" style="width: 60px; height: 60px;">
+                                <i class="fab fa-youtube fa-2x"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <%- include('../partials/footer') %>
+    <%- include('../partials/scripts') %>
+
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const formMessage = document.getElementById('formMessage');
+            
+            // Get form data
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                subject: document.getElementById('subject').value,
+                message: document.getElementById('message').value,
+                newsletter: document.getElementById('newsletter').checked
+            };
+
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
+            formMessage.innerHTML = '';
+
+            try {
+                // Send form data to backend
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Success message
+                    formMessage.innerHTML = `
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Thank you!</strong> Your message has been sent successfully. We'll get back to you soon.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    `;
+                    
+                    // Reset form
+                    document.getElementById('contactForm').reset();
+                } else {
+                    throw new Error(result.message || 'Failed to send message');
+                }
+            } catch (error) {
+                // Error message
+                formMessage.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Oops!</strong> ${error.message || 'Something went wrong. Please try again later.'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Send Message';
+            }
+        });
+    </script>
+</body>
+</html>

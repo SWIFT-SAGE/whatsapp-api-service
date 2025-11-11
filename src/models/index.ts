@@ -5,6 +5,7 @@ export { default as MessageLog, IMessageLog } from './MessageLog';
 export { default as ApiKey, IApiKey } from './ApiKey';
 export { default as Webhook, IWebhook } from './Webhook';
 export { default as Analytics, IAnalytics } from './Analytics';
+export { default as Contact, IContact } from './Contact';
 
 // Re-export mongoose types for convenience
 export { Types as MongooseTypes } from 'mongoose';
@@ -16,7 +17,8 @@ export const ModelNames = {
   MESSAGE_LOG: 'MessageLog',
   API_KEY: 'ApiKey',
   WEBHOOK: 'Webhook',
-  ANALYTICS: 'Analytics'
+  ANALYTICS: 'Analytics',
+  CONTACT: 'Contact'
 } as const;
 
 export type ModelName = typeof ModelNames[keyof typeof ModelNames];
