@@ -32,7 +32,7 @@ export const handleValidationErrors = (
       errors: errorMessages,
       userId: (req.user as IUser)?._id,
       ip: req.ip
-    });
+    }); 
     
     const error = new AppError(
       'Validation failed',
