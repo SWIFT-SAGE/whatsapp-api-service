@@ -10,6 +10,9 @@ export interface IUser extends Document {
   name: string;
   apiKey: string;
   active: boolean;
+  googleId?: string;
+  authProvider: 'local' | 'google';
+  avatar?: string;
   subscription: {
     plan: 'free' | 'basic' | 'pro';
     messageCount: number;
@@ -85,7 +88,10 @@ const userSchema = new Schema<IUser>({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function(this: IUser) {
+      // Password is only required for local authentication
+      return this.authProvider === 'local';
+    },
     minlength: [8, 'Password must be at least 8 characters long'],
     select: false,
     validate: {
@@ -111,6 +117,21 @@ const userSchema = new Schema<IUser>({
     type: Boolean,
     default: true,
     index: true
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    index: true
+  },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local',
+    required: true
+  },
+  avatar: {
+    type: String
   },
   subscription: {
     plan: {

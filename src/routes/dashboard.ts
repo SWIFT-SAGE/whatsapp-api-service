@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { authenticateToken } from '../middleware/auth';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get('/section/:section', async (req, res) => {
         }
 
         // Fetch fresh user data to ensure API key is up to date
-        const freshUser = await User.findById(req.user!._id);
+        const freshUser = await User.findById((req.user as IUser)._id);
         
         // Render the section page
         res.render(`pages/${section}`, {

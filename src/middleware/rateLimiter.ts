@@ -20,14 +20,14 @@ export const generalRateLimit = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
     // Use user ID if authenticated, otherwise IP
-    return req.user?.id || req.ip;
+    return (req.user as any)?._id || req.ip;
   },
   skip: (req: Request) => {
     // Skip rate limiting for health checks
     return req.path === '/health' || req.path === '/ping';
   },
   handler: (req: Request, res: Response) => {
-    logger.warn(`Rate limit exceeded for ${req.user?.id || req.ip} on ${req.path}`);
+    logger.warn(`Rate limit exceeded for ${(req.user as any)?._id || req.ip} on ${req.path}`);
     res.status(429).json({
       error: 'Too many requests from this IP, please try again later.',
       retryAfter: '15 minutes'
@@ -66,7 +66,7 @@ export const messageRateLimit = rateLimit({
     // Different limits based on subscription plan
     if (!req.user) return 10;
     
-    switch (req.user.subscription.plan) {
+    switch ((req.user as any).subscription.plan) {
       case 'pro':
         return 10000; // Very high limit for pro (unlimited API messages)
       case 'basic':
@@ -82,9 +82,9 @@ export const messageRateLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => `messages:${req.user?.id || req.ip}`,
+  keyGenerator: (req: Request) => `messages:${(req.user as any)?._id || req.ip}`,
   handler: (req: Request, res: Response) => {
-    logger.warn(`Message rate limit exceeded for user ${req.user?.id}`);
+    logger.warn(`Message rate limit exceeded for user ${(req.user as any)?._id}`);
     res.status(429).json({
       error: 'Message rate limit exceeded for your subscription plan.',
       retryAfter: '1 minute'
@@ -105,9 +105,9 @@ export const webhookRateLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => `webhook:${req.user?.id || req.ip}`,
+  keyGenerator: (req: Request) => `webhook:${(req.user as any)?._id || req.ip}`,
   handler: (req: Request, res: Response) => {
-    logger.warn(`Webhook rate limit exceeded for user ${req.user?.id}`);
+    logger.warn(`Webhook rate limit exceeded for user ${(req.user as any)?._id}`);
     res.status(429).json({
       error: 'Webhook rate limit exceeded.',
       retryAfter: '1 minute'
@@ -125,7 +125,7 @@ export const apiKeyRateLimit = rateLimit({
     // Different limits based on subscription plan
     if (!req.user) return 50;
     
-    switch (req.user.subscription.plan) {
+    switch ((req.user as any).subscription.plan) {
       case 'pro':
         return 20000; // Very high API limit (unlimited messages)
       case 'basic':
@@ -141,9 +141,9 @@ export const apiKeyRateLimit = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req: Request) => `api:${req.user?.id || req.ip}`,
+  keyGenerator: (req: Request) => `api:${(req.user as any)?._id || req.ip}`,
   handler: (req: Request, res: Response) => {
-    logger.warn(`API rate limit exceeded for user ${req.user?.id}`);
+    logger.warn(`API rate limit exceeded for user ${(req.user as any)?._id}`);
     res.status(429).json({
       error: 'API rate limit exceeded for your subscription plan.',
       retryAfter: '1 minute'
@@ -172,10 +172,10 @@ export const createCustomRateLimit = (options: {
     legacyHeaders: false,
     keyGenerator: (req: Request) => {
       const prefix = options.keyPrefix || 'custom';
-      return `${prefix}:${req.user?.id || req.ip}`;
+      return `${prefix}:${(req.user as any)?._id || req.ip}`;
     },
     handler: (req: Request, res: Response) => {
-      logger.warn(`Custom rate limit exceeded for ${req.user?.id || req.ip}`);
+      logger.warn(`Custom rate limit exceeded for ${(req.user as any)?._id || req.ip}`);
       res.status(429).json({
         error: options.message || 'Rate limit exceeded.',
         retryAfter: `${Math.ceil(options.windowMs / 1000)} seconds`
@@ -206,7 +206,7 @@ export const checkUserRateLimit = async (req: Request, res: Response, next: Next
       enterprise: { messagesPerMinute: 1000, apiCallsPerMinute: 2000 }
     };
 
-    const limits = planLimits[user.subscription.plan as keyof typeof planLimits] || planLimits.free;
+    const limits = planLimits[(user as any).subscription.plan as keyof typeof planLimits] || planLimits.free;
 
     // This would typically check against a usage tracking system
     // For now, we'll rely on the express-rate-limit middleware above

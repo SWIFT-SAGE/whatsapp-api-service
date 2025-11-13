@@ -6,10 +6,6 @@ import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import mongoose from 'mongoose';
 
-interface AuthenticatedRequest extends Request {
-  user?: IUser;
-}
-
 export class RazorpayController {
   /**
    * Get available payment plans
@@ -38,7 +34,7 @@ export class RazorpayController {
   /**
    * Create a Razorpay payment order
    */
-  async createPayment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async createPayment(req: Request, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -59,7 +55,7 @@ export class RazorpayController {
       }
 
       const { plan, billingCycle, type = 'subscription', promoCode } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       // Validate plan exists
       const paymentPlan = razorpayService.getPaymentPlan(plan, billingCycle);
@@ -127,7 +123,7 @@ export class RazorpayController {
 
     } catch (error: any) {
       logger.error('Failed to create Razorpay payment', {
-        userId: req.user?._id,
+        userId: (req.user as IUser)?._id,
         error: error.message,
         stack: error.stack
       });
@@ -143,7 +139,7 @@ export class RazorpayController {
   /**
    * Verify and capture payment
    */
-  async verifyPayment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async verifyPayment(req: Request, res: Response): Promise<void> {
     try {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
@@ -249,9 +245,9 @@ export class RazorpayController {
   /**
    * Get user's payment history
    */
-  async getPaymentHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getPaymentHistory(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const limit = parseInt(req.query.limit as string) || 10;
       const page = parseInt(req.query.page as string) || 1;
       const skip = (page - 1) * limit;
@@ -281,7 +277,7 @@ export class RazorpayController {
 
     } catch (error: any) {
       logger.error('Failed to get payment history', {
-        userId: req.user?._id,
+        userId: (req.user as IUser)?._id,
         error: error.message
       });
 
@@ -296,10 +292,10 @@ export class RazorpayController {
   /**
    * Get payment details by ID
    */
-  async getPaymentDetails(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async getPaymentDetails(req: Request, res: Response): Promise<void> {
     try {
       const { paymentId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       if (!mongoose.Types.ObjectId.isValid(paymentId)) {
         res.status(400).json({
@@ -330,7 +326,7 @@ export class RazorpayController {
     } catch (error: any) {
       logger.error('Failed to get payment details', {
         paymentId: req.params.paymentId,
-        userId: req.user?._id,
+        userId: (req.user as IUser)?._id,
         error: error.message
       });
 
@@ -345,9 +341,9 @@ export class RazorpayController {
   /**
    * Cancel subscription
    */
-  async cancelSubscription(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async cancelSubscription(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { reason } = req.body;
 
       const user = await User.findById(userId);
@@ -388,7 +384,7 @@ export class RazorpayController {
 
     } catch (error: any) {
       logger.error('Failed to cancel subscription', {
-        userId: req.user?._id,
+        userId: (req.user as IUser)?._id,
         error: error.message
       });
 
@@ -403,9 +399,9 @@ export class RazorpayController {
   /**
    * Reactivate subscription
    */
-  async reactivateSubscription(req: AuthenticatedRequest, res: Response): Promise<void> {
+  async reactivateSubscription(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const user = await User.findById(userId);
       if (!user) {
@@ -444,7 +440,7 @@ export class RazorpayController {
 
     } catch (error: any) {
       logger.error('Failed to reactivate subscription', {
-        userId: req.user?._id,
+        userId: (req.user as IUser)?._id,
         error: error.message
       });
 

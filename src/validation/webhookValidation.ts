@@ -1,5 +1,6 @@
 import { body, param, query } from 'express-validator';
 import { Request } from 'express';
+import { IUser } from '../models/User';
 import Webhook from '../models/Webhook';
 
 // Webhook ID parameter validation
@@ -43,7 +44,7 @@ export const validateCreateWebhook = [
       // Check if URL is already used by this user
       const existingWebhook = await Webhook.findOne({ 
         url, 
-        userId: (meta.req as Request).user?.id
+        userId: ((meta.req as Request).user as IUser)?._id
       });
       if (existingWebhook) {
         throw new Error('Webhook URL already exists for this user');

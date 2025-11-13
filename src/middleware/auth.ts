@@ -4,15 +4,6 @@ import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 
-// Extend Express Request interface
-declare global {
-  namespace Express {
-    interface Request {
-      user?: IUser;
-    }
-  }
-}
-
 interface JwtPayload {
   userId: string;
   iat: number;
@@ -219,10 +210,11 @@ export const requireSubscription = (requiredPlans: string[]) => {
       return;
     }
 
-    if (!requiredPlans.includes(req.user.subscription.plan)) {
+    const user = req.user as IUser;
+    if (!requiredPlans.includes(user.subscription.plan)) {
       res.status(403).json({ 
         error: 'Insufficient subscription plan',
-        currentPlan: req.user.subscription.plan,
+        currentPlan: user.subscription.plan,
         requiredPlans
       });
       return;
@@ -242,14 +234,15 @@ export const requireVerification = (req: Request, res: Response, next: NextFunct
     return;
   }
 
+  const user = req.user as IUser;
   logger.info('Verification check:', { 
-    userId: req.user._id,
-    isVerified: req.user.isVerified,
-    isEmailVerified: req.user.isEmailVerified
+    userId: user._id,
+    isVerified: user.isVerified,
+    isEmailVerified: user.isEmailVerified
   });
 
-  if (!req.user.isVerified) {
-    logger.warn('User not verified', { userId: req.user._id });
+  if (!user.isVerified) {
+    logger.warn('User not verified', { userId: user._id });
     res.status(403).json({ error: 'Email verification required' });
     return;
   }

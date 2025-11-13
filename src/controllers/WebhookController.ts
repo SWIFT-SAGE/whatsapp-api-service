@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import { IUser } from '../models/User';
 import WhatsappSession from '../models/WhatsappSession';
 import MessageLog from '../models/MessageLog';
 import { logger } from '../utils/logger';
@@ -258,7 +259,7 @@ export class WebhookController {
       }
 
       const { webhookUrl } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const testPayload = {
         event: 'webhook.test',

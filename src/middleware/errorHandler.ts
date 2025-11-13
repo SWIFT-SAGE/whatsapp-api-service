@@ -192,8 +192,8 @@ const generateRequestId = (): string => {
  * Middleware to add request ID
  */
 export const addRequestId = (req: Request, res: Response, next: NextFunction): void => {
-  req.requestId = req.headers['x-request-id'] as string || generateRequestId();
-  res.setHeader('X-Request-ID', req.requestId);
+  (req as any).requestId = req.headers['x-request-id'] as string || generateRequestId();
+  res.setHeader('X-Request-ID', (req as any).requestId);
   next();
 };
 
@@ -202,7 +202,7 @@ export const addRequestId = (req: Request, res: Response, next: NextFunction): v
  */
 export const errorHandler = (error: any, req: Request, res: Response, next: NextFunction): void => {
   const appError = handleError(error);
-  const requestId = req.requestId || generateRequestId();
+  const requestId = (req as any).requestId || generateRequestId();
 
   // Log error details
   const errorLog = {
@@ -221,7 +221,7 @@ export const errorHandler = (error: any, req: Request, res: Response, next: Next
       params: req.params,
       ip: req.ip,
       userAgent: req.get('User-Agent'),
-      userId: req.user?.id
+      userId: (req.user as any)?._id
     },
     timestamp: new Date().toISOString()
   };
@@ -341,15 +341,6 @@ export const initializeErrorHandling = (): void => {
   handleUncaughtException();
   handleUnhandledRejection();
 };
-
-// Extend Express Request interface
-declare global {
-  namespace Express {
-    interface Request {
-      requestId?: string;
-    }
-  }
-}
 
 export default {
   AppError,

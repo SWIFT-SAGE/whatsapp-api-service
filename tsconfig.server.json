@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noEmit": true,
+    "files": ["src/types.d.ts"]
+  },
+  "ts-node": {
+    "files": true,
+    "transpileOnly": false,
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
+}
+

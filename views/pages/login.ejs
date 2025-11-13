@@ -303,31 +303,10 @@
         
         // Social login handlers
         document.getElementById('google-login').addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting to Google...';
             this.disabled = true;
-            // Simulate OAuth flow
-            setTimeout(() => {
-                this.innerHTML = '<i class="fab fa-google me-2"></i>Continue with Google';
-                this.disabled = false;
-            }, 2000);
-        });
-        
-        document.getElementById('github-login').addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
-            this.disabled = true;
-            setTimeout(() => {
-                this.innerHTML = '<i class="fab fa-github me-2"></i>Continue with GitHub';
-                this.disabled = false;
-            }, 2000);
-        });
-        
-        document.getElementById('microsoft-login').addEventListener('click', function() {
-            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting...';
-            this.disabled = true;
-            setTimeout(() => {
-                this.innerHTML = '<i class="fab fa-microsoft me-2"></i>Continue with Microsoft';
-                this.disabled = false;
-            }, 2000);
+            // Redirect to Google OAuth
+            window.location.href = '/auth/google';
         });
         
         // Utility functions

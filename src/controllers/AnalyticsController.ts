@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import MessageLog from '../models/MessageLog';
 import WhatsappSession from '../models/WhatsappSession';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { ApiResponse } from '../types/common';
 
@@ -12,7 +12,7 @@ export class AnalyticsController {
    */
   async getDashboardStats(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { period = '30d' } = req.query;
 
       // Calculate date range
@@ -123,7 +123,7 @@ export class AnalyticsController {
    */
   async getMessageAnalytics(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { period = '7d', groupBy = 'day' } = req.query;
 
       // Calculate date range
@@ -210,7 +210,7 @@ export class AnalyticsController {
    */
   async getSessionAnalytics(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { period = '30d' } = req.query;
 
       const now = new Date();
@@ -306,7 +306,7 @@ export class AnalyticsController {
    */
   async getTopContacts(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { period = '30d', limit = 10 } = req.query;
 
       const now = new Date();

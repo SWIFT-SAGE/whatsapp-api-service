@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { param } from 'express-validator';
+import { IUser } from '../models/User';
 import WebhookController from '../controllers/WebhookController';
 import WebhookService from '../services/WebhookService';
 import { handleValidationErrors } from '../middleware/validation';
@@ -21,7 +22,7 @@ const router = express.Router();
 // Webhook CRUD operations
 router.post('/', validateCreateWebhook, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const webhook = await WebhookService.createWebhook(userId, req.body);
     res.status(201).json({
       success: true,
@@ -38,7 +39,7 @@ router.post('/', validateCreateWebhook, handleValidationErrors, async (req: Requ
 
 router.get('/', validateGetWebhooks, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { sessionId } = req.query;
     const webhooks = await WebhookService.getUserWebhooks(userId, sessionId as string);
     res.json({
@@ -55,7 +56,7 @@ router.get('/', validateGetWebhooks, handleValidationErrors, async (req: Request
 
 router.get('/:webhookId', validateWebhookId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     const webhook = await WebhookService.getWebhook(webhookId, userId);
     res.json({
@@ -72,7 +73,7 @@ router.get('/:webhookId', validateWebhookId, handleValidationErrors, async (req:
 
 router.put('/:webhookId', validateWebhookId, validateUpdateWebhook, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     const webhook = await WebhookService.updateWebhook(webhookId, userId, req.body);
     res.json({
@@ -90,7 +91,7 @@ router.put('/:webhookId', validateWebhookId, validateUpdateWebhook, handleValida
 
 router.delete('/:webhookId', validateWebhookId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     await WebhookService.deleteWebhook(webhookId, userId);
     res.json({
@@ -108,7 +109,7 @@ router.delete('/:webhookId', validateWebhookId, handleValidationErrors, async (r
 // Webhook testing
 router.post('/:webhookId/test', validateWebhookId, validateTestWebhook, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     const webhook = await WebhookService.getWebhook(webhookId, userId);
     const result = await WebhookService.testWebhookDelivery(webhook);
@@ -131,7 +132,7 @@ router.post('/test-url', validateTestWebhook, handleValidationErrors, WebhookCon
 // Webhook statistics
 router.get('/:webhookId/stats', validateWebhookId, validateGetWebhookStats, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     const { days } = req.query;
     const stats = await WebhookService.getWebhookStats(webhookId, userId, days ? parseInt(days as string) : 30);
@@ -150,7 +151,7 @@ router.get('/:webhookId/stats', validateWebhookId, validateGetWebhookStats, hand
 // Webhook logs
 router.get('/:webhookId/logs', validateWebhookId, validateGetWebhookLogs, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     const { limit } = req.query;
     const logs = await WebhookService.getWebhookLogs(webhookId, userId, limit ? parseInt(limit as string) : 50);
@@ -169,7 +170,7 @@ router.get('/:webhookId/logs', validateWebhookId, validateGetWebhookLogs, handle
 // Regenerate webhook secret
 router.post('/:webhookId/regenerate-secret', validateWebhookId, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookId } = req.params;
     const result = await WebhookService.regenerateSecret(webhookId, userId);
     res.json({
@@ -188,7 +189,7 @@ router.post('/:webhookId/regenerate-secret', validateWebhookId, handleValidation
 // Bulk operations
 router.post('/bulk', validateBulkWebhookOperation, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const { webhookIds, operation } = req.body;
     
     const results = [];
@@ -247,7 +248,7 @@ router.get('/events/supported', (req, res) => {
 // Export webhooks
 router.get('/export', validateExportWebhooks, handleValidationErrors, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!._id.toString();
+    const userId = (req.user as IUser)._id.toString();
     const webhooks = await WebhookService.getUserWebhooks(userId);
     
     const { format = 'json' } = req.query;

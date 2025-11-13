@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { ApiResponse } from '../types/common';
 
@@ -10,7 +10,7 @@ export class UserController {
    */
   async getProfile(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       
       const user = await User.findById(userId)
         .select('-password -verificationToken -resetPasswordToken')
@@ -54,11 +54,11 @@ export class UserController {
         return;
       }
 
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { name, email } = req.body;
 
       // Check if email is already taken by another user
-      if (email && email !== req.user!.email) {
+      if (email && email !== (req.user as IUser).email) {
         const existingUser = await User.findOne({ email, _id: { $ne: userId } });
         if (existingUser) {
           res.status(409).json({
@@ -95,7 +95,7 @@ export class UserController {
    */
   async getSubscription(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       
       const user = await User.findById(userId).select('subscription');
       
@@ -127,7 +127,7 @@ export class UserController {
    */
   async regenerateApiKey(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       
       const user = await User.findById(userId);
       if (!user) {
@@ -163,7 +163,7 @@ export class UserController {
    */
   async deleteAccount(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       
       // Delete user and all associated data
       await User.findByIdAndDelete(userId);
@@ -171,7 +171,7 @@ export class UserController {
       // Note: In production, you might want to soft delete and clean up associated data
       // like WhatsApp sessions, message logs, etc.
       
-      logger.info(`User account deleted: ${req.user!.email}`);
+      logger.info(`User account deleted: ${(req.user as IUser).email}`);
 
       res.json({
         success: true,
@@ -189,3 +189,4 @@ export class UserController {
 }
 
 export default new UserController();
+

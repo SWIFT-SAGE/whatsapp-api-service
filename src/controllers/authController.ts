@@ -3,7 +3,7 @@ import { validationResult } from 'express-validator';
 import * as jwt from 'jsonwebtoken';
 import { StringValue } from 'ms';
 import crypto from 'crypto';
-import User from '../models/User';
+import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { sendEmail } from '../utils/email';
 
@@ -275,7 +275,7 @@ export class AuthController {
    */
   async getProfile(req: Request, res: Response): Promise<void> {
     try {
-      const user = req.user!;
+      const user = req.user as IUser;
 
       res.json({
         success: true,
@@ -312,7 +312,7 @@ export class AuthController {
       }
 
       const { name, phone, company, bio } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       // Prepare update object
       const updateData: any = {};
@@ -366,7 +366,7 @@ export class AuthController {
       }
 
       const { currentPassword, newPassword } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       // Get user with password
       const user = await User.findById(userId).select('+password');
@@ -503,7 +503,7 @@ export class AuthController {
    */
   async generateApiKey(req: Request, res: Response): Promise<void> {
     try {
-      const user = req.user!;
+      const user = req.user as IUser;
 
       // Generate new API key
       user.apiKey = user.generateApiKey();
@@ -525,7 +525,7 @@ export class AuthController {
    */
   async regenerateApiKey(req: Request, res: Response): Promise<void> {
     try {
-      const user = req.user!;
+      const user = req.user as IUser;
 
       user.apiKey = user.generateApiKey();
       await user.save();
@@ -566,7 +566,7 @@ export class AuthController {
    */
   async sendVerificationEmail(req: Request, res: Response): Promise<void> {
     try {
-      const user = req.user!;
+      const user = req.user as IUser;
 
       if (user.isVerified) {
         res.status(400).json({ error: 'Email is already verified' });
@@ -625,6 +625,51 @@ export class AuthController {
   }
 
   /**
+   * Google OAuth Login - Initiate
+   */
+  googleAuth(req: Request, res: Response): void {
+    // This will redirect to Google OAuth consent screen
+    // The actual implementation is handled by Passport middleware
+  }
+
+  /**
+   * Google OAuth Callback
+   */
+  async googleAuthCallback(req: Request, res: Response): Promise<void> {
+    try {
+      const user = req.user as any;
+
+      if (!user) {
+        logger.error('Google OAuth callback: No user found');
+        return res.redirect('/login?error=auth_failed');
+      }
+
+      // Generate JWT token for the user
+      const secret = process.env.JWT_SECRET || 'your-super-secret-jwt-key-that-is-at-least-32-characters-long-for-security';
+      const payload = { userId: user._id.toString() };
+      const expiresIn: StringValue = (process.env.JWT_EXPIRES_IN || '7d') as StringValue;
+      const options: jwt.SignOptions = { expiresIn };
+      const token = jwt.sign(payload, secret, options);
+
+      // Set token as HTTP-only cookie
+      res.cookie('authToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      });
+
+      logger.info(`Google OAuth successful for user: ${user.email}`);
+
+      // Redirect to success page or dashboard
+      res.redirect('/success?auth=google');
+    } catch (error) {
+      logger.error('Google OAuth callback error:', error);
+      res.redirect('/login?error=auth_failed');
+    }
+  }
+
+  /**
    * Logout
    */
   async logout(req: Request, res: Response): Promise<void> {
@@ -660,7 +705,7 @@ export class AuthController {
         });
       }
 
-      logger.info('User logged out successfully', { userId: req.user?._id });
+      logger.info('User logged out successfully', { userId: (req.user as IUser)?._id });
 
       res.json({ 
         success: true, 

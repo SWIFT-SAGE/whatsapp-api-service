@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import { IUser } from '../models/User';
 import WhatsappSession from '../models/WhatsappSession';
 import WhatsAppService from '../services/whatsappService';
 import { logger } from '../utils/logger';
@@ -24,7 +25,7 @@ export class SessionController {
         return;
       }
 
-      const userId = req.user!._id.toString();
+      const userId = (req.user as IUser)._id.toString();
       const { name, webhookUrl, settings } = req.body;
 
       // Check session limits based on user plan
@@ -37,7 +38,7 @@ export class SessionController {
           default: return 1;
         }
       };
-      const maxSessions = getMaxSessions(req.user!.subscription.plan);
+      const maxSessions = getMaxSessions((req.user as IUser).subscription.plan);
 
       if (existingSessions >= maxSessions) {
         res.status(403).json({
@@ -78,7 +79,7 @@ export class SessionController {
           throw new Error(result.message);
         }
 
-        logger.info(`WhatsApp session created: ${sessionId} for user: ${req.user!.email}`);
+        logger.info(`WhatsApp session created: ${sessionId} for user: ${(req.user as IUser).email}`);
 
         res.status(201).json({
           success: true,
@@ -112,7 +113,7 @@ export class SessionController {
    */
   async getSessions(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
       const skip = (page - 1) * limit;
@@ -154,7 +155,7 @@ export class SessionController {
   async getSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const session = await WhatsappSession.findOne({ sessionId, userId });
 
@@ -197,7 +198,7 @@ export class SessionController {
       }
 
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const { webhookUrl, settings } = req.body;
 
       const session = await WhatsappSession.findOne({ sessionId, userId });
@@ -244,7 +245,7 @@ export class SessionController {
   async deleteSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const session = await WhatsappSession.findOne({ sessionId, userId });
 
@@ -284,7 +285,7 @@ export class SessionController {
   async getQRCode(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const session = await WhatsappSession.findOne({ sessionId, userId });
 

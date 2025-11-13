@@ -1,5 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
+import passport from '../config/passport';
 import AuthController from '../controllers/authController';
 import { authenticateToken, optionalAuth } from '../middleware/auth';
 
@@ -44,6 +45,20 @@ router.post('/verify-email', AuthController.verifyEmail);
 router.post('/manual-verify', AuthController.manualVerify); // Temporary for testing
 router.post('/forgot-password', AuthController.forgotPassword);
 router.post('/reset-password', resetPasswordValidation, AuthController.resetPassword);
+
+// Google OAuth routes
+router.get('/google', passport.authenticate('google', { 
+  scope: ['profile', 'email'],
+  prompt: 'select_account'
+}));
+
+router.get('/google/callback', 
+  passport.authenticate('google', { 
+    failureRedirect: '/login?error=auth_failed',
+    session: false
+  }),
+  AuthController.googleAuthCallback
+);
 
 // Protected routes
 router.use(authenticateToken);

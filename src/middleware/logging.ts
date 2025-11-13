@@ -366,21 +366,6 @@ export const logRateLimit = (identifier: string, limit: number, current: number,
   logger.warn('Rate Limit Exceeded:', rateLimitLog);
 };
 
-// Extend Express Request interface
-declare global {
-  namespace Express {
-    interface Request {
-      requestId?: string;
-      auditInfo?: {
-        action: string;
-        resource: string;
-        resourceId?: string;
-        details?: any;
-      };
-    }
-  }
-}
-
 export default {
   requestLogger,
   auditLogger,

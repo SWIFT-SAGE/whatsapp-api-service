@@ -1,4 +1,5 @@
 // Export all validation schemas
+import { IUser } from '../models/User';
 export * from './userValidation';
 export * from './sessionValidation';
 export * from './messageValidation';
@@ -29,7 +30,7 @@ export const handleValidationErrors = (
       path: req.path,
       method: req.method,
       errors: errorMessages,
-      userId: req.user?.id,
+      userId: req.user as IUser)?._id,
       ip: req.ip
     });
     

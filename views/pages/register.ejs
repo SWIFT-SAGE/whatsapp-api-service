@@ -85,8 +85,19 @@
                                 
                                 <div id="register-error" class="alert alert-danger d-none" role="alert"></div>
                                 <div id="register-success" class="alert alert-success d-none" role="alert"></div>
+                                
+                                <div class="text-center">
+                                    <div class="divider my-3">
+                                        <span class="divider-text">Or continue with</span>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-danger" id="google-register">
+                                            <i class="fab fa-google me-2"></i>Continue with Google
+                                        </button>
+                                    </div>
+                                </div>
                             </form>
-                            <div class="text-center">
+                            <div class="text-center mt-3">
                                 <p>Already have an account? 
                                     <a href="/login" class="text-decoration-none">Sign in</a>
                                 </p>
@@ -290,6 +301,26 @@
         }
         .invalid-feedback {
             display: block;
+        }
+        
+        .divider {
+            position: relative;
+            text-align: center;
+        }
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #dee2e6;
+        }
+        .divider-text {
+            background: white;
+            padding: 0 1rem;
+            color: #6c757d;
+            font-size: 0.875rem;
         }
     </style>
 
@@ -520,6 +551,14 @@
                 icon.classList.remove('fa-eye-slash');
                 icon.classList.add('fa-eye');
             }
+        });
+        
+        // Google register handler
+        document.getElementById('google-register').addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connecting to Google...';
+            this.disabled = true;
+            // Redirect to Google OAuth
+            window.location.href = '/auth/google';
         });
         
         // Utility functions

@@ -5,6 +5,8 @@ import path from 'path';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import passport from './config/passport';
 import { config } from './config';
 import { connectDatabase } from './config/database';
 import { logger, requestLogger } from './utils/logger';
@@ -78,6 +80,22 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Cookie parsing middleware
 app.use(cookieParser());
 
+// Session middleware (required for Passport)
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-super-secret-session-key-that-is-at-least-32-characters-long',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize() as any);
+app.use(passport.session() as any);
+
 // View engine setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
@@ -90,7 +108,7 @@ import AuthController from './controllers/authController';
 import { authenticateToken, authenticateWeb, optionalAuth } from './middleware/auth';
 import WhatsappSession from './models/WhatsappSession';
 import MessageLog from './models/MessageLog';
-import User from './models/User';
+import User, { IUser } from './models/User';
 import Analytics from './models/Analytics';
 
 // Web routes (for dashboard)
@@ -142,7 +160,7 @@ app.get('/', optionalAuth, (req, res) => {
 app.get('/dashboard', authenticateWeb, async (req, res) => {
   try {
     // authenticateWeb middleware ensures user exists and redirects if not
-    const user = req.user!;
+    const user = req.user as IUser;
     const userId = user._id;
     
     // Get user sessions
@@ -459,6 +477,11 @@ app.get('/auth/verify-email/:token', async (req, res) => {
   }
 });
 
+// Success page after OAuth
+app.get('/success', optionalAuth, (req, res) => {
+  res.render('pages/success', { user: req.user || null });
+});
+
 // Logout route to clear all authentication
 app.get('/logout', (req, res) => {
   // Clear the authentication cookie with all possible options
@@ -484,10 +507,24 @@ app.get('/logout', (req, res) => {
   res.redirect('/login?logout=true');
 });
 
+// Google OAuth routes
+app.get('/auth/google', passport.authenticate('google', { 
+  scope: ['profile', 'email'],
+  prompt: 'select_account'
+}));
+
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { 
+    failureRedirect: '/login?error=auth_failed',
+    session: false
+  }),
+  AuthController.googleAuthCallback
+);
+
 // API routes for AJAX calls from frontend
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user!._id).select('-password');
+    const user = await User.findById((req.user as IUser)._id).select('-password');
     res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch profile' });

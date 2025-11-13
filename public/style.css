@@ -2591,9 +2591,6 @@ pre {
   color: inherit;
 }
 
-.contact-page *:not(.btn):not(.badge):not(.alert) {
-  color: var(--color-text);
-}
 
 .contact-page section {
   padding: 4rem 0;
@@ -2642,7 +2639,7 @@ pre {
   padding: 2rem;
 }
 
-.contact-page h1,
+
 .contact-page h2,
 .contact-page h3,
 .contact-page h4,
@@ -2910,9 +2907,7 @@ pre {
   margin-bottom: 0.75rem;
 }
 
-.contact-page .fw-bold {
-  color: var(--color-text) !important;
-}
+
 
 .contact-page small {
   color: var(--color-text-secondary) !important;

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import { IUser } from '../models/User';
 import MessageLog from '../models/MessageLog';
 import WhatsappSession from '../models/WhatsappSession';
 import WhatsAppService from '../services/whatsappService';
@@ -26,10 +27,10 @@ export class MessageController {
 
       const { sessionId } = req.params;
       const { to, message, type = 'text' } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       // Check if user can send messages
-      if (!req.user!.canSendMessage()) {
+      if (!(req.user as IUser).canSendMessage()) {
         res.status(403).json({
           success: false,
           message: 'Message limit exceeded for your plan'
@@ -96,7 +97,7 @@ export class MessageController {
         await messageLog.save();
 
         // Increment user message count
-        await req.user!.incrementMessageCount();
+        await (req.user as IUser).incrementMessageCount();
 
         logger.info(`Message sent: ${messageId} from session: ${sessionId}`);
 
@@ -155,7 +156,7 @@ export class MessageController {
 
       const { sessionId } = req.params;
       const { to, caption } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const file = req.file;
 
       if (!file) {
@@ -167,7 +168,7 @@ export class MessageController {
       }
 
       // Check if user can send messages
-      if (!req.user!.canSendMessage()) {
+      if (!(req.user as IUser).canSendMessage()) {
         res.status(403).json({
           success: false,
           message: 'Message limit exceeded for your plan'
@@ -228,7 +229,7 @@ export class MessageController {
         }
         await messageLog.save();
 
-        await req.user!.incrementMessageCount();
+        await (req.user as IUser).incrementMessageCount();
 
         res.json({
           success: true,
@@ -272,7 +273,7 @@ export class MessageController {
   async getMessages(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
       const direction = req.query.direction as string;
@@ -337,7 +338,7 @@ export class MessageController {
   async getMessage(req: Request, res: Response): Promise<void> {
     try {
       const { messageId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const message = await MessageLog.findOne({ messageId, userId })
         .populate('sessionId', 'sessionId phoneNumber');

@@ -1,4 +1,5 @@
 import { body, param, query } from 'express-validator';
+import { IUser } from '../models/User';
 import { Request } from 'express';
 import WhatsappSession from '../models/WhatsappSession';
 
@@ -31,7 +32,7 @@ export const validateCreateSession = [
     .custom(async (sessionId: string, meta) => {
       const existingSession = await WhatsappSession.findOne({ 
         sessionId, 
-        userId: meta.req.user?.id
+        userId: meta.req.user as IUser)?._id
       });
       if (existingSession) {
         throw new Error('Session ID already exists for this user');
@@ -451,7 +452,7 @@ export const validateCloneSession = [
     .custom(async (sessionId: string, meta) => {
       const existingSession = await WhatsappSession.findOne({ 
         sessionId, 
-        userId: meta.req.user?.id
+        userId: meta.req.user as IUser)?._id
       });
       if (existingSession) {
         throw new Error('New session ID already exists for this user');

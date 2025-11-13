@@ -179,6 +179,8 @@ const fieldInteractions = new Set();
 // Initialize Application
 document.addEventListener('DOMContentLoaded', function() {
   initializeApp();
+  // Ensure navbar is updated on page load
+  updateAuthUI();
   setupEventListeners();
   setupFieldValidation();
   checkAuthState();
@@ -952,17 +954,20 @@ async function logout() {
 function updateAuthUI() {
   const loginNav = document.getElementById('login-nav');
   const registerNav = document.getElementById('register-nav');
+  const getStartedNav = document.getElementById('get-started-nav');
   const userNav = document.getElementById('user-nav');
   const userName = document.getElementById('user-name');
 
   if (currentUser) {
     if (loginNav) loginNav.style.display = 'none';
     if (registerNav) registerNav.style.display = 'none';
+    if (getStartedNav) getStartedNav.style.display = 'none';
     if (userNav) userNav.style.display = 'block';
     if (userName) userName.textContent = currentUser.name;
   } else {
     if (loginNav) loginNav.style.display = 'block';
     if (registerNav) registerNav.style.display = 'block';
+    if (getStartedNav) getStartedNav.style.display = 'block';
     if (userNav) userNav.style.display = 'none';
   }
 }

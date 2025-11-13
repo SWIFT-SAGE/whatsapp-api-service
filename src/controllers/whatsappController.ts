@@ -4,6 +4,7 @@ import WhatsAppService from '../services/whatsappService';
 import RateLimitService from '../services/rateLimitService';
 import WhatsappSession from '../models/WhatsappSession';
 import MessageLog from '../models/MessageLog';
+import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { generateId } from '../utils/helpers';
 import QRCodeService from '../services/QRCodeService';
@@ -15,7 +16,7 @@ export class WhatsAppController {
    */
   async createSession(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id.toString();
+      const userId = (req.user as IUser)._id.toString();
       const { name, webhook, webhookUrl, settings } = req.body;
       
       // Use webhook or webhookUrl (frontend sends webhook)
@@ -31,7 +32,7 @@ export class WhatsAppController {
           default: return 1;
         }
       };
-      const maxSessions = getMaxSessions(req.user!.subscription.plan);
+      const maxSessions = getMaxSessions((req.user as IUser).subscription.plan);
 
       if (existingSessions >= maxSessions) {
         res.status(403).json({
@@ -61,8 +62,8 @@ export class WhatsAppController {
       await session.save();
 
       // Update user's sessions array
-      req.user!.whatsappSessions.push(session._id);
-      await req.user!.save();
+      (req.user as IUser).whatsappSessions.push(session._id);
+      await (req.user as IUser).save();
 
       // Initialize WhatsApp client
       const result = await WhatsAppService.createClient(sessionId, userId);
@@ -91,7 +92,7 @@ export class WhatsAppController {
    */
   async getSessions(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const sessions = await WhatsappSession.find({ userId })
         .select('-qrCode') // Don't include QR code in list
@@ -134,7 +135,7 @@ export class WhatsAppController {
   async getSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       const session = await WhatsappSession.findOne({ sessionId, userId });
       if (!session) {
@@ -177,7 +178,7 @@ export class WhatsAppController {
     try {
       const { sessionId } = req.params;
       const { to, message, quotedMessageId } = req.body;
-      const userId = req.user!._id.toString();
+      const userId = (req.user as IUser)._id.toString();
 
       // Input validation
       if (!to || !message) {
@@ -238,7 +239,7 @@ export class WhatsAppController {
       }
 
       // Check rate limit
-      const rateLimitResult = await RateLimitService.canSendMessage(userId, req.user!.subscription.plan);
+      const rateLimitResult = await RateLimitService.canSendMessage(userId, (req.user as IUser).subscription.plan);
       if (!rateLimitResult.allowed) {
         res.status(429).json({
           error: 'Message limit exceeded',
@@ -271,7 +272,7 @@ export class WhatsAppController {
       await messageLog.save();
 
       // Increment user message count
-      await req.user!.incrementMessageCount();
+      await (req.user as IUser).incrementMessageCount();
 
       res.json({
         success: true,
@@ -291,7 +292,7 @@ export class WhatsAppController {
     try {
       const { sessionId } = req.params;
       const { to, caption } = req.body;
-      const userId = req.user!._id.toString();
+      const userId = (req.user as IUser)._id.toString();
 
       // Input validation
       if (!req.file) {
@@ -361,7 +362,7 @@ export class WhatsAppController {
       }
 
       // Check rate limit
-      const rateLimitResult = await RateLimitService.canSendMessage(userId, req.user!.subscription.plan);
+      const rateLimitResult = await RateLimitService.canSendMessage(userId, (req.user as IUser).subscription.plan);
       if (!rateLimitResult.allowed) {
         res.status(429).json({
           error: 'Message limit exceeded',
@@ -406,7 +407,7 @@ export class WhatsAppController {
       await messageLog.save();
 
       // Increment user message count
-      await req.user!.incrementMessageCount();
+      await (req.user as IUser).incrementMessageCount();
 
       res.json({
         success: true,
@@ -426,7 +427,7 @@ export class WhatsAppController {
     try {
       const { sessionId } = req.params;
       const { page = 1, limit = 50, contact } = req.query;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       // Verify session ownership
       const session = await WhatsappSession.findOne({ sessionId, userId });
@@ -476,7 +477,7 @@ export class WhatsAppController {
     try {
       const { sessionId } = req.params;
       const { settings, webhook, webhookUrl } = req.body;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       
       // Use webhook or webhookUrl (frontend sends webhook)
       const finalWebhookUrl = webhook || webhookUrl;
@@ -523,7 +524,7 @@ export class WhatsAppController {
   async getQRCode(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       logger.info(`Getting QR code for session: ${sessionId}, user: ${userId}`);
 
@@ -719,7 +720,7 @@ export class WhatsAppController {
   async getQRCodeStatus(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       logger.info(`Getting QR status for session: ${sessionId}`);
 
@@ -815,7 +816,7 @@ export class WhatsAppController {
   async debugForceQR(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       logger.info(`Force generating QR for session: ${sessionId}`);
 
@@ -858,7 +859,7 @@ export class WhatsAppController {
    */
   async debugQRSessions(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
       
       // Get all sessions for this user
       const sessions = await WhatsappSession.find({ userId });
@@ -899,7 +900,7 @@ export class WhatsAppController {
   async deleteSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       // Try to find session by sessionId first
       let session = await WhatsappSession.findOne({ sessionId, userId });
@@ -922,10 +923,10 @@ export class WhatsAppController {
       await WhatsappSession.findByIdAndDelete(session._id);
 
       // Remove from user's sessions array
-      req.user!.whatsappSessions = req.user!.whatsappSessions.filter(
+      (req.user as IUser).whatsappSessions = (req.user as IUser).whatsappSessions.filter(
         s => !s.equals(session._id)
       );
-      await req.user!.save();
+      await (req.user as IUser).save();
 
       res.json({
         success: true,
@@ -947,7 +948,7 @@ export class WhatsAppController {
   async connectSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       logger.info(`Connecting session: ${sessionId} for user: ${userId}`);
 
@@ -1007,7 +1008,7 @@ export class WhatsAppController {
   async disconnectSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       logger.info(`Disconnecting session: ${sessionId} for user: ${userId}`);
 
@@ -1079,7 +1080,7 @@ export class WhatsAppController {
   async fixSessionStatus(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
-      const userId = req.user!._id;
+      const userId = (req.user as IUser)._id;
 
       logger.info(`Fixing session status: ${sessionId} for user: ${userId}`);
 
