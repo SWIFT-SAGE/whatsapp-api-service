@@ -32,9 +32,9 @@ export const validateCreateSession = [
     .custom(async (sessionId: string, meta) => {
       const existingSession = await WhatsappSession.findOne({ 
         sessionId, 
-        userId: meta.req.user as IUser)?._id
+        userId: (meta.req.user as IUser)?._id
       });
-      if (existingSession) {
+      if (existingSession) {  const user = meta.req.user as IUser;
         throw new Error('Session ID already exists for this user');
       }
       return true;
@@ -452,7 +452,7 @@ export const validateCloneSession = [
     .custom(async (sessionId: string, meta) => {
       const existingSession = await WhatsappSession.findOne({ 
         sessionId, 
-        userId: meta.req.user as IUser)?._id
+        userId: (meta.req.user as IUser)._id
       });
       if (existingSession) {
         throw new Error('New session ID already exists for this user');

@@ -30,7 +30,7 @@ export const handleValidationErrors = (
       path: req.path,
       method: req.method,
       errors: errorMessages,
-      userId: req.user as IUser)?._id,
+      userId: (req.user as IUser)?._id,
       ip: req.ip
     });
     
