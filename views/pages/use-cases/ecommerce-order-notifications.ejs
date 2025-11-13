@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body>
+    <%- include('../../partials/navbar') %>
+
+    <!-- Hero Section -->
+    <section class="hero-section" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); padding: 120px 0 80px;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/" class="text-white">Home</a></li>
+                            <li class="breadcrumb-item"><a href="/use-cases" class="text-white">Use Cases</a></li>
+                            <li class="breadcrumb-item active text-white" aria-current="page">Order Notifications</li>
+                        </ol>
+                    </nav>
+                    <h1 class="display-3 fw-bold text-white mb-4">E-commerce Order Notifications via WhatsApp</h1>
+                    <p class="lead text-white mb-4">Send automated WhatsApp order confirmations, shipping updates, and delivery notifications. Reduce support tickets by 70%, increase customer satisfaction, and build trust with real-time order tracking via the world's most popular messaging app.</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="/register" class="btn btn-light btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Automate Notifications
+                        </a>
+                        <a href="/api-docs/docs/messages" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-code me-2"></i>API Documentation
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="text-center">
+                        <i class="fas fa-shopping-bag" style="font-size: 200px; color: rgba(255,255,255,0.2);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <article>
+                        <h2 class="h1 fw-bold mb-4">WhatsApp Order Notifications for E-commerce</h2>
+                        <p class="lead">E-commerce businesses lose millions in customer support costs answering "Where is my order?" inquiries. WhatsApp order notifications solve this problem by proactively informing customers about every step of their purchase journey—from order confirmation to delivery—through the messaging app they check 23 times per day.</p>
+
+                        <p>Traditional email notifications have a 20% open rate and often end up in spam folders. WhatsApp messages achieve a 98% open rate with an average read time of 3 seconds. By implementing WhatsApp order notifications, e-commerce stores reduce customer anxiety, decrease support ticket volume by 70%, and create delightful post-purchase experiences that drive repeat purchases and positive reviews.</p>
+
+                        <h2 class="h3 fw-bold mt-5 mb-3">Why WhatsApp for Order Notifications?</h2>
+                        
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-envelope-open fa-2x text-danger me-3"></i>
+                                            <h3 class="h5 mb-0">98% Open Rate</h3>
+                                        </div>
+                                        <p class="mb-0">WhatsApp messages are opened within minutes, compared to hours or days for email. Ensure customers see critical order updates immediately.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-headset fa-2x text-danger me-3"></i>
+                                            <h3 class="h5 mb-0">70% Fewer Support Tickets</h3>
+                                        </div>
+                                        <p class="mb-0">Proactive notifications eliminate "where is my order" inquiries, freeing your support team to handle complex issues.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-globe fa-2x text-danger me-3"></i>
+                                            <h3 class="h5 mb-0">Global Reach</h3>
+                                        </div>
+                                        <p class="mb-0">With 2+ billion users worldwide, WhatsApp is the preferred communication channel in 180+ countries. Reach customers everywhere.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-redo fa-2x text-danger me-3"></i>
+                                            <h3 class="h5 mb-0">35% More Repeat Purchases</h3>
+                                        </div>
+                                        <p class="mb-0">Excellent post-purchase communication builds trust and encourages customers to buy again.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">How to Set Up WhatsApp Order Notifications</h2>
+                        <p>Implement automated order notifications in 6 simple steps:</p>
+
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <ol class="mb-0">
+                                    <li class="mb-3"><strong>Create WhatsApp Business API Account:</strong> Sign up for a free account and obtain your API key from the dashboard.</li>
+                                    <li class="mb-3"><strong>Connect Your E-commerce Platform:</strong> Integrate with Shopify, WooCommerce, Magento, or custom stores using webhooks or API.</li>
+                                    <li class="mb-3"><strong>Design Message Templates:</strong> Create WhatsApp-approved message templates for order confirmation, shipping, and delivery notifications.</li>
+                                    <li class="mb-3"><strong>Set Up Automation Rules:</strong> Configure which order events trigger WhatsApp messages (placed, confirmed, shipped, delivered).</li>
+                                    <li class="mb-3"><strong>Add Customer Opt-in:</strong> Implement WhatsApp consent checkbox during checkout to comply with messaging regulations.</li>
+                                    <li class="mb-0"><strong>Test & Monitor:</strong> Send test orders through your system and monitor delivery rates and customer responses.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Types of E-commerce Order Notifications</h2>
+                        <p>Essential WhatsApp notifications every online store should send:</p>
+
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Order Confirmation:</strong> Send instant confirmation with order number, items, total amount, and estimated delivery date within 30 seconds of purchase.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Payment Confirmation:</strong> Notify customers when payment is processed successfully and order is being prepared.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Order Processing:</strong> Update customers when their order moves from payment to fulfillment stage.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Shipping Notification:</strong> Alert customers when order ships with carrier name, tracking number, and clickable tracking link.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Out for Delivery:</strong> Send real-time notification when package is out for delivery with expected delivery window.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Delivery Confirmation:</strong> Confirm successful delivery and thank customers, optionally request feedback or reviews.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Delay Alerts:</strong> Proactively inform customers about shipping delays before they contact support.
+                            </li>
+                        </ul>
+
+                        <h2 class="h3 fw-bold mt-5 mb-3">Sample WhatsApp Order Notification</h2>
+                        <p>Here's what a professional order confirmation looks like:</p>
+
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <div class="border rounded p-3 bg-white" style="max-width: 400px;">
+                                    <p class="mb-2"><strong>✅ Order Confirmed!</strong></p>
+                                    <p class="mb-2">Hi Sarah! Your order #12345 has been confirmed.</p>
+                                    <p class="mb-2"><strong>Items:</strong><br>
+                                    • Blue Denim Jacket (Size M) x1<br>
+                                    • White Cotton T-shirt x2</p>
+                                    <p class="mb-2"><strong>Total:</strong> $89.99</p>
+                                    <p class="mb-2"><strong>Estimated Delivery:</strong> Dec 20-22</p>
+                                    <p class="mb-0 small text-muted">Track your order: https://store.com/track/12345</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Integration with Popular Platforms</h2>
+                        <p>Our API works seamlessly with major e-commerce platforms:</p>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card h-100 text-center">
+                                    <div class="card-body">
+                                        <i class="fab fa-shopify fa-3x text-success mb-3"></i>
+                                        <h4 class="h6">Shopify</h4>
+                                        <a href="/integrations/shopify-whatsapp">View Integration →</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 text-center">
+                                    <div class="card-body">
+                                        <i class="fab fa-wordpress fa-3x text-primary mb-3"></i>
+                                        <h4 class="h6">WooCommerce</h4>
+                                        <a href="/api-docs/docs/code-examples">View Integration →</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 text-center">
+                                    <div class="card-body">
+                                        <i class="fas fa-shopping-cart fa-3x text-warning mb-3"></i>
+                                        <h4 class="h6">Custom Stores</h4>
+                                        <a href="/api-docs">View API Docs →</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Technical Implementation Example</h2>
+                        <p>Send order confirmation with our REST API:</p>
+
+                        <div class="bg-dark text-light p-4 rounded mb-4">
+                            <pre class="text-light mb-0"><code>// Send order confirmation via WhatsApp
+const sendOrderConfirmation = async (order) => {
+  const response = await fetch('https://api.whatsapp-api.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      to: order.customer.phone,
+      template: 'order_confirmation',
+      parameters: {
+        customer_name: order.customer.name,
+        order_number: order.id,
+        items: order.items.map(i => i.name).join(', '),
+        total: order.total,
+        delivery_date: order.estimated_delivery,
+        tracking_url: `https://store.com/track/${order.id}`
+      }
+    })
+  });
+  
+  return response.json();
+};</code></pre>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Pricing for Order Notifications</h2>
+                        <p>Cost-effective plans based on order volume:</p>
+
+                        <div class="table-responsive mb-5">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Monthly Orders</th>
+                                        <th>Messages Needed</th>
+                                        <th>Recommended Plan</th>
+                                        <th>Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>0-50</td>
+                                        <td>Up to 150</td>
+                                        <td>Free Tier</td>
+                                        <td>$0/month</td>
+                                    </tr>
+                                    <tr>
+                                        <td>50-5,000</td>
+                                        <td>Up to 15,000</td>
+                                        <td>Basic Plan</td>
+                                        <td>$25/month</td>
+                                    </tr>
+                                    <tr>
+                                        <td>5,000+</td>
+                                        <td>Unlimited</td>
+                                        <td>Pro Plan</td>
+                                        <td>$40/month</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Best Practice</h4>
+                            <p class="mb-0">Always obtain explicit customer consent before sending WhatsApp notifications. Add a checkbox during checkout: "Send me order updates via WhatsApp" to comply with messaging regulations and improve deliverability.</p>
+                        </div>
+
+                        <h2 class="h3 fw-bold mt-4 mb-3">Success Stories</h2>
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <blockquote class="mb-0">
+                                    <p class="mb-2">"After implementing WhatsApp order notifications, our support tickets dropped by 65% and customer satisfaction scores increased from 4.2 to 4.8 stars. The ROI was immediate."</p>
+                                    <footer class="blockquote-footer">Fashion e-commerce store processing 10,000 orders/month</footer>
+                                </blockquote>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mt-4 mb-3">Related Resources</h2>
+                        <ul>
+                            <li><a href="/integrations/shopify-whatsapp">Shopify WhatsApp Integration Guide</a></li>
+                            <li><a href="/features/whatsapp-chatbot-api">Build Order Status Chatbot</a></li>
+                            <li><a href="/use-cases/customer-support-automation">Customer Support Automation</a></li>
+                            <li><a href="/pricing">View Pricing Plans</a></li>
+                        </ul>
+                    </article>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card sticky-top" style="top: 100px;">
+                        <div class="card-body">
+                            <h3 class="h5 fw-bold mb-4">Impact Metrics</h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">📈 98% message open rate</li>
+                                <li class="mb-2">⏱️ 3 second average read time</li>
+                                <li class="mb-2">📉 70% fewer support tickets</li>
+                                <li class="mb-2">😊 35% higher satisfaction</li>
+                                <li class="mb-2">🔄 28% more repeat purchases</li>
+                            </ul>
+                            
+                            <hr>
+                            
+                            <h3 class="h5 fw-bold mb-3">Quick Links</h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><a href="#benefits">Benefits</a></li>
+                                <li class="mb-2"><a href="#setup">Setup Guide</a></li>
+                                <li class="mb-2"><a href="#types">Notification Types</a></li>
+                                <li class="mb-2"><a href="#pricing">Pricing</a></li>
+                            </ul>
+
+                            <div class="bg-light p-4 rounded mt-4">
+                                <h4 class="h6 fw-bold">Start Automating</h4>
+                                <p class="small mb-3">Reduce support costs with WhatsApp notifications</p>
+                                <a href="/register" class="btn btn-danger w-100 mb-2">Get Started Free</a>
+                                <a href="/api-docs" class="btn btn-outline-danger w-100">Read API Docs</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Schema Markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>"
+      },{
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Use Cases",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/use-cases"
+      },{
+        "@type": "ListItem",
+        "position": 3,
+        "name": "E-commerce Order Notifications",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/use-cases/ecommerce-order-notifications"
+      }]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Set Up WhatsApp Order Notifications",
+      "description": "Step-by-step guide to implementing automated WhatsApp order notifications for e-commerce stores",
+      "step": [{
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Create WhatsApp Business API Account",
+        "text": "Sign up for a free account and obtain your API key."
+      },{
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "Connect Your E-commerce Platform",
+        "text": "Integrate with Shopify, WooCommerce, or custom stores using webhooks."
+      },{
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Design Message Templates",
+        "text": "Create WhatsApp-approved templates for different order stages."
+      },{
+        "@type": "HowToStep",
+        "position": 4,
+        "name": "Set Up Automation Rules",
+        "text": "Configure which order events trigger WhatsApp messages."
+      },{
+        "@type": "HowToStep",
+        "position": 5,
+        "name": "Add Customer Opt-in",
+        "text": "Implement WhatsApp consent checkbox during checkout."
+      },{
+        "@type": "HowToStep",
+        "position": 6,
+        "name": "Test & Monitor",
+        "text": "Send test orders and monitor delivery rates."
+      }]
+    }
+    </script>
+
+    <%- include('../../partials/footer') %>
+    <%- include('../../partials/scripts') %>
+</body>
+</html>
+

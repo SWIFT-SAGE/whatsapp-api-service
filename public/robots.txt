@@ -1,0 +1,30 @@
+# robots.txt for WhatsApp API Service
+# https://www.robotstxt.org/
+
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /api-docs
+Allow: /contact
+Allow: /about
+Allow: /blog
+Allow: /help
+Allow: /community
+
+# Disallow private areas
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /admin
+Disallow: /logout
+Disallow: /auth/
+
+# Sitemap location
+Sitemap: https://whatsapp-api.com/sitemap.xml
+
+# Crawl-delay for specific bots (optional)
+User-agent: Googlebot
+Crawl-delay: 0
+
+User-agent: Bingbot
+Crawl-delay: 1
+

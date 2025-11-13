@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body>
+    <%- include('../../partials/navbar') %>
+
+    <!-- Hero Section -->
+    <section class="hero-section" style="background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); padding: 120px 0 80px;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/" class="text-white">Home</a></li>
+                            <li class="breadcrumb-item"><a href="/features" class="text-white">Features</a></li>
+                            <li class="breadcrumb-item active text-white" aria-current="page">WhatsApp Chatbot API</li>
+                        </ol>
+                    </nav>
+                    <h1 class="display-3 fw-bold text-white mb-4">WhatsApp Chatbot API for Developers</h1>
+                    <p class="lead text-white mb-4">Build intelligent conversational AI chatbots with our powerful WhatsApp Business API. Automate customer interactions, handle inquiries 24/7, and scale your business with AI-powered messaging automation.</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="/register" class="btn btn-light btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Start Building Free
+                        </a>
+                        <a href="/api-docs/docs/chatbot" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-book me-2"></i>Chatbot Documentation
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="text-center">
+                        <i class="fas fa-robot" style="font-size: 200px; color: rgba(255,255,255,0.2);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <article>
+                        <h2 class="h1 fw-bold mb-4">What is WhatsApp Chatbot API?</h2>
+                        <p class="lead">A WhatsApp chatbot API is a programming interface that enables developers to create automated conversational agents on WhatsApp Business Platform. Our REST API provides comprehensive endpoints to build, deploy, and manage intelligent chatbots that can handle customer inquiries, process orders, provide support, and engage users through natural language conversations.</p>
+
+                        <p>With over 2 billion active users worldwide, WhatsApp has become the preferred communication channel for businesses and customers. Our chatbot API bridges the gap between your business systems and WhatsApp users, enabling seamless automated interactions at scale. Whether you're building a simple FAQ bot or a sophisticated AI-powered virtual assistant, our API provides the tools you need.</p>
+
+                        <h2 class="h3 fw-bold mt-5 mb-3">Key Features of Our WhatsApp Chatbot API</h2>
+                        
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-brain fa-2x text-primary me-3"></i>
+                                            <h3 class="h5 mb-0">Natural Language Processing</h3>
+                                        </div>
+                                        <p class="mb-0">Integrate with leading NLP platforms like Dialogflow, IBM Watson, or custom AI models to understand user intent and provide contextual responses.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-comments fa-2x text-primary me-3"></i>
+                                            <h3 class="h5 mb-0">Multi-turn Conversations</h3>
+                                        </div>
+                                        <p class="mb-0">Maintain conversation context across multiple messages with session management and state tracking capabilities built into our API.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-plug fa-2x text-primary me-3"></i>
+                                            <h3 class="h5 mb-0">Webhook Integration</h3>
+                                        </div>
+                                        <p class="mb-0">Receive real-time message events, delivery confirmations, and user interactions through customizable webhooks for seamless automation.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-chart-line fa-2x text-primary me-3"></i>
+                                            <h3 class="h5 mb-0">Analytics & Insights</h3>
+                                        </div>
+                                        <p class="mb-0">Track chatbot performance, conversation metrics, user engagement, and conversion rates through comprehensive analytics dashboard.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">How to Build a WhatsApp Chatbot</h2>
+                        <p>Creating a WhatsApp chatbot with our API is straightforward. Follow these steps to get your first chatbot running in minutes:</p>
+
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <ol class="mb-0">
+                                    <li class="mb-3"><strong>Sign Up & Get API Credentials:</strong> Create your free account and obtain your API key and session credentials from the dashboard.</li>
+                                    <li class="mb-3"><strong>Define Conversation Flows:</strong> Design your chatbot's conversation logic, including user intents, responses, and actions.</li>
+                                    <li class="mb-3"><strong>Implement Webhook Handlers:</strong> Set up webhook endpoints to receive incoming messages and process user requests.</li>
+                                    <li class="mb-3"><strong>Send Automated Responses:</strong> Use our API to send intelligent responses based on user input and conversation context.</li>
+                                    <li class="mb-0"><strong>Test & Deploy:</strong> Test your chatbot thoroughly and deploy to production with monitoring enabled.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Use Cases for WhatsApp Chatbot API</h2>
+                        <p>Our chatbot API powers diverse business applications across industries:</p>
+
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Customer Support Automation:</strong> Handle common inquiries, FAQs, and support tickets automatically, reducing response time by 80%.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>E-commerce Order Management:</strong> Process orders, provide order status updates, and handle returns through conversational commerce.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Lead Generation & Qualification:</strong> Capture leads, qualify prospects, and schedule appointments automatically via WhatsApp.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Appointment Booking:</strong> Allow customers to book, reschedule, or cancel appointments through natural conversation.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Product Recommendations:</strong> Provide personalized product suggestions based on customer preferences and purchase history.
+                            </li>
+                        </ul>
+
+                        <h2 class="h3 fw-bold mt-5 mb-3">WhatsApp Chatbot API Pricing</h2>
+                        <p>We offer flexible pricing plans to suit businesses of all sizes. Start with our free tier to build and test your chatbot, then upgrade as you scale:</p>
+
+                        <div class="row g-3 mb-5">
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h3 class="h5">Free Plan</h3>
+                                        <p class="text-muted">Perfect for testing</p>
+                                        <p class="display-6 fw-bold">$0</p>
+                                        <p>5 messages included</p>
+                                        <a href="/register" class="btn btn-outline-primary w-100">Get Started</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-primary">
+                                    <div class="card-body">
+                                        <h3 class="h5">Basic Plan</h3>
+                                        <p class="text-muted">For growing businesses</p>
+                                        <p class="display-6 fw-bold">$25<small class="text-muted">/mo</small></p>
+                                        <p>100,000 messages/month</p>
+                                        <a href="/pricing" class="btn btn-primary w-100">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h3 class="h5">Pro Plan</h3>
+                                        <p class="text-muted">Advanced features</p>
+                                        <p class="display-6 fw-bold">$40<small class="text-muted">/mo</small></p>
+                                        <p>Unlimited API messages</p>
+                                        <a href="/pricing" class="btn btn-outline-primary w-100">Compare Plans</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Developer Resources</h2>
+                        <p>Everything you need to build powerful WhatsApp chatbots:</p>
+                        <ul>
+                            <li><a href="/api-docs">Complete API Documentation</a> - Comprehensive reference for all endpoints</li>
+                            <li><a href="/api-docs/docs/webhooks">Webhook Integration Guide</a> - Set up real-time event notifications</li>
+                            <li><a href="/api-docs/docs/code-examples">Code Examples</a> - Sample implementations in multiple languages</li>
+                            <li><a href="/help">Developer Support</a> - Get help from our technical team</li>
+                        </ul>
+                    </article>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card sticky-top" style="top: 100px;">
+                        <div class="card-body">
+                            <h3 class="h5 fw-bold mb-4">Quick Links</h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><a href="#features">Features Overview</a></li>
+                                <li class="mb-2"><a href="#howto">How to Build</a></li>
+                                <li class="mb-2"><a href="#usecases">Use Cases</a></li>
+                                <li class="mb-2"><a href="#pricing">Pricing</a></li>
+                            </ul>
+                            
+                            <hr>
+                            
+                            <h3 class="h5 fw-bold mb-3">Related Pages</h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><a href="/integrations/shopify-whatsapp">Shopify Integration</a></li>
+                                <li class="mb-2"><a href="/use-cases/customer-support-automation">Customer Support</a></li>
+                                <li class="mb-2"><a href="/use-cases/ecommerce-order-notifications">Order Notifications</a></li>
+                            </ul>
+
+                            <div class="bg-light p-4 rounded mt-4">
+                                <h4 class="h6 fw-bold">Ready to Build?</h4>
+                                <p class="small mb-3">Start creating your WhatsApp chatbot today</p>
+                                <a href="/register" class="btn btn-primary w-100">Create Free Account</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Schema Markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>"
+      },{
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Features",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/features"
+      },{
+        "@type": "ListItem",
+        "position": 3,
+        "name": "WhatsApp Chatbot API",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/features/whatsapp-chatbot-api"
+      }]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Build a WhatsApp Chatbot",
+      "description": "Step-by-step guide to creating automated WhatsApp chatbots using our API",
+      "step": [{
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Sign Up & Get API Credentials",
+        "text": "Create your free account and obtain your API key and session credentials from the dashboard."
+      },{
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "Define Conversation Flows",
+        "text": "Design your chatbot's conversation logic, including user intents, responses, and actions."
+      },{
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Implement Webhook Handlers",
+        "text": "Set up webhook endpoints to receive incoming messages and process user requests."
+      },{
+        "@type": "HowToStep",
+        "position": 4,
+        "name": "Send Automated Responses",
+        "text": "Use our API to send intelligent responses based on user input and conversation context."
+      },{
+        "@type": "HowToStep",
+        "position": 5,
+        "name": "Test & Deploy",
+        "text": "Test your chatbot thoroughly and deploy to production with monitoring enabled."
+      }]
+    }
+    </script>
+
+    <%- include('../../partials/footer') %>
+    <%- include('../../partials/scripts') %>
+</body>
+</html>
+

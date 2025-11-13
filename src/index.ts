@@ -114,6 +114,9 @@ import Analytics from './models/Analytics';
 // Web routes (for dashboard)
 app.get('/', optionalAuth, (req, res) => {
   // Provide default data for all included pages
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
   const defaultData = {
     user: req.user || null,
     stats: {
@@ -150,7 +153,17 @@ app.get('/', optionalAuth, (req, res) => {
         popular: false
       }
     ],
-    baseUrl: `${req.protocol}://${req.get('host')}`
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'WhatsApp Business API 2025 | Integration & Automation',
+      description: 'Build WhatsApp chatbot solutions with our REST API. Integrate with Shopify, automate marketing campaigns, and boost customer engagement. Free tier available for developers.',
+      keywords: 'WhatsApp Business API, WhatsApp API integration, WhatsApp chatbot API, REST API WhatsApp messaging, WhatsApp marketing automation, integrate WhatsApp with Shopify, WhatsApp API for developers, WhatsApp Business API 2025',
+      url: fullUrl,
+      type: 'website'
+    },
+    showFAQSchema: true,
+    showPricingSchema: false
   };
   
   res.render('index', defaultData);
@@ -296,8 +309,11 @@ app.get('/register', optionalAuth, (req, res) => {
   res.render('pages/register');
 });
 
-// Pricing route with optional user data
+// Pricing route with optional user data and SEO
 app.get('/pricing', optionalAuth, (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
   const pricingData = {
     user: req.user || null,
     plans: [
@@ -325,7 +341,18 @@ app.get('/pricing', optionalAuth, (req, res) => {
         features: ['Unlimited API Messages', '10,000 Bot Messages/month', '2 Chatbots', 'Priority Support', 'Advanced Analytics'],
         limits: { messages: -1, botMessages: 10000, chatbots: 2, apiCalls: 20000 }
       }
-    ]
+    ],
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'Pricing - WhatsApp API Plans Starting at $0',
+      description: 'Flexible WhatsApp API pricing plans for businesses of all sizes. Start free with 5 messages, upgrade to Basic ($25/mo) or Pro ($40/mo) for advanced features.',
+      keywords: 'WhatsApp API pricing, WhatsApp Business API cost, messaging API plans, affordable WhatsApp API',
+      url: fullUrl,
+      type: 'website'
+    },
+    showPricingSchema: true,
+    showFAQSchema: false
   };
   res.render('pricing', pricingData);
 });
@@ -480,6 +507,99 @@ app.get('/auth/verify-email/:token', async (req, res) => {
 // Success page after OAuth
 app.get('/success', optionalAuth, (req, res) => {
   res.render('pages/success', { user: req.user || null });
+});
+
+// Feature pages
+app.get('/features/whatsapp-chatbot-api', optionalAuth, (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  res.render('pages/features/whatsapp-chatbot-api', {
+    user: req.user || null,
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'WhatsApp Chatbot API for Developers | Build AI-Powered Bots',
+      description: 'Build intelligent WhatsApp chatbots with our REST API. Create conversational AI, automate customer support, and handle inquiries 24/7 with natural language processing.',
+      keywords: 'WhatsApp chatbot API, conversational AI WhatsApp, WhatsApp bot development, automated WhatsApp responses, NLP chatbot API',
+      url: fullUrl,
+      type: 'article'
+    }
+  });
+});
+
+// Integration pages
+app.get('/integrations/shopify-whatsapp', optionalAuth, (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  res.render('pages/integrations/shopify-whatsapp', {
+    user: req.user || null,
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'Shopify WhatsApp Integration | Automated Order Notifications',
+      description: 'Connect Shopify with WhatsApp Business API. Send order confirmations, shipping updates, and abandoned cart reminders. Boost conversions by 40% with WhatsApp.',
+      keywords: 'Shopify WhatsApp integration, WhatsApp Shopify plugin, automated order updates, abandoned cart WhatsApp, e-commerce messaging',
+      url: fullUrl,
+      type: 'article'
+    }
+  });
+});
+
+app.get('/integrations/salesforce-whatsapp', optionalAuth, (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  res.render('pages/integrations/salesforce-whatsapp', {
+    user: req.user || null,
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'Salesforce WhatsApp Integration | CRM Messaging Automation',
+      description: 'Integrate Salesforce CRM with WhatsApp Business API. Automate lead nurturing, send appointment reminders, and engage prospects via WhatsApp. 60% higher conversion rates.',
+      keywords: 'Salesforce WhatsApp integration, CRM WhatsApp automation, lead nurturing WhatsApp, Salesforce messaging API',
+      url: fullUrl,
+      type: 'article'
+    }
+  });
+});
+
+// Use case pages
+app.get('/use-cases/ecommerce-order-notifications', optionalAuth, (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  res.render('pages/use-cases/ecommerce-order-notifications', {
+    user: req.user || null,
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'WhatsApp Order Notifications for E-commerce | 98% Open Rate',
+      description: 'Send automated order confirmations, shipping updates, and delivery notifications via WhatsApp. Reduce support tickets by 70% and increase customer satisfaction.',
+      keywords: 'WhatsApp order notifications, e-commerce order updates, automated shipping notifications, order tracking WhatsApp',
+      url: fullUrl,
+      type: 'article'
+    }
+  });
+});
+
+app.get('/use-cases/customer-support-automation', optionalAuth, (req, res) => {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  res.render('pages/use-cases/customer-support-automation', {
+    user: req.user || null,
+    baseUrl,
+    fullUrl,
+    seo: {
+      title: 'WhatsApp Customer Support Automation | AI Chatbot Support',
+      description: 'Automate customer support with AI-powered WhatsApp chatbots. Resolve 80% of inquiries instantly, reduce costs by 60%, and provide 24/7 multilingual assistance.',
+      keywords: 'WhatsApp customer support automation, AI support chatbot, automated customer service, WhatsApp helpdesk',
+      url: fullUrl,
+      type: 'article'
+    }
+  });
 });
 
 // Logout route to clear all authentication

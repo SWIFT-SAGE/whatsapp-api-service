@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../../partials/head') %>
+</head>
+
+<body>
+    <%- include('../../partials/navbar') %>
+
+        <!-- Hero Section -->
+        <section class="hero-section"
+            style="background: linear-gradient(135deg, #00a1e0 0%, #0070d2 100%); padding: 120px 0 80px;">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-7">
+                        <nav aria-label="breadcrumb" class="mb-4">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/" class="text-white">Home</a></li>
+                                <li class="breadcrumb-item"><a href="/integrations" class="text-white">Integrations</a>
+                                </li>
+                                <li class="breadcrumb-item active text-white" aria-current="page">Salesforce WhatsApp
+                                </li>
+                            </ol>
+                        </nav>
+                        <h1 class="display-3 fw-bold text-white mb-4">Salesforce WhatsApp Integration</h1>
+                        <p class="lead text-white mb-4">Connect Salesforce CRM with WhatsApp Business API to engage
+                            leads and customers through their preferred channel. Automate follow-ups, qualify leads
+                            faster, and close more deals with conversational CRM powered by WhatsApp messaging.</p>
+                        <div class="d-flex gap-3 flex-wrap">
+                            <a href="/register" class="btn btn-light btn-lg">
+                                <i class="fas fa-rocket me-2"></i>Connect Salesforce
+                            </a>
+                            <a href="/api-docs/docs/code-examples" class="btn btn-outline-light btn-lg">
+                                <i class="fas fa-book me-2"></i>Integration Docs
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="text-center">
+                            <i class="fab fa-salesforce" style="font-size: 200px; color: rgba(255,255,255,0.2);"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <article>
+                            <h2 class="h1 fw-bold mb-4">WhatsApp CRM Integration for Salesforce</h2>
+                            <p class="lead">Integrating WhatsApp with Salesforce transforms your CRM into a powerful
+                                conversational engagement platform. Our WhatsApp Business API enables sales teams to
+                                reach prospects on their preferred messaging channel, automate lead nurturing campaigns,
+                                and provide instant customer support—all while keeping Salesforce as your single source
+                                of truth.</p>
+
+                            <p>Modern buyers expect instant, personalized communication. WhatsApp boasts a 98% open rate
+                                and 45-60 second average response time compared to email's 20% open rate and hours-long
+                                response delays. By connecting WhatsApp to Salesforce, your sales team can engage leads
+                                5x faster, qualify prospects through conversational AI, and increase conversion rates by
+                                up to 60%. Every WhatsApp interaction syncs automatically to Salesforce, ensuring
+                                complete visibility and accurate pipeline forecasting.</p>
+
+                            <h2 class="h3 fw-bold mt-5 mb-3">Key Benefits of Salesforce WhatsApp Integration</h2>
+
+                            <div class="row g-4 mb-5">
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <i class="fas fa-user-tie fa-2x text-primary me-3"></i>
+                                                <h3 class="h5 mb-0">Automated Lead Nurturing</h3>
+                                            </div>
+                                            <p class="mb-0">Automatically engage new leads from Salesforce with
+                                                personalized WhatsApp messages. Set up drip campaigns, send product
+                                                information, and qualify leads through conversational workflows.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <i class="fas fa-sync fa-2x text-primary me-3"></i>
+                                                <h3 class="h5 mb-0">Bi-directional Sync</h3>
+                                            </div>
+                                            <p class="mb-0">All WhatsApp conversations automatically log to Salesforce
+                                                contact records. Track message history, engagement metrics, and
+                                                conversation outcomes in your CRM.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <i class="fas fa-bolt fa-2x text-primary me-3"></i>
+                                                <h3 class="h5 mb-0">Instant Notifications</h3>
+                                            </div>
+                                            <p class="mb-0">Alert sales reps via WhatsApp when hot leads engage with
+                                                your content, fill out forms, or reach key milestones in your sales
+                                                process.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <i class="fas fa-chart-bar fa-2x text-primary me-3"></i>
+                                                <h3 class="h5 mb-0">CRM Analytics Integration</h3>
+                                            </div>
+                                            <p class="mb-0">Track WhatsApp campaign performance, response rates, and
+                                                conversion metrics directly in Salesforce dashboards and reports.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h2 class="h3 fw-bold mb-3">How to Integrate WhatsApp with Salesforce CRM</h2>
+                            <p>Follow these steps to connect WhatsApp Business API with your Salesforce instance:</p>
+
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <ol class="mb-0">
+                                        <li class="mb-3"><strong>Set Up API Access:</strong> Create your WhatsApp
+                                            Business API account and generate API credentials from the dashboard.</li>
+                                        <li class="mb-3"><strong>Install Salesforce App:</strong> Install our Salesforce
+                                            AppExchange package or use REST API for custom integration.</li>
+                                        <li class="mb-3"><strong>Configure Authentication:</strong> Connect Salesforce
+                                            with WhatsApp API using OAuth 2.0 secure authentication.</li>
+                                        <li class="mb-3"><strong>Map Custom Fields:</strong> Define which Salesforce
+                                            fields should trigger WhatsApp messages and where to log conversation data.
+                                        </li>
+                                        <li class="mb-3"><strong>Create Message Templates:</strong> Design WhatsApp
+                                            message templates for lead engagement, opportunity updates, and customer
+                                            communications.</li>
+                                        <li class="mb-3"><strong>Set Up Workflows:</strong> Configure Salesforce Process
+                                            Builder or Flow to trigger WhatsApp messages based on CRM events.</li>
+                                        <li class="mb-0"><strong>Test & Deploy:</strong> Test integration with sample
+                                            leads and deploy to your sales team with training documentation.</li>
+                                    </ol>
+                                </div>
+                            </div>
+
+                            <h2 class="h3 fw-bold mb-3">Salesforce WhatsApp Use Cases</h2>
+                            <p>Transform your CRM with these powerful automation scenarios:</p>
+
+                            <ul class="list-unstyled">
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>New Lead Engagement:</strong> Automatically send welcome messages to new
+                                    leads within 5 minutes of form submission, increasing response rates by 400%.
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Lead Qualification:</strong> Use chatbot workflows to qualify leads through
+                                    WhatsApp before routing to sales reps, saving 10+ hours per week.
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Meeting Reminders:</strong> Send automated appointment confirmations and
+                                    reminders via WhatsApp, reducing no-shows by 35%.
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Opportunity Updates:</strong> Keep prospects informed about proposal status,
+                                    contract updates, and next steps through WhatsApp.
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Customer Onboarding:</strong> Guide new customers through onboarding steps
+                                    with automated WhatsApp messages triggered by Salesforce milestones.
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                    <strong>Renewal Reminders:</strong> Automate renewal conversations for subscriptions
+                                    and contracts stored in Salesforce.
+                                </li>
+                            </ul>
+
+                            <h2 class="h3 fw-bold mt-5 mb-3">Technical Integration Architecture</h2>
+                            <p>Our REST API provides flexible integration options with Salesforce:</p>
+
+                            <div class="bg-dark text-light p-4 rounded mb-4">
+                                <pre class="text-light mb-0"><code>// Apex trigger to send WhatsApp message
+trigger LeadWhatsAppNotification on Lead (after insert) {
+    for (Lead lead : Trigger.new) {
+        if (lead.Status == 'New' && lead.Phone != null) {
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint('https://api.whatsapp-api.com/v1/messages');
+            req.setMethod('POST');
+            req.setHeader('Authorization', 'Bearer YOUR_API_KEY');
+            req.setHeader('Content-Type', 'application/json');
+            
+            Map<String, Object> payload = new Map<String, Object>{
+                'to' => lead.Phone,
+                'template' => 'welcome_lead',
+                'parameters' => new Map<String, String>{
+                    'name' => lead.FirstName,
+                    'company' => lead.Company
+                }
+            };
+            
+            req.setBody(JSON.serialize(payload));
+            Http http = new Http();
+            HTTPResponse res = http.send(req);
+        }
+    }
+}</code></pre>
+                            </div>
+
+                            <h2 class="h3 fw-bold mb-3">Salesforce Integration Pricing</h2>
+                            <p>Choose the plan that fits your sales team size:</p>
+
+                            <div class="row g-3 mb-5">
+                                <div class="col-md-4">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <h3 class="h5">Starter</h3>
+                                            <p class="display-6 fw-bold">$25<small class="text-muted">/mo</small></p>
+                                            <ul class="list-unstyled text-start">
+                                                <li class="mb-2">✓ 100,000 messages/month</li>
+                                                <li class="mb-2">✓ Basic CRM sync</li>
+                                                <li class="mb-2">✓ Email support</li>
+                                            </ul>
+                                            <a href="/pricing" class="btn btn-outline-primary w-100">Get Started</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card h-100 border-primary">
+                                        <div class="card-body text-center">
+                                            <span class="badge bg-primary mb-2">Popular</span>
+                                            <h3 class="h5">Professional</h3>
+                                            <p class="display-6 fw-bold">$40<small class="text-muted">/mo</small></p>
+                                            <ul class="list-unstyled text-start">
+                                                <li class="mb-2">✓ Unlimited messages</li>
+                                                <li class="mb-2">✓ Advanced workflows</li>
+                                                <li class="mb-2">✓ Chatbot integration</li>
+                                                <li class="mb-2">✓ Priority support</li>
+                                            </ul>
+                                            <a href="/pricing" class="btn btn-primary w-100">Get Started</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card h-100">
+                                        <div class="card-body text-center">
+                                            <h3 class="h5">Enterprise</h3>
+                                            <p class="display-6 fw-bold">Custom</p>
+                                            <ul class="list-unstyled text-start">
+                                                <li class="mb-2">✓ Custom integration</li>
+                                                <li class="mb-2">✓ Dedicated support</li>
+                                                <li class="mb-2">✓ SLA guarantee</li>
+                                                <li class="mb-2">✓ Training included</li>
+                                            </ul>
+                                            <a href="/contact" class="btn btn-outline-primary w-100">Contact Sales</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <h4 class="alert-heading"><i class="fas fa-lightbulb me-2"></i>Best Practice</h4>
+                                <p class="mb-0">Combine Salesforce integration with our <a
+                                        href="/features/whatsapp-chatbot-api">AI chatbot</a> to qualify leads
+                                    automatically before they reach your sales team. This can save 15-20 hours per week
+                                    and improve lead quality by 50%.</p>
+                            </div>
+
+                            <h2 class="h3 fw-bold mt-4 mb-3">Related Resources</h2>
+                            <ul>
+                                <li><a href="/api-docs">Complete API Documentation</a></li>
+                                <li><a href="/integrations/shopify-whatsapp">Shopify WhatsApp Integration</a></li>
+                                <li><a href="/use-cases/customer-support-automation">Customer Support Automation</a>
+                                </li>
+                                <li><a href="/help">Technical Support</a></li>
+                            </ul>
+                        </article>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card sticky-top" style="top: 100px;">
+                            <div class="card-body">
+                                <h3 class="h5 fw-bold mb-4">Integration Stats</h3>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2">📊 60% higher conversion rate</li>
+                                    <li class="mb-2">⚡ 5x faster lead response</li>
+                                    <li class="mb-2">💬 98% message open rate</li>
+                                    <li class="mb-2">🕒 15 hours saved per week</li>
+                                    <li class="mb-2">📈 400% better engagement</li>
+                                </ul>
+
+                                <hr>
+
+                                <h3 class="h5 fw-bold mb-3">CRM Integrations</h3>
+                                <ul class="list-unstyled">
+                                    <li class="mb-2"><a href="/integrations/hubspot-whatsapp">HubSpot</a></li>
+                                    <li class="mb-2"><a href="/integrations/pipedrive-whatsapp">Pipedrive</a></li>
+                                    <li class="mb-2"><a href="/integrations/zoho-whatsapp">Zoho CRM</a></li>
+                                </ul>
+
+                                <div class="bg-light p-4 rounded mt-4">
+                                    <h4 class="h6 fw-bold">Connect Now</h4>
+                                    <p class="small mb-3">Integrate Salesforce with WhatsApp today</p>
+                                    <a href="/register" class="btn btn-primary w-100 mb-2">Start Free Trial</a>
+                                    <a href="/contact" class="btn btn-outline-primary w-100">Talk to Sales</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Schema Markup -->
+        <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>"
+      },{
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Integrations",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/integrations"
+      },{
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Salesforce WhatsApp Integration",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/integrations/salesforce-whatsapp"
+      }]
+    }
+    </script>
+
+        <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Integrate WhatsApp with Salesforce CRM",
+      "description": "Step-by-step guide to connecting Salesforce with WhatsApp Business API for automated lead engagement",
+      "step": [{
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Set Up API Access",
+        "text": "Create WhatsApp Business API account and generate credentials."
+      },{
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "Install Salesforce App",
+        "text": "Install AppExchange package or use REST API for custom integration."
+      },{
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Configure Authentication",
+        "text": "Connect Salesforce with WhatsApp API using OAuth 2.0."
+      },{
+        "@type": "HowToStep",
+        "position": 4,
+        "name": "Map Custom Fields",
+        "text": "Define field mappings and conversation logging rules."
+      },{
+        "@type": "HowToStep",
+        "position": 5,
+        "name": "Create Message Templates",
+        "text": "Design templates for lead engagement and opportunity updates."
+      },{
+        "@type": "HowToStep",
+        "position": 6,
+        "name": "Set Up Workflows",
+        "text": "Configure Process Builder to trigger WhatsApp messages."
+      },{
+        "@type": "HowToStep",
+        "position": 7,
+        "name": "Test & Deploy",
+        "text": "Test with sample leads and deploy to sales team."
+      }]
+    }
+    </script>
+
+        <%- include('../../partials/footer') %>
+            <%- include('../../partials/scripts') %>
+</body>
+
+</html>

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../../partials/head') %>
+</head>
+<body>
+    <%- include('../../partials/navbar') %>
+
+    <!-- Hero Section -->
+    <section class="hero-section" style="background: linear-gradient(135deg, #96bf48 0%, #5e8e3e 100%); padding: 120px 0 80px;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <nav aria-label="breadcrumb" class="mb-4">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/" class="text-white">Home</a></li>
+                            <li class="breadcrumb-item"><a href="/integrations" class="text-white">Integrations</a></li>
+                            <li class="breadcrumb-item active text-white" aria-current="page">Shopify WhatsApp</li>
+                        </ol>
+                    </nav>
+                    <h1 class="display-3 fw-bold text-white mb-4">Shopify WhatsApp Integration</h1>
+                    <p class="lead text-white mb-4">Connect your Shopify store with WhatsApp Business API. Send automated order confirmations, shipping updates, and abandoned cart reminders directly to customers via WhatsApp. Boost conversions by 40% with conversational commerce.</p>
+                    <div class="d-flex gap-3 flex-wrap">
+                        <a href="/register" class="btn btn-light btn-lg">
+                            <i class="fas fa-rocket me-2"></i>Integrate Shopify Now
+                        </a>
+                        <a href="/api-docs/docs/code-examples" class="btn btn-outline-light btn-lg">
+                            <i class="fas fa-code me-2"></i>View Integration Guide
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="text-center">
+                        <i class="fab fa-shopify" style="font-size: 200px; color: rgba(255,255,255,0.2);"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <article>
+                        <h2 class="h1 fw-bold mb-4">How to Integrate WhatsApp with Shopify</h2>
+                        <p class="lead">Integrating WhatsApp with your Shopify store enables powerful e-commerce automation that enhances customer experience and drives sales. Our WhatsApp Business API seamlessly connects with Shopify to deliver real-time order notifications, personalized product recommendations, and instant customer support through the world's most popular messaging platform.</p>
+
+                        <p>With over 2 billion WhatsApp users globally, your Shopify customers prefer receiving order updates and support via WhatsApp rather than traditional email. Studies show that WhatsApp messages have a 98% open rate compared to just 20% for emails. By integrating WhatsApp into your Shopify workflow, you can significantly improve customer satisfaction, reduce cart abandonment, and increase repeat purchases.</p>
+
+                        <h2 class="h3 fw-bold mt-5 mb-3">Benefits of Shopify WhatsApp Integration</h2>
+                        
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-shopping-cart fa-2x text-success me-3"></i>
+                                            <h3 class="h5 mb-0">Reduce Cart Abandonment</h3>
+                                        </div>
+                                        <p class="mb-0">Send automated WhatsApp reminders to customers who abandon their carts. Include product images, personalized messages, and direct checkout links to recover up to 35% of abandoned carts.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-shipping-fast fa-2x text-success me-3"></i>
+                                            <h3 class="h5 mb-0">Automated Order Updates</h3>
+                                        </div>
+                                        <p class="mb-0">Keep customers informed with instant WhatsApp notifications for order confirmation, processing, shipping, and delivery. Reduce "Where is my order?" inquiries by 80%.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-comments fa-2x text-success me-3"></i>
+                                            <h3 class="h5 mb-0">Conversational Commerce</h3>
+                                        </div>
+                                        <p class="mb-0">Enable customers to browse products, ask questions, and complete purchases directly through WhatsApp conversations. Create seamless shopping experiences without leaving the chat.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <i class="fas fa-star fa-2x text-success me-3"></i>
+                                            <h3 class="h5 mb-0">Post-Purchase Engagement</h3>
+                                        </div>
+                                        <p class="mb-0">Request product reviews, send cross-sell recommendations, and offer exclusive discounts via WhatsApp to increase customer lifetime value and repeat purchases.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Step-by-Step Shopify WhatsApp Integration</h2>
+                        <p>Follow this comprehensive guide to connect your Shopify store with WhatsApp Business API:</p>
+
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <ol class="mb-0">
+                                    <li class="mb-3"><strong>Create API Account:</strong> Sign up for a free WhatsApp Business API account and obtain your API credentials from the dashboard.</li>
+                                    <li class="mb-3"><strong>Install Shopify Webhook:</strong> Configure Shopify webhooks to send order events (created, fulfilled, cancelled) to our API endpoint.</li>
+                                    <li class="mb-3"><strong>Set Up Message Templates:</strong> Create WhatsApp message templates for different order statuses and get them approved by WhatsApp.</li>
+                                    <li class="mb-3"><strong>Configure Automation Rules:</strong> Define when and what messages should be sent based on order events and customer actions.</li>
+                                    <li class="mb-3"><strong>Add Customer Opt-in:</strong> Implement WhatsApp opt-in checkbox on your Shopify checkout page to collect customer consent.</li>
+                                    <li class="mb-0"><strong>Test & Go Live:</strong> Test the integration with sample orders and deploy to production once verified.</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Shopify WhatsApp Use Cases</h2>
+                        <p>Powerful automation scenarios for your e-commerce business:</p>
+
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Order Confirmation Messages:</strong> Send instant order confirmations with order details, estimated delivery date, and tracking information immediately after purchase.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Shipping Notifications:</strong> Notify customers when orders are shipped with carrier information and real-time tracking links.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Abandoned Cart Recovery:</strong> Send personalized cart recovery messages with product images and exclusive discount codes within 1 hour of abandonment.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Delivery Updates:</strong> Alert customers when their package is out for delivery and has been successfully delivered.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Review Requests:</strong> Automatically request product reviews via WhatsApp 3-5 days after delivery to boost social proof.
+                            </li>
+                            <li class="mb-3">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>Customer Support:</strong> Enable customers to track orders, request returns, and get support directly through WhatsApp.
+                            </li>
+                        </ul>
+
+                        <h2 class="h3 fw-bold mt-5 mb-3">Technical Implementation</h2>
+                        <p>Our REST API makes Shopify integration straightforward. Here's a sample code snippet to send order confirmations:</p>
+
+                        <div class="bg-dark text-light p-4 rounded mb-4">
+                            <pre class="text-light mb-0"><code>// Shopify webhook handler
+app.post('/webhooks/shopify/orders/create', async (req, res) => {
+  const order = req.body;
+  
+  // Send WhatsApp notification
+  await fetch('https://api.whatsapp-api.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer YOUR_API_KEY',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      to: order.customer.phone,
+      template: 'order_confirmation',
+      parameters: {
+        customer_name: order.customer.first_name,
+        order_number: order.order_number,
+        total: order.total_price,
+        items: order.line_items.length
+      }
+    })
+  });
+  
+  res.status(200).send('OK');
+});</code></pre>
+                        </div>
+
+                        <h2 class="h3 fw-bold mb-3">Pricing for Shopify Integration</h2>
+                        <p>Flexible plans based on your store's message volume:</p>
+
+                        <div class="table-responsive mb-5">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Plan</th>
+                                        <th>Messages/Month</th>
+                                        <th>Price</th>
+                                        <th>Features</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Free</strong></td>
+                                        <td>5 messages</td>
+                                        <td>$0</td>
+                                        <td>Testing & Development</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Basic</strong></td>
+                                        <td>100,000</td>
+                                        <td>$25/month</td>
+                                        <td>Order notifications, Webhooks</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Pro</strong></td>
+                                        <td>Unlimited</td>
+                                        <td>$40/month</td>
+                                        <td>Cart recovery, Analytics, Support</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Pro Tip</h4>
+                            <p class="mb-0">Combine Shopify WhatsApp integration with our <a href="/features/whatsapp-chatbot-api">chatbot API</a> to handle customer inquiries automatically and provide 24/7 support without human intervention.</p>
+                        </div>
+
+                        <h2 class="h3 fw-bold mt-4 mb-3">Additional Resources</h2>
+                        <ul>
+                            <li><a href="/api-docs">WhatsApp API Documentation</a></li>
+                            <li><a href="/api-docs/docs/webhooks">Webhook Setup Guide</a></li>
+                            <li><a href="/use-cases/ecommerce-order-notifications">E-commerce Order Notifications</a></li>
+                            <li><a href="/pricing">View Full Pricing</a></li>
+                        </ul>
+                    </article>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card sticky-top" style="top: 100px;">
+                        <div class="card-body">
+                            <h3 class="h5 fw-bold mb-4">Integration Benefits</h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">✓ 5-minute setup time</li>
+                                <li class="mb-2">✓ No coding required</li>
+                                <li class="mb-2">✓ 98% message open rate</li>
+                                <li class="mb-2">✓ 40% conversion boost</li>
+                                <li class="mb-2">✓ 24/7 automated support</li>
+                            </ul>
+                            
+                            <hr>
+                            
+                            <h3 class="h5 fw-bold mb-3">Popular Integrations</h3>
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><a href="/integrations/salesforce-whatsapp">Salesforce Integration</a></li>
+                                <li class="mb-2"><a href="/features/whatsapp-chatbot-api">Chatbot API</a></li>
+                                <li class="mb-2"><a href="/use-cases/customer-support-automation">Support Automation</a></li>
+                            </ul>
+
+                            <div class="bg-light p-4 rounded mt-4">
+                                <h4 class="h6 fw-bold">Start Integration</h4>
+                                <p class="small mb-3">Connect Shopify with WhatsApp in minutes</p>
+                                <a href="/register" class="btn btn-success w-100">Get Started Free</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Schema Markup -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>"
+      },{
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Integrations",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/integrations"
+      },{
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Shopify WhatsApp Integration",
+        "item": "<%= locals.baseUrl || 'https://whatsapp-api.com' %>/integrations/shopify-whatsapp"
+      }]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "How to Integrate WhatsApp with Shopify",
+      "description": "Complete guide to connecting Shopify store with WhatsApp Business API for automated order notifications",
+      "step": [{
+        "@type": "HowToStep",
+        "position": 1,
+        "name": "Create API Account",
+        "text": "Sign up for a free WhatsApp Business API account and obtain your API credentials."
+      },{
+        "@type": "HowToStep",
+        "position": 2,
+        "name": "Install Shopify Webhook",
+        "text": "Configure Shopify webhooks to send order events to our API endpoint."
+      },{
+        "@type": "HowToStep",
+        "position": 3,
+        "name": "Set Up Message Templates",
+        "text": "Create WhatsApp message templates for different order statuses."
+      },{
+        "@type": "HowToStep",
+        "position": 4,
+        "name": "Configure Automation Rules",
+        "text": "Define when and what messages should be sent based on order events."
+      },{
+        "@type": "HowToStep",
+        "position": 5,
+        "name": "Add Customer Opt-in",
+        "text": "Implement WhatsApp opt-in checkbox on checkout page."
+      },{
+        "@type": "HowToStep",
+        "position": 6,
+        "name": "Test & Go Live",
+        "text": "Test with sample orders and deploy to production."
+      }]
+    }
+    </script>
+
+    <%- include('../../partials/footer') %>
+    <%- include('../../partials/scripts') %>
+</body>
+</html>
+
