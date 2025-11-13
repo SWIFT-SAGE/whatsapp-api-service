@@ -83,7 +83,7 @@ module.exports = {
    */
   googleAnalytics: {
     // Measurement ID
-    measurementId: 'G-XXXXXXXXXX', // Replace with your GA4 Measurement ID
+    measurementId: 'G-GXYQWFETJS', // Replace with your GA4 Measurement ID
     
     // API Secret for Measurement Protocol (server-side tracking)
     apiSecret: 'YOUR_API_SECRET_HERE',

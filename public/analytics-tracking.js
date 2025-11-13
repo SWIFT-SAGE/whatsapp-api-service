@@ -14,7 +14,7 @@
   // ============================================================================
   
   const ANALYTICS_CONFIG = {
-    GA4_MEASUREMENT_ID: 'G-XXXXXXXXXX', // Replace with your actual Measurement ID
+    GA4_MEASUREMENT_ID: 'G-GXYQWFETJS', // Replace with your actual Measurement ID
     DEBUG_MODE: false, // Set to true for development
     TRACK_ERRORS: true,
     TRACK_WEB_VITALS: true,
