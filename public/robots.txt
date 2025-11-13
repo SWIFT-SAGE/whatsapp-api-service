@@ -1,30 +1,93 @@
-# robots.txt for WhatsApp API Service
-# https://www.robotstxt.org/
+# Robots.txt - SEO Optimized for WhatsApp API Service
+# Last Updated: 2025-01-15
 
+# Allow all well-behaved crawlers
 User-agent: *
 Allow: /
-Allow: /pricing
-Allow: /api-docs
-Allow: /contact
-Allow: /about
-Allow: /blog
-Allow: /help
-Allow: /community
 
-# Disallow private areas
+# Disallow private/authenticated areas
 Disallow: /dashboard
-Disallow: /api/
-Disallow: /admin
-Disallow: /logout
+Disallow: /dashboard/*
+Disallow: /api/user/*
+Disallow: /api/billing/*
 Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /success
+Disallow: /email-verification
+
+# Disallow search and filter parameters
+Disallow: /*?sort=*
+Disallow: /*?filter=*
+Disallow: /*?page=*
+Disallow: /*?limit=*
+Disallow: /*?search=*
+Disallow: /*?q=*
+Disallow: /*?ref=*
+Disallow: /*?utm_*
+
+# Disallow API endpoints from crawling
+Disallow: /api/whatsapp/*
+Disallow: /api/sessions/*
+Disallow: /api/messages/*
+Disallow: /api/webhooks/*
+Disallow: /api/analytics/*
+
+# Allow CSS, JS, and image files
+Allow: /style.css
+Allow: /app.js
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.webp$
+Allow: /*.svg$
+Allow: /*.woff$
+Allow: /*.woff2$
+
+# Googlebot specific rules
+User-agent: Googlebot
+Crawl-delay: 1
+Allow: /
+
+# Googlebot Images
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /public/images/
+
+# Bingbot specific rules
+User-agent: Bingbot
+Crawl-delay: 2
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: Scrapy
+Disallow: /
+
+User-agent: ZoominfoBot
+Disallow: /
 
 # Sitemap location
 Sitemap: https://whatsapp-api.com/sitemap.xml
 
-# Crawl-delay for specific bots (optional)
-User-agent: Googlebot
-Crawl-delay: 0
+# Host directive (preferred domain)
+Host: https://whatsapp-api.com
 
-User-agent: Bingbot
-Crawl-delay: 1
-
+# Crawl-delay for general bots (in seconds)
+# Set to 2 seconds to be respectful of server resources
+Crawl-delay: 2

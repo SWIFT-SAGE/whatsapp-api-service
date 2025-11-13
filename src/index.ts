@@ -103,6 +103,12 @@ app.set('views', path.join(__dirname, '..', 'views'));
 // Static files
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// SEO Redirect middleware (must be before route definitions)
+import { seoRedirectMiddleware, trailingSlashMiddleware, lowercaseUrlMiddleware } from './middleware/redirects';
+app.use(lowercaseUrlMiddleware);
+app.use(trailingSlashMiddleware);
+app.use(seoRedirectMiddleware);
+
 // Import controllers for web routes
 import AuthController from './controllers/authController';
 import { authenticateToken, authenticateWeb, optionalAuth } from './middleware/auth';
@@ -365,7 +371,41 @@ app.get('/contact', optionalAuth, (req, res) => {
   res.render('pages/contact', contactData);
 });
 
-// API docs route with user context
+// SEO-optimized documentation route (new URL structure)
+app.get('/docs/whatsapp-api', optionalAuth, (req, res) => {
+  const apiDocsData = {
+    user: req.user || null,
+    baseUrl: `${req.protocol}://${req.get('host')}/api`,
+    version: '1.0.0',
+    currentPage: 'overview'
+  };
+  res.render('api-docs', apiDocsData);
+});
+
+// SEO-optimized documentation pages routes (new URL structure)
+app.get('/docs/whatsapp-api/:page', optionalAuth, (req, res) => {
+  const { page } = req.params;
+  const validPages = [
+    'authentication', 'sessions', 'messages', 'webhooks', 
+    'rate-limiting', 'error-codes', 'sdks-libraries', 
+    'api-testing', 'code-examples'
+  ];
+  
+  if (!validPages.includes(page)) {
+    return res.status(404).render('pages/404');
+  }
+  
+  const docData = {
+    user: req.user || null,
+    baseUrl: `${req.protocol}://${req.get('host')}/api`,
+    version: '1.0.0',
+    currentPage: page
+  };
+  
+  res.render(`pages/docs/${page}`, docData);
+});
+
+// Legacy routes (keep for backwards compatibility - will be redirected by middleware)
 app.get('/api-docs', optionalAuth, (req, res) => {
   const apiDocsData = {
     user: req.user || null,
@@ -376,7 +416,6 @@ app.get('/api-docs', optionalAuth, (req, res) => {
   res.render('api-docs', apiDocsData);
 });
 
-// API documentation pages routes
 app.get('/api-docs/docs/:page', optionalAuth, (req, res) => {
   const { page } = req.params;
   const validPages = [

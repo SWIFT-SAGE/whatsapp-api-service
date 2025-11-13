@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
-        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 
-    <!-- Homepage -->
+    <!-- Homepage - Highest Priority -->
     <url>
         <loc>https://apimessinging.com/</loc>
         <lastmod>2025-01-15</lastmod>
@@ -13,7 +10,7 @@
         <priority>1.0</priority>
     </url>
 
-    <!-- Pricing Page -->
+    <!-- Core Commercial Pages - Very High Priority -->
     <url>
         <loc>https://apimessinging.com/pricing</loc>
         <lastmod>2025-01-15</lastmod>
@@ -21,68 +18,159 @@
         <priority>0.9</priority>
     </url>
 
-    <!-- API Documentation -->
     <url>
-        <loc>https://apimessinging.com/api-docs</loc>
+        <loc>https://apimessinging.com/register</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Documentation - High Priority (SEO-optimized URLs) -->
+    <url>
+        <loc>https://apimessinging.com/docs/apimessinging</loc>
         <lastmod>2025-01-15</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
 
-    <!-- Documentation Pages -->
     <url>
-        <loc>https://apimessinging.com/api-docs/docs/authentication</loc>
+        <loc>https://apimessinging.com/docs/apimessinging/authentication</loc>
         <lastmod>2025-01-15</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
     <url>
-        <loc>https://apimessinging.com/api-docs/docs/sessions</loc>
+        <loc>https://apimessinging.com/docs/apimessinging/sessions</loc>
         <lastmod>2025-01-15</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
     <url>
-        <loc>https://apimessinging.com/api-docs/docs/messages</loc>
+        <loc>https://apimessinging.com/docs/apimessinging/messages</loc>
         <lastmod>2025-01-15</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
     <url>
-        <loc>https://apimessinging.com/api-docs/docs/webhooks</loc>
+        <loc>https://apimessinging.com/docs/apimessinging/webhooks</loc>
         <lastmod>2025-01-15</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
 
-    <!-- Contact Page -->
+    <url>
+        <loc>https://apimessinging.com/docs/apimessinging/rate-limiting</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/docs/apimessinging/error-codes</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/docs/apimessinging/sdks-libraries</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/docs/apimessinging/api-testing</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/docs/apimessinging/code-examples</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Feature Pages - High Priority (SEO Keyword-Rich URLs) -->
+    <url>
+        <loc>https://apimessinging.com/features/whatsapp-chatbot-api</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/features/chatbot-builder</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/features/whatsapp-automation</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Integration Pages - High Priority (Platform-Specific SEO URLs) -->
+    <url>
+        <loc>https://apimessinging.com/integrations/shopify-whatsapp</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/integrations/salesforce-whatsapp</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/integrations/woocommerce-whatsapp</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Use Case Pages - High Priority (Solution-Focused SEO URLs) -->
+    <url>
+        <loc>https://apimessinging.com/use-cases/ecommerce-order-notifications</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/use-cases/customer-support-automation</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Blog - Medium-High Priority -->
+    <url>
+        <loc>https://apimessinging.com/blog</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Contact & Support - Medium-High Priority -->
     <url>
         <loc>https://apimessinging.com/contact</loc>
         <lastmod>2025-01-15</lastmod>
         <changefreq>monthly</changefreq>
-        <priority>0.7</priority>
+        <priority>0.8</priority>
     </url>
 
-    <!-- About Page -->
-    <url>
-        <loc>https://apimessinging.com/about</loc>
-        <lastmod>2025-01-15</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.6</priority>
-    </url>
-
-    <!-- Blog -->
-    <url>
-        <loc>https://apimessinging.com/blog</loc>
-        <lastmod>2025-01-15</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.7</priority>
-    </url>
-
-    <!-- Help Center -->
     <url>
         <loc>https://apimessinging.com/help</loc>
         <lastmod>2025-01-15</lastmod>
@@ -90,7 +178,21 @@
         <priority>0.7</priority>
     </url>
 
-    <!-- Community -->
+    <!-- Company Pages - Medium Priority -->
+    <url>
+        <loc>https://apimessinging.com/about</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <url>
+        <loc>https://apimessinging.com/careers</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+
     <url>
         <loc>https://apimessinging.com/community</loc>
         <lastmod>2025-01-15</lastmod>
@@ -98,7 +200,22 @@
         <priority>0.6</priority>
     </url>
 
-    <!-- Legal Pages -->
+    <url>
+        <loc>https://apimessinging.com/changelog</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Security & Trust Pages - Medium-High Priority -->
+    <url>
+        <loc>https://apimessinging.com/security</loc>
+        <lastmod>2025-01-15</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <!-- Legal Pages - Lower Priority but Important -->
     <url>
         <loc>https://apimessinging.com/privacy</loc>
         <lastmod>2025-01-15</lastmod>
@@ -114,49 +231,17 @@
     </url>
 
     <url>
-        <loc>https://apimessinging.com/security</loc>
+        <loc>https://apimessinging.com/cookies</loc>
         <lastmod>2025-01-15</lastmod>
-        <changefreq>monthly</changefreq>
-        <priority>0.5</priority>
-    </url>
-
-    <!-- Feature Pages -->
-    <url>
-        <loc>https://apimessinging.com/features/whatsapp-chatbot-api</loc>
-        <lastmod>2025-01-15</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
-    </url>
-
-    <!-- Integration Pages -->
-    <url>
-        <loc>https://apimessinging.com/integrations/shopify-whatsapp</loc>
-        <lastmod>2025-01-15</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
     </url>
 
     <url>
-        <loc>https://apimessinging.com/integrations/salesforce-whatsapp</loc>
+        <loc>https://apimessinging.com/licenses</loc>
         <lastmod>2025-01-15</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
-    </url>
-
-    <!-- Use Case Pages -->
-    <url>
-        <loc>https://apimessinging.com/use-cases/ecommerce-order-notifications</loc>
-        <lastmod>2025-01-15</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
-    </url>
-
-    <url>
-        <loc>https://apimessinging.com/use-cases/customer-support-automation</loc>
-        <lastmod>2025-01-15</lastmod>
-        <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+        <changefreq>yearly</changefreq>
+        <priority>0.3</priority>
     </url>
 
 </urlset>
-

@@ -1,0 +1,275 @@
+{
+  "redirectConfiguration": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-01-15",
+    "totalRules": 35,
+    "redirectType": "301 Permanent",
+    "rules": [
+      {
+        "category": "Documentation",
+        "redirects": [
+          {
+            "from": "/api-docs",
+            "to": "/docs/whatsapp-api",
+            "type": "exact",
+            "reason": "SEO keyword optimization"
+          },
+          {
+            "from": "/api-docs/docs/*",
+            "to": "/docs/whatsapp-api/*",
+            "type": "pattern",
+            "reason": "URL structure simplification"
+          },
+          {
+            "from": "/documentation",
+            "to": "/docs/whatsapp-api",
+            "type": "exact",
+            "reason": "URL consolidation"
+          },
+          {
+            "from": "/docs",
+            "to": "/docs/whatsapp-api",
+            "type": "exact",
+            "reason": "Descriptive keyword addition"
+          }
+        ]
+      },
+      {
+        "category": "Pricing",
+        "redirects": [
+          {
+            "from": "/price",
+            "to": "/pricing",
+            "type": "exact",
+            "reason": "Standardized naming"
+          },
+          {
+            "from": "/plans",
+            "to": "/pricing",
+            "type": "exact",
+            "reason": "URL consolidation"
+          },
+          {
+            "from": "/subscription",
+            "to": "/pricing",
+            "type": "exact",
+            "reason": "URL consolidation"
+          }
+        ]
+      },
+      {
+        "category": "Features",
+        "redirects": [
+          {
+            "from": "/features/bot",
+            "to": "/features/chatbot-builder",
+            "type": "exact",
+            "reason": "Descriptive, keyword-rich naming"
+          },
+          {
+            "from": "/features/automation",
+            "to": "/features/whatsapp-automation",
+            "type": "exact",
+            "reason": "Platform-specific keyword"
+          },
+          {
+            "from": "/chatbot",
+            "to": "/features/whatsapp-chatbot-api",
+            "type": "exact",
+            "reason": "Hierarchical structure + keywords"
+          }
+        ]
+      },
+      {
+        "category": "Integrations",
+        "redirects": [
+          {
+            "from": "/integration/shopify",
+            "to": "/integrations/shopify-whatsapp",
+            "type": "exact",
+            "reason": "Plural form + platform keywords"
+          },
+          {
+            "from": "/integration/salesforce",
+            "to": "/integrations/salesforce-whatsapp",
+            "type": "exact",
+            "reason": "Plural form + platform keywords"
+          },
+          {
+            "from": "/shopify",
+            "to": "/integrations/shopify-whatsapp",
+            "type": "exact",
+            "reason": "Hierarchical structure"
+          },
+          {
+            "from": "/salesforce",
+            "to": "/integrations/salesforce-whatsapp",
+            "type": "exact",
+            "reason": "Hierarchical structure"
+          }
+        ]
+      },
+      {
+        "category": "Use Cases",
+        "redirects": [
+          {
+            "from": "/use-case/ecommerce",
+            "to": "/use-cases/ecommerce-order-notifications",
+            "type": "exact",
+            "reason": "Plural + solution-focused description"
+          },
+          {
+            "from": "/use-case/support",
+            "to": "/use-cases/customer-support-automation",
+            "type": "exact",
+            "reason": "Plural + solution-focused description"
+          },
+          {
+            "from": "/ecommerce",
+            "to": "/use-cases/ecommerce-order-notifications",
+            "type": "exact",
+            "reason": "Hierarchical structure"
+          },
+          {
+            "from": "/support",
+            "to": "/use-cases/customer-support-automation",
+            "type": "exact",
+            "reason": "Hierarchical structure"
+          }
+        ]
+      },
+      {
+        "category": "Authentication",
+        "redirects": [
+          {
+            "from": "/signup",
+            "to": "/register",
+            "type": "exact",
+            "reason": "Standardized terminology"
+          },
+          {
+            "from": "/sign-up",
+            "to": "/register",
+            "type": "exact",
+            "reason": "Standardized terminology"
+          },
+          {
+            "from": "/signin",
+            "to": "/login",
+            "type": "exact",
+            "reason": "Standardized terminology"
+          },
+          {
+            "from": "/sign-in",
+            "to": "/login",
+            "type": "exact",
+            "reason": "Standardized terminology"
+          }
+        ]
+      },
+      {
+        "category": "Support",
+        "redirects": [
+          {
+            "from": "/support",
+            "to": "/help",
+            "type": "exact",
+            "reason": "URL consolidation"
+          },
+          {
+            "from": "/faq",
+            "to": "/help",
+            "type": "exact",
+            "reason": "URL consolidation"
+          },
+          {
+            "from": "/faqs",
+            "to": "/help",
+            "type": "exact",
+            "reason": "URL consolidation"
+          }
+        ]
+      },
+      {
+        "category": "Company",
+        "redirects": [
+          {
+            "from": "/about-us",
+            "to": "/about",
+            "type": "exact",
+            "reason": "Simplified naming"
+          },
+          {
+            "from": "/company",
+            "to": "/about",
+            "type": "exact",
+            "reason": "URL consolidation"
+          },
+          {
+            "from": "/contact-us",
+            "to": "/contact",
+            "type": "exact",
+            "reason": "Simplified naming"
+          },
+          {
+            "from": "/get-in-touch",
+            "to": "/contact",
+            "type": "exact",
+            "reason": "URL consolidation"
+          }
+        ]
+      },
+      {
+        "category": "Blog",
+        "redirects": [
+          {
+            "from": "/blog/post",
+            "to": "/blog",
+            "type": "exact",
+            "reason": "URL simplification"
+          },
+          {
+            "from": "/articles",
+            "to": "/blog",
+            "type": "exact",
+            "reason": "Standardized terminology"
+          }
+        ]
+      }
+    ],
+    "additionalRules": {
+      "trailingSlash": {
+        "enabled": true,
+        "action": "remove",
+        "exception": "/ (root only)"
+      },
+      "caseNormalization": {
+        "enabled": true,
+        "action": "lowercase",
+        "reason": "URL consistency and SEO"
+      }
+    },
+    "seoMetrics": {
+      "estimatedImpact": {
+        "seoScore": "+15-25 points",
+        "organicTraffic": "+10-20% over 6 months",
+        "crawlEfficiency": "+30% faster indexing",
+        "userExperience": "Improved URL readability"
+      },
+      "keywords": {
+        "added": [
+          "whatsapp",
+          "api",
+          "chatbot",
+          "automation",
+          "shopify",
+          "salesforce",
+          "ecommerce",
+          "customer-support"
+        ],
+        "density": "1-2 keywords per URL"
+      }
+    }
+  }
+}
+
