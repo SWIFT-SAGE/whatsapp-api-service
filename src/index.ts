@@ -607,14 +607,7 @@ app.post('/api/contact', async (req, res) => {
 // Health check routes (before other routes for quick access)
 app.use('/health', healthRoutes);
 
-// Handle favicon requests
-app.get('/favicon.ico', (req, res) => {
-  // Return a simple 1x1 transparent pixel as favicon
-  const transparentPixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
-  res.setHeader('Content-Type', 'image/png');
-  res.setHeader('Content-Length', transparentPixel.length);
-  res.send(transparentPixel);
-});
+// Favicon is now served from /public/favicon.ico via static files middleware
 
 // Handle Chrome DevTools requests
 app.get('/.well-known/appspecific/com.chrome.devtools.json', (req, res) => {
