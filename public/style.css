@@ -2503,19 +2503,6 @@ pre {
   opacity: 0.6;
 }
 
-.loading::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid var(--whatsapp-green);
-  border-radius: 50%;
-  border-right-color: transparent;
-  animation: spin 1s linear infinite;
-}
 
 @keyframes spin {
   to {

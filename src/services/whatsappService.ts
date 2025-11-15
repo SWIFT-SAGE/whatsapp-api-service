@@ -1,4 +1,4 @@
-import { Client, Message, MessageMedia, RemoteAuth } from 'whatsapp-web.js';
+import { Client, Message, MessageMedia, RemoteAuth, Buttons, List } from 'whatsapp-web.js';
 import { MongoStore } from 'wwebjs-mongo';
 import mongoose from 'mongoose';
 import WhatsappSession from '../models/WhatsappSession';
@@ -603,11 +603,11 @@ class WhatsAppService {
         
         const sentMessage = await client.sendMessage(chatId, media, { caption: caption || '' });
         logger.info(`Media sent successfully via client.sendMessage, messageId: ${sentMessage.id._serialized}`);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
-        };
+
+      return { 
+        success: true, 
+        messageId: sentMessage.id._serialized 
+      };
       }
     } catch (error: any) {
       logger.error(`Error sending media via session ${sessionId}:`, error);
@@ -686,6 +686,96 @@ class WhatsAppService {
   }
 
   /**
+   * Send button message using whatsapp-web.js Buttons class
+   */
+  async sendButtonMessage(sessionId: string, to: string, buttons: Buttons): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const client = this.clients[sessionId];
+      if (!client) {
+        return { success: false, error: 'Session not found or not connected' };
+      }
+
+      // Validate client state
+      const state = await client.getState();
+      if (state !== 'CONNECTED') {
+        return { success: false, error: `Session is not ready. Current state: ${state}` };
+      }
+
+      // Format phone number
+      const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
+      
+      logger.info(`Sending button message to ${chatId}`);
+
+      // Send button message
+      const sentMessage = await client.sendMessage(chatId, buttons);
+      
+      logger.info(`Button message sent successfully, messageId: ${sentMessage.id._serialized}`);
+      
+      return { 
+        success: true, 
+        messageId: sentMessage.id._serialized 
+      };
+    } catch (error: any) {
+      logger.error(`Error sending button message via session ${sessionId}:`, error);
+      
+      if (error.message?.includes('not registered')) {
+        return { success: false, error: 'Phone number is not registered on WhatsApp' };
+      } else if (error.message?.includes('Rate limit')) {
+        return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
+      } else if (error.message?.includes('Session closed')) {
+        return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
+      }
+      
+      return { success: false, error: error.message || 'Failed to send button message' };
+    }
+  }
+
+  /**
+   * Send list message using whatsapp-web.js List class
+   */
+  async sendListMessage(sessionId: string, to: string, list: List): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const client = this.clients[sessionId];
+      if (!client) {
+        return { success: false, error: 'Session not found or not connected' };
+      }
+
+      // Validate client state
+      const state = await client.getState();
+      if (state !== 'CONNECTED') {
+        return { success: false, error: `Session is not ready. Current state: ${state}` };
+      }
+
+      // Format phone number
+      const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
+      
+      logger.info(`Sending list message to ${chatId}`);
+
+      // Send list message
+      const sentMessage = await client.sendMessage(chatId, list);
+      
+      logger.info(`List message sent successfully, messageId: ${sentMessage.id._serialized}`);
+      
+      return { 
+        success: true, 
+        messageId: sentMessage.id._serialized 
+      };
+    } catch (error: any) {
+      logger.error(`Error sending list message via session ${sessionId}:`, error);
+      
+      if (error.message?.includes('not registered')) {
+        return { success: false, error: 'Phone number is not registered on WhatsApp' };
+      } else if (error.message?.includes('Rate limit')) {
+        return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
+      } else if (error.message?.includes('Session closed')) {
+        return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
+      }
+      
+      return { success: false, error: error.message || 'Failed to send list message' };
+    }
+  }
+
+  /**
    * Get session status
    */
   async getSessionStatus(sessionId: string): Promise<{ connected: boolean; info?: any }> {
@@ -744,6 +834,29 @@ class WhatsAppService {
   }
 
   /**
+   * Normalize message type to valid enum value
+   */
+  private normalizeMessageType(type: string): string {
+    const validTypes = ['text', 'image', 'audio', 'video', 'document', 'location', 'contact', 'sticker', 'gif', 'chat', 'interactive', 'ptt', 'buttons', 'list', 'e2e_notification', 'notification', 'unknown'];
+    
+    // If type is already valid, return it
+    if (validTypes.includes(type)) {
+      return type;
+    }
+    
+    // Map common WhatsApp types
+    const typeMap: { [key: string]: string } = {
+      'e2e_notification': 'e2e_notification',
+      'notification': 'notification',
+      'protocol': 'notification',
+      'revoked': 'notification',
+      'system': 'notification'
+    };
+    
+    return typeMap[type] || 'unknown';
+  }
+
+  /**
    * Log message to database
    */
   private async logMessage(message: Message, sessionId: string, userId: string, direction: 'inbound' | 'outbound'): Promise<void> {
@@ -751,12 +864,14 @@ class WhatsAppService {
       const session = await WhatsappSession.findOne({ sessionId });
       if (!session) return;
 
+      const normalizedType = this.normalizeMessageType(message.type);
+
       const messageLog = new MessageLog({
         userId,
         sessionId: session._id,
         messageId: message.id._serialized,
         direction,
-        type: message.type,
+        type: normalizedType,
         from: message.from,
         to: message.to || '',
         content: message.body,

@@ -952,6 +952,22 @@
                 const html = await response.text();
                 if (contentContainer) {
                     contentContainer.innerHTML = html;
+                    
+                    // Execute any scripts in the loaded content
+                    const scripts = contentContainer.querySelectorAll('script');
+                    console.log(`Found ${scripts.length} script(s) to execute in ${section} section`);
+                    scripts.forEach((oldScript, index) => {
+                        const newScript = document.createElement('script');
+                        // Copy all attributes
+                        Array.from(oldScript.attributes).forEach(attr => {
+                            newScript.setAttribute(attr.name, attr.value);
+                        });
+                        // Copy the script content
+                        newScript.textContent = oldScript.textContent;
+                        // Replace old script with new one to execute it
+                        oldScript.parentNode.replaceChild(newScript, oldScript);
+                        console.log(`Executed script ${index + 1}/${scripts.length}`);
+                    });
                 }
 
                 // Load section-specific data after page is loaded

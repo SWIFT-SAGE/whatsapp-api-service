@@ -5,19 +5,27 @@ export interface IMessageTemplate extends Document {
   name: string;
   description?: string;
   category: 'marketing' | 'transactional' | 'notification' | 'custom';
-  type: 'text' | 'media' | 'button' | 'list' | 'interactive';
+  type: 'text' | 'media' | 'buttons' | 'list' | 'interactive';
   content: {
+    // Text & Media
     text?: string;
     mediaUrl?: string;
     mediaType?: 'image' | 'video' | 'document' | 'audio';
     caption?: string;
-    footer?: string;
+    
+    // Buttons (whatsapp-web.js Buttons class)
+    buttonTitle?: string; // Title shown above buttons
+    buttonFooter?: string; // Footer text
     buttons?: Array<{
       id: string;
-      text: string;
+      body: string; // Button text
     }>;
-    listTitle?: string;
-    listButtonText?: string;
+    
+    // List (whatsapp-web.js List class)
+    listBody?: string; // Main text for list
+    listButtonText?: string; // Text on the button to open list
+    listTitle?: string; // Title at top of list
+    listFooter?: string; // Footer text
     listSections?: Array<{
       title: string;
       rows: Array<{
@@ -64,11 +72,13 @@ const MessageTemplateSchema: Schema = new Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'media', 'button', 'list', 'interactive'],
+      enum: ['text', 'media', 'buttons', 'list', 'interactive'],
       required: true,
       default: 'text'
     },
-    content: {
+  content: {
+    type: {
+      // Text & Media
       text: String,
       mediaUrl: String,
       mediaType: {
@@ -76,13 +86,20 @@ const MessageTemplateSchema: Schema = new Schema(
         enum: ['image', 'video', 'document', 'audio']
       },
       caption: String,
-      footer: String,
+      
+      // Buttons
+      buttonTitle: String,
+      buttonFooter: String,
       buttons: [{
         id: String,
-        text: String
+        body: String
       }],
-      listTitle: String,
+      
+      // List
+      listBody: String,
       listButtonText: String,
+      listTitle: String,
+      listFooter: String,
       listSections: [{
         title: String,
         rows: [{
@@ -92,6 +109,8 @@ const MessageTemplateSchema: Schema = new Schema(
         }]
       }]
     },
+    default: {}
+  },
     variables: {
       type: [String],
       default: []

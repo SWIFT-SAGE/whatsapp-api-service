@@ -1,14 +1,22 @@
 import { Router } from 'express';
 import TemplateController from '../controllers/TemplateController';
-import { authenticate } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 import { body, query } from 'express-validator';
-import { handleValidationErrors } from '../middleware/errorHandler';
-import { rateLimiter } from '../middleware/rateLimiter';
+import { handleValidationErrors } from '../middleware/validation';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
 // Apply authentication to all routes
-router.use(authenticate);
+router.use(authenticateToken);
+
+// Create rate limiter helper
+const rateLimiter = (options: { windowMs: number; max: number }) => 
+  rateLimit({
+    ...options,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
 
 // Validation rules
 const createTemplateValidation = [

@@ -1,11 +1,12 @@
 import MessageTemplate, { IMessageTemplate } from '../models/MessageTemplate';
-import WhatsAppService from './whatsappService';
+import whatsappService from './whatsappService';
 import { logger } from '../utils/logger';
-import { MessageMedia } from 'whatsapp-web.js';
+import { MessageMedia, Buttons, List } from 'whatsapp-web.js';
 import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { getAllBuiltInTemplates, getBuiltInTemplateById, BuiltInTemplateDefinition } from './BuiltInTemplates';
 
 interface TemplateVariable {
   [key: string]: string | number;
@@ -21,98 +22,8 @@ interface SendTemplateOptions {
 }
 
 class TemplateService {
-  private whatsappService: WhatsAppService;
-  private builtInTemplates: Map<string, Function>;
-
   constructor() {
-    this.whatsappService = WhatsAppService.getInstance();
-    this.builtInTemplates = this.initializeBuiltInTemplates();
-  }
-
-  /**
-   * Initialize built-in templates
-   */
-  private initializeBuiltInTemplates(): Map<string, Function> {
-    const templates = new Map<string, Function>();
-
-    templates.set('welcome', (data: any) => 
-      `*Welcome ${data.name}!* 👋\n\n` +
-      `Thank you for contacting us. How can we help you today?`
-    );
-
-    templates.set('orderConfirmation', (data: any) => 
-      `Hi *${data.name}*,\n\n` +
-      `✅ Your order has been confirmed!\n\n` +
-      `📦 Order ID: \`${data.orderId}\`\n` +
-      `💰 Amount: ₹${data.amount}\n\n` +
-      `We'll notify you once it ships.`
-    );
-
-    templates.set('appointment', (data: any) => 
-      `Hello *${data.name}*,\n\n` +
-      `📅 Your appointment is confirmed:\n` +
-      `🗓️ Date: ${data.date}\n` +
-      `🕐 Time: ${data.time}\n\n` +
-      `See you soon!`
-    );
-
-    templates.set('reminder', (data: any) =>
-      `⏰ *Reminder for ${data.name}*\n\n` +
-      `Task: ${data.task}\n` +
-      `Deadline: ${data.deadline}\n\n` +
-      `_This is an automated reminder_`
-    );
-
-    templates.set('productUpdate', (data: any) => {
-      const featuresText = data.features
-        ? data.features.map((f: string) => `• ${f}`).join('\n')
-        : '';
-      
-      return `🎉 *New Product Launch!*\n\n` +
-             `${data.productName}\n` +
-             `Price: ~₹${data.oldPrice}~ *₹${data.newPrice}*\n\n` +
-             `Features:\n${featuresText}\n\n` +
-             `> Order now: ${data.link}`;
-    });
-
-    templates.set('invoice', (data: any) => {
-      const itemsText = data.items
-        ? data.items.map((item: any) => `• ${item.name} - ₹${item.price}`).join('\n')
-        : '';
-      
-      return `*INVOICE*\n` +
-             `${'='.repeat(30)}\n\n` +
-             `Customer: ${data.customerName}\n\n` +
-             `Items:\n${itemsText}\n\n` +
-             `${'='.repeat(30)}\n` +
-             `*Total: ₹${data.total}*\n` +
-             `Due Date: \`${data.dueDate}\`\n\n` +
-             `_Thank you for your business!_`;
-    });
-
-    templates.set('followup', (data: any) =>
-      `Hey ${data.name},\n\n` +
-      `Just following up on ${data.topic}. ` +
-      `Let me know if you have any questions!`
-    );
-
-    templates.set('shipping', (data: any) =>
-      `📦 *Shipping Update*\n\n` +
-      `Hi ${data.name},\n\n` +
-      `Your order ${data.orderId} has been shipped!\n\n` +
-      `🚚 Tracking: \`${data.trackingNumber}\`\n` +
-      `📍 Carrier: ${data.carrier}\n` +
-      `📅 Expected Delivery: ${data.deliveryDate}`
-    );
-
-    templates.set('feedback', (data: any) =>
-      `Hi ${data.name}! 😊\n\n` +
-      `We'd love to hear your feedback about ${data.product}.\n\n` +
-      `Please rate your experience (1-5 stars) and share your thoughts.\n\n` +
-      `Thank you for helping us improve!`
-    );
-
-    return templates;
+    // Built-in templates are now imported from BuiltInTemplates.ts
   }
 
   /**
@@ -250,7 +161,7 @@ class TemplateService {
   }
 
   /**
-   * Send template message
+   * Send template message (handles built-in templates)
    */
   async sendTemplate(options: SendTemplateOptions): Promise<any> {
     try {
@@ -259,34 +170,64 @@ class TemplateService {
       // Handle single or multiple recipients
       const recipients = Array.isArray(to) ? to : [to];
       
-      // Get template
-      let template: IMessageTemplate | null = null;
-      let messageText: string = '';
+      // Get built-in template
+      const identifier = templateId || templateName!;
+      const builtInTemplate = getBuiltInTemplateById(identifier);
       
-      if (templateId || templateName) {
-        const identifier = templateId || templateName!;
-        
-        // First, try to get from database (we need userId, so we'll handle this in the controller)
-        // For now, check built-in templates
-        if (this.builtInTemplates.has(identifier)) {
-          const templateFunc = this.builtInTemplates.get(identifier)!;
-          messageText = templateFunc(variables);
-        } else {
-          throw new Error(`Template not found: ${identifier}`);
-        }
-      } else {
-        throw new Error('Template ID or name is required');
+      if (!builtInTemplate) {
+        throw new Error(`Template not found: ${identifier}`);
       }
       
       const results = [];
       
       for (const recipient of recipients) {
         try {
-          // Format phone number
-          const chatId = recipient.includes('@') ? recipient : `${recipient.replace(/[^\d]/g, '')}@c.us`;
+          // Format phone number - preserve + sign if present, otherwise add it
+          let chatId: string;
+          if (recipient.includes('@')) {
+            chatId = recipient;
+          } else {
+            // Remove spaces, dashes, parentheses but keep + and digits
+            let cleaned = recipient.replace(/[\s\-\(\)]/g, '');
+            // If it doesn't start with +, add it (assuming country code is included)
+            if (!cleaned.startsWith('+')) {
+              cleaned = '+' + cleaned;
+            }
+            // Remove + for WhatsApp format (country code without +)
+            chatId = `${cleaned.substring(1)}@c.us`;
+          }
           
-          // Send message
-          const result = await this.whatsappService.sendMessage(sessionId, chatId, messageText);
+          logger.info(`Sending ${builtInTemplate.type} template "${builtInTemplate.id}" to ${chatId}`);
+          
+          let result: any;
+          
+          // Handle different template types
+          switch (builtInTemplate.type) {
+            case 'text':
+              const messageText = this.replaceVariables(builtInTemplate.content.text || '', variables);
+              logger.info(`Text template message: ${messageText.substring(0, 100)}...`);
+              result = await whatsappService.sendMessage(sessionId, chatId, messageText);
+              break;
+              
+            case 'buttons':
+              logger.info(`Sending button template with ${builtInTemplate.content.buttons?.length || 0} buttons`);
+              result = await this.sendBuiltInButtonTemplate(sessionId, chatId, builtInTemplate, variables);
+              break;
+              
+            case 'list':
+              logger.info(`Sending list template with ${builtInTemplate.content.listSections?.length || 0} sections`);
+              result = await this.sendBuiltInListTemplate(sessionId, chatId, builtInTemplate, variables);
+              break;
+              
+            default:
+              throw new Error(`Unsupported template type: ${builtInTemplate.type}`);
+          }
+          
+          if (!result.success) {
+            logger.error(`Failed to send template to ${chatId}: ${result.error}`);
+          } else {
+            logger.info(`Template sent successfully to ${chatId}, messageId: ${result.messageId}`);
+          }
           
           results.push({
             to: recipient,
@@ -300,18 +241,23 @@ class TemplateService {
             await new Promise(resolve => setTimeout(resolve, options.delay));
           }
         } catch (error: any) {
+          logger.error(`Error sending template to ${recipient}:`, error);
           results.push({
             to: recipient,
             success: false,
-            error: error.message
+            error: error.message || 'Unknown error'
           });
         }
       }
       
+      const sentCount = results.filter(r => r.success).length;
+      const failedCount = results.filter(r => !r.success).length;
+      
+      // Return success only if at least one message was sent successfully
       return {
-        success: true,
-        sent: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length,
+        success: sentCount > 0,
+        sent: sentCount,
+        failed: failedCount,
         results
       };
     } catch (error: any) {
@@ -348,14 +294,14 @@ class TemplateService {
           switch (template.type) {
             case 'text':
               const messageText = this.replaceVariables(template.content.text || '', variables);
-              result = await this.whatsappService.sendMessage(sessionId, chatId, messageText);
+              result = await whatsappService.sendMessage(sessionId, chatId, messageText);
               break;
               
             case 'media':
               result = await this.sendMediaTemplate(sessionId, chatId, template, variables);
               break;
               
-            case 'button':
+            case 'buttons':
               result = await this.sendButtonTemplate(sessionId, chatId, template, variables);
               break;
               
@@ -413,7 +359,7 @@ class TemplateService {
       
       if (template.content.mediaUrl) {
         // Send from URL
-        return await this.whatsappService.sendMediaFromUrl(sessionId, chatId, template.content.mediaUrl, caption);
+        return await whatsappService.sendMediaFromUrl(sessionId, chatId, template.content.mediaUrl, caption);
       } else {
         throw new Error('Media URL is required for media templates');
       }
@@ -424,27 +370,44 @@ class TemplateService {
   }
 
   /**
-   * Send button template (using formatted text)
+   * Send button template (using whatsapp-web.js Buttons class)
    */
   private async sendButtonTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
     try {
-      let messageText = template.content.text 
+      // Replace variables in text
+      const bodyText = template.content.text 
         ? this.replaceVariables(template.content.text, variables)
         : '';
       
-      // Add buttons as formatted text (WhatsApp Web.js doesn't support interactive buttons via client)
-      if (template.content.buttons && template.content.buttons.length > 0) {
-        messageText += '\n\n_Select an option:_\n';
-        template.content.buttons.forEach((button, index) => {
-          messageText += `\n${index + 1}. ${button.text}`;
-        });
+      const buttonTitle = template.content.buttonTitle 
+        ? this.replaceVariables(template.content.buttonTitle, variables)
+        : undefined;
+      
+      const buttonFooter = template.content.buttonFooter 
+        ? this.replaceVariables(template.content.buttonFooter, variables)
+        : undefined;
+      
+      // Prepare buttons (max 3 buttons)
+      const buttonList = template.content.buttons && template.content.buttons.length > 0
+        ? template.content.buttons.slice(0, 3).map(btn => ({
+            id: btn.id,
+            body: this.replaceVariables(btn.body, variables)
+          }))
+        : [];
+      
+      if (buttonList.length === 0) {
+        throw new Error('At least one button is required for button templates');
       }
       
-      if (template.content.footer) {
-        messageText += `\n\n_${template.content.footer}_`;
-      }
+      // Create Buttons object
+      const buttons = new Buttons(
+        bodyText,
+        buttonList,
+        buttonTitle || '',
+        buttonFooter || ''
+      );
       
-      return await this.whatsappService.sendMessage(sessionId, chatId, messageText);
+      return await whatsappService.sendButtonMessage(sessionId, chatId, buttons);
     } catch (error: any) {
       logger.error('Error sending button template:', error);
       throw error;
@@ -452,34 +415,53 @@ class TemplateService {
   }
 
   /**
-   * Send list template (using formatted text)
+   * Send list template (using whatsapp-web.js List class)
    */
   private async sendListTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
     try {
-      let messageText = template.content.listTitle 
-        ? `*${this.replaceVariables(template.content.listTitle, variables)}*\n\n`
+      // Replace variables
+      const listBody = template.content.listBody 
+        ? this.replaceVariables(template.content.listBody, variables)
         : '';
       
-      // Add list sections
-      if (template.content.listSections && template.content.listSections.length > 0) {
-        template.content.listSections.forEach((section) => {
-          messageText += `*${section.title}*\n`;
-          section.rows.forEach((row, index) => {
-            messageText += `${index + 1}. *${row.title}*`;
-            if (row.description) {
-              messageText += `\n   _${row.description}_`;
-            }
-            messageText += '\n';
-          });
-          messageText += '\n';
-        });
+      const listButtonText = template.content.listButtonText 
+        ? this.replaceVariables(template.content.listButtonText, variables)
+        : 'View Options';
+      
+      const listTitle = template.content.listTitle 
+        ? this.replaceVariables(template.content.listTitle, variables)
+        : '';
+      
+      const listFooter = template.content.listFooter 
+        ? this.replaceVariables(template.content.listFooter, variables)
+        : '';
+      
+      // Prepare sections with variable replacement
+      const sections = template.content.listSections && template.content.listSections.length > 0
+        ? template.content.listSections.map(section => ({
+            title: this.replaceVariables(section.title, variables),
+            rows: section.rows.map(row => ({
+              id: row.id,
+              title: this.replaceVariables(row.title, variables),
+              description: row.description ? this.replaceVariables(row.description, variables) : undefined
+            }))
+          }))
+        : [];
+      
+      if (sections.length === 0) {
+        throw new Error('At least one section is required for list templates');
       }
       
-      if (template.content.footer) {
-        messageText += `_${template.content.footer}_`;
-      }
+      // Create List object
+      const list = new List(
+        listBody,
+        listButtonText,
+        sections,
+        listTitle,
+        listFooter
+      );
       
-      return await this.whatsappService.sendMessage(sessionId, chatId, messageText);
+      return await whatsappService.sendListMessage(sessionId, chatId, list);
     } catch (error: any) {
       logger.error('Error sending list template:', error);
       throw error;
@@ -487,10 +469,83 @@ class TemplateService {
   }
 
   /**
-   * Get built-in template names
+   * Send built-in button template
    */
-  getBuiltInTemplates(): string[] {
-    return Array.from(this.builtInTemplates.keys());
+  private async sendBuiltInButtonTemplate(sessionId: string, chatId: string, template: BuiltInTemplateDefinition, variables: TemplateVariable): Promise<any> {
+    try {
+      const bodyText = template.content.text 
+        ? this.replaceVariables(template.content.text, variables)
+        : '';
+      
+      const buttonTitle = template.content.buttonTitle 
+        ? this.replaceVariables(template.content.buttonTitle, variables)
+        : '';
+      
+      const buttonFooter = template.content.buttonFooter 
+        ? this.replaceVariables(template.content.buttonFooter, variables)
+        : '';
+      
+      const buttonList = template.content.buttons.map((btn: any) => ({
+        id: btn.id,
+        body: this.replaceVariables(btn.body, variables)
+      }));
+      
+      const buttons = new Buttons(
+        bodyText,
+        buttonList,
+        buttonTitle,
+        buttonFooter
+      );
+      
+      return await whatsappService.sendButtonMessage(sessionId, chatId, buttons);
+    } catch (error: any) {
+      logger.error('Error sending built-in button template:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send built-in list template
+   */
+  private async sendBuiltInListTemplate(sessionId: string, chatId: string, template: BuiltInTemplateDefinition, variables: TemplateVariable): Promise<any> {
+    try {
+      const listBody = template.content.listBody 
+        ? this.replaceVariables(template.content.listBody, variables)
+        : '';
+      
+      const listButtonText = template.content.listButtonText || 'View Options';
+      const listTitle = template.content.listTitle || '';
+      const listFooter = template.content.listFooter || '';
+      
+      const sections = template.content.listSections.map((section: any) => ({
+        title: section.title,
+        rows: section.rows.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description
+        }))
+      }));
+      
+      const list = new List(
+        listBody,
+        listButtonText,
+        sections,
+        listTitle,
+        listFooter
+      );
+      
+      return await whatsappService.sendListMessage(sessionId, chatId, list);
+    } catch (error: any) {
+      logger.error('Error sending built-in list template:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all built-in template definitions
+   */
+  getBuiltInTemplates(): BuiltInTemplateDefinition[] {
+    return getAllBuiltInTemplates();
   }
 }
 

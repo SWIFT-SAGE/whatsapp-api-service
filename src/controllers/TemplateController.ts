@@ -194,8 +194,11 @@ class TemplateController {
       const builtInTemplates = TemplateService.getBuiltInTemplates();
       const identifier = templateId || templateName;
       
+      // Check if identifier matches a built-in template ID
+      const isBuiltIn = builtInTemplates.some(t => t.id === identifier || t.name === identifier);
+      
       let result;
-      if (builtInTemplates.includes(identifier)) {
+      if (isBuiltIn) {
         // Use built-in template
         result = await TemplateService.sendTemplate({
           sessionId,
@@ -217,11 +220,22 @@ class TemplateController {
         });
       }
       
-      res.json({
-        success: true,
-        message: 'Template sent successfully',
-        data: result
-      });
+      // Check if any messages were actually sent
+      if (result.success && result.sent > 0) {
+        res.json({
+          success: true,
+          message: `Template sent successfully to ${result.sent} recipient(s)${result.failed > 0 ? `, ${result.failed} failed` : ''}`,
+          data: result
+        });
+      } else {
+        // All messages failed
+        const errorMessage = result.results?.[0]?.error || 'Failed to send template';
+        res.status(400).json({
+          success: false,
+          message: errorMessage,
+          data: result
+        });
+      }
     } catch (error: any) {
       logger.error('Error in sendTemplate:', error);
       res.status(500).json({

@@ -514,45 +514,45 @@ export class WhatsAppController {
         // Send media using file path method (more reliable)
         const result = await WhatsAppService.sendMedia(sessionId, to, tempFilePath, caption);
 
-        if (!result.success) {
-          logger.error(`Media send failed: ${result.error}`);
-          res.status(400).json({ 
-            success: false,
-            error: result.error || 'Failed to send media',
-            code: 'MEDIA_SEND_FAILED'
-          });
-          return;
-        }
+      if (!result.success) {
+        logger.error(`Media send failed: ${result.error}`);
+        res.status(400).json({ 
+          success: false,
+          error: result.error || 'Failed to send media',
+          code: 'MEDIA_SEND_FAILED'
+        });
+        return;
+      }
 
-        logger.info(`Media sent successfully: ${result.messageId}`);
+      logger.info(`Media sent successfully: ${result.messageId}`);
 
-        // Log message
-        const messageLog = new MessageLog({
-          userId,
-          sessionId: session._id,
-          messageId: result.messageId,
-          direction: 'outbound',
+      // Log message
+      const messageLog = new MessageLog({
+        userId,
+        sessionId: session._id,
+        messageId: result.messageId,
+        direction: 'outbound',
           type: processedMimetype.startsWith('image/') ? 'image' : 
                 processedMimetype.startsWith('video/') ? 'video' : 
                 processedMimetype.startsWith('audio/') ? 'audio' : 'document',
-          from: session.phoneNumber || '',
-          to,
-          content: caption,
+        from: session.phoneNumber || '',
+        to,
+        content: caption,
           fileName: processedFilename,
           fileSize: processedBuffer.length,
           mimeType: processedMimetype,
-          status: 'sent'
-        });
-        await messageLog.save();
+        status: 'sent'
+      });
+      await messageLog.save();
 
-        // Increment user message count
-        await (req.user as IUser).incrementMessageCount();
+      // Increment user message count
+      await (req.user as IUser).incrementMessageCount();
 
-        res.json({
-          success: true,
-          messageId: result.messageId,
-          remainingMessages: rateLimitResult.remainingPoints ? rateLimitResult.remainingPoints - 1 : undefined
-        });
+      res.json({
+        success: true,
+        messageId: result.messageId,
+        remainingMessages: rateLimitResult.remainingPoints ? rateLimitResult.remainingPoints - 1 : undefined
+      });
       } finally {
         // Clean up temporary file
         try {

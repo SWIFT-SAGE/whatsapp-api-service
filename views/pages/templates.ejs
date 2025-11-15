@@ -1,231 +1,1042 @@
-<!-- Templates Section -->
-<div id="dashboard-templates" class="dashboard-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-file-alt me-2"></i>Message Templates</h2>
-        <button class="btn btn-primary" id="create-template-btn">
-            <i class="fas fa-plus me-2"></i>New Template
-        </button>
-    </div>
+<!-- Message Templates Section -->
+<style>
+  .templates-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
 
-    <!-- Template Categories Tabs -->
-    <ul class="nav nav-tabs mb-4" id="templateTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="all-tab" data-template-category="all" type="button">
-                <i class="fas fa-layer-group me-1"></i>All Templates
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="marketing-tab" data-template-category="marketing" type="button">
-                <i class="fas fa-bullhorn me-1"></i>Marketing
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="otp-tab" data-template-category="otp" type="button">
-                <i class="fas fa-lock me-1"></i>OTP
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="custom-tab" data-template-category="custom" type="button">
-                <i class="fas fa-edit me-1"></i>Custom
-            </button>
-        </li>
-    </ul>
+  .templates-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
 
-    <!-- Templates Content -->
-    <div class="tab-content" id="templateTabContent">
-        <!-- All Templates Tab -->
-        <div class="tab-pane fade show active" id="all-templates" role="tabpanel">
-            <div class="row g-4" id="all-templates-container">
-                <div class="col-12 text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="text-muted mt-2">Loading templates...</p>
-                </div>
-            </div>
+  .templates-header h1 {
+    font-size: 2rem;
+    color: #1f2937;
+  }
+
+  .btn-primary-template {
+    background: #25d366;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+
+  .btn-primary-template:hover {
+    background: #20ba5a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+  }
+
+  .templates-tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .templates-tab {
+    padding: 0.75rem 1.5rem;
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+  }
+
+  .templates-tab.active {
+    color: #25d366;
+  }
+
+  .templates-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #25d366;
+  }
+
+  .templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .template-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+
+  .template-card:hover {
+    border-color: #25d366;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  .template-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+  }
+
+  .template-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .template-category {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #eff6ff;
+    color: #1e40af;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .template-category.marketing { background: #fef3c7; color: #92400e; }
+  .template-category.transactional { background: #dbeafe; color: #1e40af; }
+  .template-category.notification { background: #fce7f3; color: #9f1239; }
+  .template-category.custom { background: #e0e7ff; color: #4338ca; }
+  .template-category.built-in { background: #d1fae5; color: #065f46; }
+
+  .template-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f3f4f6;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+  }
+
+  .template-preview {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+    white-space: pre-wrap;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+
+  .template-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .template-stat {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+  }
+
+  .template-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-icon-template {
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-icon-template:hover {
+    border-color: #25d366;
+    background: #f0fdf4;
+  }
+
+  .template-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .template-modal.active {
+    display: flex;
+  }
+
+  .template-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .template-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .template-modal-header h2 {
+    font-size: 1.5rem;
+    color: #1f2937;
+  }
+
+  .template-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+  }
+
+  .template-form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .template-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .template-form-group input,
+  .template-form-group select,
+  .template-form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+
+  .template-form-group textarea {
+    min-height: 150px;
+    resize: vertical;
+  }
+
+  .template-form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+
+  .variable-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .variable-chip {
+    padding: 0.25rem 0.75rem;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .variable-chip button {
+    background: none;
+    border: none;
+    color: #1e40af;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+  }
+
+  .btn-secondary-template {
+    background: #e5e7eb;
+    color: #374151;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-right: 0.5rem;
+  }
+
+  .template-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6b7280;
+  }
+
+  .template-empty-state svg {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    opacity: 0.3;
+  }
+
+  .template-loading {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+  }
+
+  .template-spinner {
+    border: 3px solid #f3f4f6;
+    border-top: 3px solid #25d366;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: template-spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes template-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="templates-container">
+  <div class="templates-header">
+    <h1>📝 Message Templates</h1>
+    <button class="btn-primary-template" onclick="window.templateFunctions.openCreateModal()">+ Create Template</button>
         </div>
 
-        <!-- Marketing Templates Tab -->
-        <div class="tab-pane fade" id="marketing-templates" role="tabpanel">
-            <div class="row g-4" id="marketing-templates-container">
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-bullhorn fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No marketing templates yet</h5>
-                    <p class="text-muted">Create templates for promotional messages, offers, and announcements</p>
-                </div>
-            </div>
+  <div class="templates-tabs">
+    <button class="templates-tab active" data-tab="all" onclick="window.templateFunctions.switchTab('all')">All Templates</button>
+    <button class="templates-tab" data-tab="built-in" onclick="window.templateFunctions.switchTab('built-in')">Built-in</button>
+    <button class="templates-tab" data-tab="custom" onclick="window.templateFunctions.switchTab('custom')">Custom</button>
+    <button class="templates-tab" data-tab="marketing" onclick="window.templateFunctions.switchTab('marketing')">Marketing</button>
+    <button class="templates-tab" data-tab="transactional" onclick="window.templateFunctions.switchTab('transactional')">Transactional</button>
         </div>
 
-        <!-- OTP Templates Tab -->
-        <div class="tab-pane fade" id="otp-templates" role="tabpanel">
-            <div class="row g-4" id="otp-templates-container">
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-lock fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No OTP templates yet</h5>
-                    <p class="text-muted">Create templates for authentication codes and verification messages</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Custom Templates Tab -->
-        <div class="tab-pane fade" id="custom-templates" role="tabpanel">
-            <div class="row g-4" id="custom-templates-container">
-                <div class="col-12 text-center py-5">
-                    <i class="fas fa-edit fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No custom templates yet</h5>
-                    <p class="text-muted">Create custom templates for any type of message</p>
-                </div>
-            </div>
-        </div>
+  <div id="templates-content" class="template-loading">
+    <div class="template-spinner"></div>
+    <p>Loading templates...</p>
     </div>
 </div>
 
 <!-- Create/Edit Template Modal -->
-<div class="modal fade" id="templateModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="templateModalTitle">
-                    <i class="fas fa-file-alt me-2"></i>Create Template
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="template-modal" class="template-modal">
+  <div class="template-modal-content">
+    <div class="template-modal-header">
+      <h2 id="modal-title">Create Template</h2>
+      <button class="template-close-btn" onclick="window.templateFunctions.closeModal()">&times;</button>
             </div>
-            <div class="modal-body">
-                <form id="template-form">
-                    <input type="hidden" id="template-id">
-                    
-                    <div class="mb-3">
-                        <label for="template-name" class="form-label">Template Name *</label>
-                        <input type="text" class="form-control" id="template-name" 
-                               placeholder="e.g., Welcome Message" required>
+    <form id="template-form" onsubmit="return window.templateFunctions.saveTemplate(event)">
+      <div class="template-form-group">
+        <label>Template Name *</label>
+        <input type="text" name="name" required placeholder="e.g., Order Confirmation">
                     </div>
 
-                    <div class="mb-3">
-                        <label for="template-category" class="form-label">Category *</label>
-                        <select class="form-select" id="template-category" required>
-                            <option value="">Select category...</option>
+      <div class="template-form-group">
+        <label>Category</label>
+        <select name="category">
+          <option value="custom">Custom</option>
                             <option value="marketing">Marketing</option>
-                            <option value="otp">OTP</option>
-                            <option value="custom">Custom</option>
+          <option value="transactional">Transactional</option>
+          <option value="notification">Notification</option>
                         </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="template-content" class="form-label">Message Content *</label>
-                        <textarea class="form-control" id="template-content" rows="6" 
-                                  placeholder="Enter your message template here..." required></textarea>
-                        <small class="text-muted">
-                            Use variables: {{name}}, {{code}}, {{date}}, {{amount}}, {{link}}
-                        </small>
+      <div class="template-form-group">
+        <label>Type</label>
+        <select name="type" onchange="window.templateFunctions.handleTypeChange(this.value)">
+          <option value="text">Text</option>
+          <option value="media">Media</option>
+          <option value="button">Button</option>
+          <option value="list">List</option>
+        </select>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Variables Used</label>
-                        <div id="template-variables" class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-secondary">None detected</span>
+      <div class="template-form-group">
+        <label>Message Content *</label>
+        <textarea name="text" required placeholder="Use {{variableName}} for dynamic content
+
+Example:
+Hi *{{name}}*!
+
+Your order {{orderId}} has been confirmed.
+Amount: ₹{{amount}}
+
+Thank you!"></textarea>
+        <small>Use *text* for bold, _text_ for italic, ~text~ for strikethrough</small>
                         </div>
+
+      <div class="template-form-group" id="media-url-group" style="display: none;">
+        <label>Media URL</label>
+        <input type="url" name="mediaUrl" placeholder="https://example.com/image.jpg">
+        <small>Enter image, video, or document URL</small>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="template-description" class="form-label">Description</label>
-                        <textarea class="form-control" id="template-description" rows="2" 
-                                  placeholder="Brief description of this template..."></textarea>
+      <div class="template-form-group">
+        <label>Variables</label>
+        <input type="text" id="variable-input" placeholder="Add variable name (e.g., name, orderId)" onkeypress="if(event.key === 'Enter') { event.preventDefault(); window.templateFunctions.addVariable(); }">
+        <button type="button" onclick="window.templateFunctions.addVariable()" class="btn-secondary-template" style="margin-top: 0.5rem;">+ Add Variable</button>
+        <div id="variables-list" class="variable-chips"></div>
+        <small>Variables can be used in your template like {{name}}</small>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="template-active" checked>
-                            <label class="form-check-label" for="template-active">
-                                Active (available for use)
-                            </label>
+      <div class="template-form-group">
+        <label>Description</label>
+        <input type="text" name="description" placeholder="Brief description of this template">
                         </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem;">
+        <button type="button" class="btn-secondary-template" onclick="window.templateFunctions.closeModal()">Cancel</button>
+        <button type="submit" class="btn-primary-template">Save Template</button>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" form="template-form">
-                    <i class="fas fa-save me-2"></i>Save Template
-                </button>
+</div>
+
+<!-- Send Template Modal -->
+<div id="send-modal" class="template-modal">
+  <div class="template-modal-content">
+    <div class="template-modal-header">
+      <h2>Send Template</h2>
+      <button class="template-close-btn" onclick="window.templateFunctions.closeSendModal()">&times;</button>
+    </div>
+    <form id="send-form" onsubmit="return window.templateFunctions.sendTemplate(event)">
+      <input type="hidden" id="send-template-id">
+      
+      <div class="template-form-group">
+        <label>Session ID *</label>
+        <input type="text" name="sessionId" required placeholder="session_xxxxx">
+      </div>
+
+      <div class="template-form-group">
+        <label>Recipient Number *</label>
+        <input type="text" name="to" required placeholder="919876543210">
+        <small>Enter phone number with country code (no + or spaces)</small>
             </div>
+
+      <div id="send-variables"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem;">
+        <button type="button" class="btn-secondary-template" onclick="window.templateFunctions.closeSendModal()">Cancel</button>
+        <button type="submit" class="btn-primary-template">Send Message</button>
         </div>
+    </form>
     </div>
 </div>
 
-<!-- Preview Template Modal -->
-<div class="modal fade" id="previewTemplateModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-eye me-2"></i>Template Preview
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<script>
+(function() {
+  console.log('Templates page script loaded');
+  
+  // Global state
+  let currentTab = 'all';
+  let allTemplates = [];
+  let builtInTemplates = [];
+  let currentVariables = [];
+
+  // Initialize templates when script loads
+  setTimeout(() => {
+    console.log('Initializing templates...');
+    loadTemplates();
+  }, 500);
+
+  async function loadTemplates() {
+    console.log('=== loadTemplates called ===');
+    try {
+      console.log('Fetching templates from API...');
+      const [customRes, builtInRes] = await Promise.all([
+        fetch('/api/templates', {
+          credentials: 'include'
+        }),
+        fetch('/api/templates/built-in', {
+          credentials: 'include'
+        })
+      ]);
+
+      console.log('Custom templates response:', customRes.status);
+      console.log('Built-in templates response:', builtInRes.status);
+
+      if (!customRes.ok || !builtInRes.ok) {
+        throw new Error(`HTTP Error: ${customRes.status} / ${builtInRes.status}`);
+      }
+
+      const customData = await customRes.json();
+      const builtInData = await builtInRes.json();
+
+      allTemplates = customData.data || [];
+      builtInTemplates = builtInData.data || [];
+
+      console.log('Templates loaded:', {
+        custom: allTemplates.length,
+        builtIn: builtInTemplates.length
+      });
+
+      displayTemplates();
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      const container = document.getElementById('templates-content');
+      if (container) {
+        container.innerHTML = `
+          <div class="template-empty-state">
+            <h3>Error loading templates</h3>
+            <p>${error.message}</p>
+            <button class="btn-primary-template" onclick="location.reload()">Refresh Page</button>
             </div>
-            <div class="modal-body">
-                <div class="card">
-                    <div class="card-body">
-                        <h6 class="card-subtitle mb-2 text-muted" id="preview-template-name"></h6>
-                        <p class="card-text" id="preview-template-content" style="white-space: pre-wrap;"></p>
-                        <div class="mt-3">
-                            <small class="text-muted">Category: <span id="preview-template-category"></span></small>
+        `;
+      }
+    }
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.templates-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector(`[data-tab="${tab}"]`);
+    if (activeTab) activeTab.classList.add('active');
+    displayTemplates();
+  }
+
+  function displayTemplates() {
+    console.log('Displaying templates for tab:', currentTab);
+    console.log('builtInTemplates:', builtInTemplates);
+    console.log('allTemplates:', allTemplates);
+    
+    let filtered = [];
+
+    if (currentTab === 'built-in') {
+      // builtInTemplates now contains full template definitions with id, name, type, etc.
+      filtered = builtInTemplates.map(tmpl => ({
+        _id: tmpl.id,
+        name: tmpl.name,
+        description: tmpl.description,
+        category: tmpl.category,
+        type: tmpl.type,
+        variables: tmpl.variables,
+        isBuiltIn: true
+      }));
+    } else if (currentTab === 'all') {
+      const builtInAsObjects = builtInTemplates.map(tmpl => ({
+        _id: tmpl.id,
+        name: tmpl.name,
+        description: tmpl.description,
+        category: tmpl.category,
+        type: tmpl.type,
+        variables: tmpl.variables,
+        isBuiltIn: true
+      }));
+      filtered = [...builtInAsObjects, ...allTemplates];
+    } else if (currentTab === 'custom') {
+      filtered = allTemplates.filter(t => t.category === 'custom' || !t.category);
+    } else {
+      filtered = allTemplates.filter(t => t.category === currentTab);
+    }
+
+    const container = document.getElementById('templates-content');
+    if (!container) return;
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="template-empty-state">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <h3>No templates found</h3>
+          <p>Create your first template to get started</p>
                         </div>
+      `;
+      return;
+    }
+
+    const cardsHTML = filtered.map(template => renderTemplateCard(template)).join('');
+    container.innerHTML = `<div class="templates-grid">${cardsHTML}</div>`;
+  }
+
+  function renderTemplateCard(template) {
+    let preview = '';
+    
+    if (template.description) {
+      preview = template.description;
+    } else if (template.isBuiltIn) {
+      preview = `Built-in ${template.type} template`;
+    } else if (template.content?.text) {
+      preview = template.content.text.substring(0, 150);
+    } else {
+      preview = 'No preview available';
+    }
+
+    return `
+      <div class="template-card" onclick="window.templateFunctions.selectTemplate('${template._id || template.name}', ${template.isBuiltIn})">
+        <div class="template-card-header">
+          <div>
+            <div class="template-name">${template.name}</div>
+            <span class="template-category ${template.category}">${template.category || 'custom'}</span>
                     </div>
                 </div>
                 
-                <div class="mt-3" id="preview-variables">
-                    <h6>Test with Variables:</h6>
-                    <form id="preview-variables-form">
-                        <!-- Variables will be added dynamically -->
-                    </form>
-                    <div class="mt-3 p-3 bg-light rounded" id="preview-result">
-                        <!-- Preview result will be shown here -->
+        <div class="template-type">
+          ${getTypeIcon(template.type)} ${template.type || 'text'}
+        </div>
+        
+        <div class="template-preview">${preview}</div>
+        
+        ${!template.isBuiltIn ? `
+          <div class="template-stats">
+            <div class="template-stat">
+              <span class="stat-label">Used</span>
+              <span class="stat-value">${template.usageCount || 0}</span>
                     </div>
+            <div class="template-stat">
+              <span class="stat-label">Variables</span>
+              <span class="stat-value">${template.variables?.length || 0}</span>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="use-template-btn">
-                    <i class="fas fa-paper-plane me-2"></i>Use Template
-                </button>
+        ` : `
+          <div class="template-stats">
+            <div class="template-stat">
+              <span class="stat-label">Variables</span>
+              <span class="stat-value">${template.variables?.length || 0}</span>
             </div>
         </div>
+        `}
+        
+        <div class="template-actions">
+          <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.openSendModal('${template._id || template.name}', ${template.isBuiltIn})" title="Send">
+            📤
+          </button>
+          ${!template.isBuiltIn ? `
+            <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.editTemplate('${template._id}')" title="Edit">
+              ✏️
+            </button>
+            <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.deleteTemplate('${template._id}')" title="Delete">
+              🗑️
+            </button>
+          ` : ''}
     </div>
 </div>
+    `;
+  }
 
-<style>
-    .template-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .template-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .template-variables .badge {
-        font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
-    }
-    
-    #template-content {
-        font-family: 'Courier New', monospace;
-        font-size: 0.95rem;
-    }
-    
-    .nav-tabs .nav-link {
-        color: #6c757d;
-    }
-    
-    .nav-tabs .nav-link.active {
-        color: #25D366;
-        border-bottom-color: #25D366;
-    }
-    
-    .template-card .badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-    }
-</style>
+  function getTypeIcon(type) {
+    const icons = {
+      text: '💬',
+      media: '🖼️',
+      button: '🔘',
+      buttons: '🔘',
+      list: '📋',
+      interactive: '⚡'
+    };
+    return icons[type] || '💬';
+  }
 
+  function selectTemplate(templateId, isBuiltIn) {
+    console.log('Selected template:', templateId);
+  }
+
+  function openCreateModal() {
+    document.getElementById('modal-title').textContent = 'Create Template';
+    document.getElementById('template-form').reset();
+    delete document.getElementById('template-form').dataset.editId;
+    currentVariables = [];
+    document.getElementById('variables-list').innerHTML = '';
+    document.getElementById('template-modal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('template-modal').classList.remove('active');
+  }
+
+  async function editTemplate(templateId) {
+    try {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Failed to fetch template');
+      
+      const result = await response.json();
+      if (!result.success || !result.data) throw new Error('Template not found');
+      
+      const template = result.data;
+      
+      document.getElementById('modal-title').textContent = 'Edit Template';
+      document.querySelector('[name="name"]').value = template.name || '';
+      document.querySelector('[name="category"]').value = template.category || 'custom';
+      document.querySelector('[name="type"]').value = template.type || 'text';
+      document.querySelector('[name="text"]').value = template.content?.text || '';
+      document.querySelector('[name="mediaUrl"]').value = template.content?.mediaUrl || '';
+      document.querySelector('[name="description"]').value = template.description || '';
+      
+      currentVariables = template.variables || [];
+      renderVariables();
+      
+      document.getElementById('template-form').dataset.editId = templateId;
+      document.getElementById('template-modal').classList.add('active');
+    } catch (error) {
+      alert('Failed to load template: ' + error.message);
+    }
+  }
+
+  function handleTypeChange(type) {
+    const mediaUrlGroup = document.getElementById('media-url-group');
+    if (mediaUrlGroup) {
+      mediaUrlGroup.style.display = type === 'media' ? 'block' : 'none';
+    }
+  }
+
+  function addVariable() {
+    const input = document.getElementById('variable-input');
+    if (!input) return;
+    
+    const variable = input.value.trim();
+    if (!variable) {
+      alert('Please enter a variable name');
+      return;
+    }
+    
+    if (currentVariables.includes(variable)) {
+      alert(`Variable "${variable}" already exists`);
+      return;
+    }
+    
+    currentVariables.push(variable);
+    renderVariables();
+    input.value = '';
+  }
+
+  function removeVariable(variable) {
+    currentVariables = currentVariables.filter(v => v !== variable);
+    renderVariables();
+  }
+
+  function renderVariables() {
+    const list = document.getElementById('variables-list');
+    if (!list) return;
+    
+    list.innerHTML = currentVariables.map(v => `
+      <div class="variable-chip">
+        {{${v}}}
+        <button type="button" onclick="window.templateFunctions.removeVariable('${v}')">&times;</button>
+      </div>
+    `).join('');
+  }
+
+  async function saveTemplate(event) {
+    if (event && event.preventDefault) event.preventDefault();
+    
+    const form = document.getElementById('template-form');
+    if (!form) return false;
+    
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton?.disabled) return false;
+    
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Saving...';
+    }
+    
+    try {
+      const formData = new FormData(form);
+      const editId = form.dataset.editId;
+      const isEdit = !!editId;
+      
+      const contentObj = { text: formData.get('text') || '' };
+      const mediaUrl = formData.get('mediaUrl');
+      if (mediaUrl && mediaUrl.trim()) {
+        contentObj.mediaUrl = mediaUrl.trim();
+      }
+      
+      const templateData = {
+        name: formData.get('name'),
+        category: formData.get('category') || 'custom',
+        type: formData.get('type') || 'text',
+        description: formData.get('description') || '',
+        content: contentObj,
+        variables: currentVariables || [],
+        formatting: { useBold: true, useItalic: true, useEmojis: true }
+      };
+
+      const url = isEdit ? `/api/templates/${editId}` : '/api/templates';
+      const method = isEdit ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(templateData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        try {
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.message || errorJson.error || 'Failed to save template');
+        } catch (e) {
+          throw new Error(errorText);
+        }
+      }
+      
+      const result = await response.json();
+      if (result.success) {
+        alert(`Template ${isEdit ? 'updated' : 'created'} successfully!`);
+        delete form.dataset.editId;
+        closeModal();
+        await loadTemplates();
+      } else {
+        throw new Error(result.message || 'Failed to save template');
+      }
+    } catch (error) {
+      alert('Failed to save template: ' + error.message);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Save Template';
+      }
+    }
+    
+    return false;
+  }
+
+  function openSendModal(templateId, isBuiltIn) {
+    console.log('Opening send modal for:', templateId, 'isBuiltIn:', isBuiltIn);
+    
+    const input = document.getElementById('send-template-id');
+    const modal = document.getElementById('send-modal');
+    const variablesContainer = document.getElementById('send-variables');
+    
+    if (!input || !modal) {
+      alert('Modal not found');
+      return;
+    }
+    
+    input.value = templateId;
+    
+    // Get template variables based on whether it's built-in or custom
+    let templateVariables = [];
+    
+    if (isBuiltIn) {
+      // Find built-in template by ID and get its variables
+      const template = builtInTemplates.find(t => t.id === templateId);
+      templateVariables = template?.variables || [];
+      console.log('Built-in template found:', template);
+    } else {
+      // Find custom template and get its variables
+      const template = allTemplates.find(t => t._id === templateId);
+      templateVariables = template?.variables || [];
+      console.log('Custom template found:', template);
+    }
+    
+    console.log('Template variables:', templateVariables);
+    
+    // Generate variable input fields
+    if (templateVariables.length > 0 && variablesContainer) {
+      variablesContainer.innerHTML = `
+        <div class="template-form-group">
+          <label>Template Variables</label>
+          ${templateVariables.map(v => `
+            <div style="margin-bottom: 1rem;">
+              <label style="font-weight: normal; font-size: 0.875rem;">${v}</label>
+              <input type="text" name="var_${v}" placeholder="Enter ${v}" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      variablesContainer.innerHTML = '';
+    }
+    
+    modal.classList.add('active');
+  }
+
+  function closeSendModal() {
+    const modal = document.getElementById('send-modal');
+    if (modal) modal.classList.remove('active');
+  }
+
+  async function sendTemplate(event) {
+    if (event && event.preventDefault) event.preventDefault();
+    
+    const form = document.getElementById('send-form');
+    if (!form) return false;
+    
+    const formData = new FormData(form);
+    const templateId = document.getElementById('send-template-id').value;
+    
+    // Validate required fields
+    const sessionId = formData.get('sessionId');
+    const to = formData.get('to');
+    
+    if (!sessionId || !sessionId.trim()) {
+      alert('Please enter Session ID');
+      return false;
+    }
+    
+    if (!to || !to.trim()) {
+      alert('Please enter recipient phone number');
+      return false;
+    }
+    
+    // Collect variables from the form
+    const variables = {};
+    for (let [key, value] of formData.entries()) {
+      if (key.startsWith('var_')) {
+        const varName = key.replace('var_', '');
+        variables[varName] = value;
+      }
+    }
+    
+    console.log('Sending template:', {
+      sessionId,
+      to,
+      templateName: templateId,
+      variables
+    });
+    
+    const sendData = {
+      sessionId: sessionId.trim(),
+      to: to.trim(),
+      templateName: templateId,
+      variables: variables
+    };
+
+    // Disable submit button
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Sending...';
+    }
+
+    try {
+      const response = await fetch('/api/templates/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(sendData)
+      });
+
+      console.log('Send response status:', response.status);
+      const result = await response.json();
+      console.log('Send result:', result);
+
+      if (result.success) {
+        const message = result.message || 'Template sent successfully!';
+        alert(message);
+        closeSendModal();
+        form.reset();
+      } else {
+        // Show detailed error message
+        let errorMsg = result.message || 'Failed to send template';
+        
+        // If there are detailed results, show them
+        if (result.data && result.data.results && result.data.results.length > 0) {
+          const firstError = result.data.results[0];
+          if (firstError.error) {
+            errorMsg = firstError.error;
+          }
+        }
+        
+        alert('Error: ' + errorMsg);
+        console.error('Template send failed:', result);
+      }
+    } catch (error) {
+      console.error('Send error:', error);
+      alert('Failed to send template: ' + (error.message || 'Network error'));
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Send Message';
+      }
+    }
+    
+    return false;
+  }
+
+  async function deleteTemplate(templateId) {
+    if (!confirm('Are you sure you want to delete this template?')) return;
+
+    try {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete');
+
+      const result = await response.json();
+      if (result.success) {
+        alert('Template deleted successfully!');
+        await loadTemplates();
+      } else {
+        throw new Error(result.message || 'Failed to delete');
+      }
+    } catch (error) {
+      alert('Failed to delete template: ' + error.message);
+    }
+  }
+
+  // Expose functions globally
+  window.templateFunctions = {
+    loadTemplates,
+    switchTab,
+    displayTemplates,
+    selectTemplate,
+    openCreateModal,
+    closeModal,
+    editTemplate,
+    handleTypeChange,
+    addVariable,
+    removeVariable,
+    saveTemplate,
+    openSendModal,
+    closeSendModal,
+    sendTemplate,
+    deleteTemplate
+  };
+
+  console.log('Template functions registered');
+})();
+</script>
