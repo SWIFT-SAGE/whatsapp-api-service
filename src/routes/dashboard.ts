@@ -14,7 +14,7 @@ router.get('/section/:section', async (req, res) => {
         const { section } = req.params;
         
         // Validate section name
-        const validSections = ['overview', 'sessions', 'messages', 'chatbot', 'webhooks', 'analytics', 'billing', 'profile', 'api-docs'];
+        const validSections = ['overview', 'sessions', 'messages', 'templates', 'chatbot', 'webhooks', 'analytics', 'billing', 'profile', 'api-docs'];
         if (!validSections.includes(section)) {
             return res.status(400).json({ error: 'Invalid section name' });
         }

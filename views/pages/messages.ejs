@@ -31,9 +31,6 @@
             <button class="btn btn-primary" id="compose-message">
                 <i class="fas fa-plus me-2"></i>Compose
             </button>
-            <button class="btn btn-outline-info btn-sm" id="debug-sessions-api" title="Debug Sessions API">
-                <i class="fas fa-bug"></i> Debug API
-            </button>
         </div>
     </div>
 
@@ -154,9 +151,6 @@
             if (typeof initializeMessageEventListeners === 'function') {
                 initializeMessageEventListeners();
             }
-            
-            // Make debug function available immediately
-            console.log('Debug function available: window.debugSessionsApiCall()');
         }, 200);
     };
     
@@ -715,9 +709,11 @@ function initializeMessageEventListeners() {
     // Compose message button
     const composeButton = document.getElementById('compose-message');
     if (composeButton) {
-        composeButton.addEventListener('click', function(e) {
+        composeButton.addEventListener('click', async function(e) {
             e.preventDefault();
-            loadSessionsForCompose();
+            await loadSessionsForCompose();
+            const modal = new bootstrap.Modal(document.getElementById('composeMessageModal'));
+            modal.show();
         });
     }
 
@@ -769,44 +765,6 @@ function initializeMessageEventListeners() {
         });
     }
 
-    // Debug sessions API button - use setTimeout to ensure button exists
-    setTimeout(() => {
-        const debugSessionsApiButton = document.getElementById('debug-sessions-api');
-        console.log('Looking for debug button:', debugSessionsApiButton);
-        
-        if (debugSessionsApiButton) {
-            console.log('Debug button found, attaching event listener');
-            debugSessionsApiButton.addEventListener('click', async function(e) {
-                e.preventDefault();
-                console.log('Debug button clicked!');
-                const originalContent = this.innerHTML;
-                this.disabled = true;
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
-                
-                try {
-                    await debugSessionsApiCall();
-                    alert('Debug completed! Check browser console for details.');
-                } catch (error) {
-                    alert('Debug failed: ' + error.message + '\nCheck browser console for details.');
-                } finally {
-                    this.disabled = false;
-                    this.innerHTML = originalContent;
-                }
-            });
-        } else {
-            console.error('Debug button not found! Available buttons:', 
-                Array.from(document.querySelectorAll('button')).map(b => b.id || b.className));
-        }
-    }, 500);
-    
-    // Also add event delegation as backup
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.id === 'debug-sessions-api') {
-            e.preventDefault();
-            console.log('Debug button clicked via delegation!');
-            window.testSessionsAPI();
-        }
-    });
 }
 
 /**
@@ -817,37 +775,65 @@ async function loadSessionsForCompose() {
         const composeSession = document.getElementById('compose-session');
         if (!composeSession) return;
 
+        composeSession.innerHTML = '<option value="">Loading sessions...</option>';
+
         const response = await window.makeApiCall('/api/whatsapp/sessions');
-        let sessions = [];
+        console.log('Sessions API response:', response);
         
-        if (response.success && response.data) {
-            sessions = Array.isArray(response.data) ? response.data : 
-                      (response.data.sessions || []);
+        let sessions = [];
+        if (response && response.success) {
+            // The API returns { success: true, sessions: [...] }
+            if (response.sessions && Array.isArray(response.sessions)) {
+                sessions = response.sessions;
+            } else if (response.data && Array.isArray(response.data)) {
+                sessions = response.data;
+            } else if (response.data && response.data.sessions && Array.isArray(response.data.sessions)) {
+                sessions = response.data.sessions;
+            }
         }
 
+        console.log('Total sessions found:', sessions.length);
+
         // Filter only connected sessions
-        const connectedSessions = sessions.filter(session => 
-            session.isConnected === true || 
-            session.connected === true || 
-            session.status === 'connected' ||
-            session.status === 'ready'
-        );
+        const connectedSessions = sessions.filter(session => {
+            console.log(`Session ${session.sessionId}:`, {
+                isConnected: session.isConnected,
+                connected: session.connected,
+                status: session.status
+            });
+            return session.isConnected === true || 
+                   session.connected === true || 
+                   session.status === 'connected' ||
+                   session.status === 'ready';
+        });
+
+        console.log('Connected sessions:', connectedSessions.length);
 
         composeSession.innerHTML = '<option value="">Select a connected session</option>';
         
-        connectedSessions.forEach(session => {
-            const option = document.createElement('option');
-            option.value = session.sessionId || session.id;
-            option.textContent = `${session.sessionId || session.id} ${session.phoneNumber ? '(' + session.phoneNumber + ')' : ''}`;
-            composeSession.appendChild(option);
-        });
-
         if (connectedSessions.length === 0) {
-            composeSession.innerHTML = '<option value="">No connected sessions available</option>';
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = sessions.length > 0 ? 'No connected sessions (connect a session first)' : 'No sessions available (create one first)';
+            option.disabled = true;
+            composeSession.appendChild(option);
+        } else {
+            connectedSessions.forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.sessionId || session.id;
+                option.textContent = `${session.sessionId || session.id} ${session.phoneNumber ? '(' + session.phoneNumber + ')' : ''}`;
+                composeSession.appendChild(option);
+            });
         }
+
+        console.log(`✓ Loaded ${connectedSessions.length} connected sessions for compose`);
 
     } catch (error) {
         console.error('Error loading sessions for compose:', error);
+        const composeSession = document.getElementById('compose-session');
+        if (composeSession) {
+            composeSession.innerHTML = '<option value="">Error loading sessions</option>';
+        }
     }
 }
 
@@ -861,8 +847,13 @@ async function sendComposedMessage() {
         const text = document.getElementById('compose-text').value;
         const mediaFile = document.getElementById('compose-media').files[0];
 
-        if (!sessionId || !phone || !text) {
-            alert('Please fill in all required fields');
+        if (!sessionId || !phone) {
+            alert('Please select a session and enter a phone number');
+            return;
+        }
+
+        if (!text && !mediaFile) {
+            alert('Please enter a message or select a media file');
             return;
         }
 
@@ -874,16 +865,25 @@ async function sendComposedMessage() {
         let response;
         
         if (mediaFile) {
-            // Send media message
+            // Send media message using fetch directly for proper FormData handling
             const formData = new FormData();
             formData.append('to', phone);
-            formData.append('message', text);
             formData.append('media', mediaFile);
+            if (text) {
+                formData.append('caption', text);
+            }
 
-            response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/media`, {
+            const apiKey = window.getApiKey ? window.getApiKey() : sessionStorage.getItem('apiKey');
+            
+            const fetchResponse = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
                 method: 'POST',
+                headers: {
+                    'x-api-key': apiKey
+                },
                 body: formData
             });
+
+            response = await fetchResponse.json();
         } else {
             // Send text message
             response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
@@ -912,7 +912,7 @@ async function sendComposedMessage() {
             // Refresh messages
             loadMessagesData(currentPage, currentLimit);
         } else {
-            throw new Error(response.message || 'Failed to send message');
+            throw new Error(response.error || response.message || 'Failed to send message');
         }
 
     } catch (error) {
@@ -920,8 +920,10 @@ async function sendComposedMessage() {
         alert('Failed to send message: ' + error.message);
     } finally {
         const sendButton = document.getElementById('send-composed-message');
-        sendButton.disabled = false;
-        sendButton.innerHTML = '<i class="fas fa-send me-2"></i>Send Message';
+        if (sendButton) {
+            sendButton.disabled = false;
+            sendButton.innerHTML = '<i class="fas fa-send me-2"></i>Send Message';
+        }
     }
 }
 
@@ -1022,84 +1024,6 @@ async function exportMessages() {
         exportButton.innerHTML = '<i class="fas fa-file-export me-2"></i>Export CSV';
     }
 }
-
-/**
- * Debug function to test the sessions API call directly
- */
-async function debugSessionsApiCall() {
-    console.log('=== DEBUGGING SESSIONS API CALL ===');
-    
-    // Check authentication status
-    const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
-    const authToken = sessionStorage.getItem('authToken');
-    const currentUser = window.currentUser;
-    const storedUser = sessionStorage.getItem('currentUser');
-    
-    console.log('Auth Status:', {
-        isLoggedIn,
-        hasAuthToken: !!authToken,
-        currentUser,
-        storedUser: storedUser ? JSON.parse(storedUser) : null
-    });
-    
-    // Check API key
-    const apiKey = window.getApiKey ? window.getApiKey() : null;
-    console.log('API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'NOT FOUND');
-    
-    // Test the API call directly
-    try {
-        console.log('Making direct fetch call to /api/whatsapp/sessions...');
-        
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        if (apiKey) {
-            headers['x-api-key'] = apiKey;
-        }
-        
-        console.log('Request headers:', headers);
-        
-        const response = await fetch('/api/whatsapp/sessions', {
-            method: 'GET',
-            headers: headers
-        });
-        
-        console.log('Response status:', response.status, response.statusText);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Error response body:', errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-        
-        const data = await response.json();
-        console.log('Success! Response data:', data);
-        
-        return data;
-        
-    } catch (error) {
-        console.error('Direct API call failed:', error);
-        throw error;
-    }
-}
-
-// Make debug function globally available
-window.debugSessionsApiCall = debugSessionsApiCall;
-
-// Also add a simple test function
-window.testSessionsAPI = async function() {
-    console.log('=== SIMPLE API TEST ===');
-    try {
-        const result = await debugSessionsApiCall();
-        console.log('✅ API test successful!', result);
-        return result;
-    } catch (error) {
-        console.error('❌ API test failed:', error);
-        return null;
-    }
-};
 
 // Manual session loader is now defined at the top of the script
 </script>

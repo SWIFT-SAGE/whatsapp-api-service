@@ -171,6 +171,9 @@
                             <a href="#" class="nav-link" data-section="messages">
                                 <i class="fas fa-comments me-2"></i>Messages
                             </a>
+                            <a href="#" class="nav-link" data-section="templates">
+                                <i class="fas fa-file-alt me-2"></i>Templates
+                            </a>
                             <a href="#" class="nav-link" data-section="chatbot" id="chatbot-nav">
                                 <i class="fas fa-robot me-2"></i>Chatbot
                             </a>
@@ -654,6 +657,93 @@
         // Make loadSessionsData globally available
         window.loadSessionsData = loadSessionsData;
 
+        // Load templates data
+        async function loadTemplatesData() {
+            try {
+                const response = await makeApiCall('/api/templates');
+                
+                if (!response.success || !response.data) {
+                    console.error('Failed to load templates');
+                    return;
+                }
+
+                const templates = response.data;
+                
+                // Separate templates by category
+                const allTemplates = templates;
+                const marketingTemplates = templates.filter(t => t.category === 'marketing');
+                const otpTemplates = templates.filter(t => t.category === 'otp');
+                const customTemplates = templates.filter(t => t.category === 'custom');
+
+                // Render all templates
+                renderTemplates('all-templates-container', allTemplates);
+                renderTemplates('marketing-templates-container', marketingTemplates);
+                renderTemplates('otp-templates-container', otpTemplates);
+                renderTemplates('custom-templates-container', customTemplates);
+
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        function renderTemplates(containerId, templates) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (templates.length === 0) {
+                const category = containerId.replace('-templates-container', '').replace('all', 'template');
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No ${category}s yet</h5>
+                        <p class="text-muted">Click "New Template" to create your first template</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = templates.map(template => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card template-card h-100" style="position: relative;" data-category="${template.category}">
+                        <span class="badge bg-${template.category === 'marketing' ? 'primary' : template.category === 'otp' ? 'warning' : 'secondary'}">
+                            ${template.category.toUpperCase()}
+                        </span>
+                        <div class="card-body">
+                            <h5 class="card-title">${template.name}</h5>
+                            <p class="card-text text-muted small" style="max-height: 100px; overflow: hidden;">
+                                ${template.content.substring(0, 150)}${template.content.length > 150 ? '...' : ''}
+                            </p>
+                            ${template.variables.length > 0 ? `
+                                <div class="mb-2">
+                                    <small class="text-muted">Variables:</small>
+                                    ${template.variables.map(v => `<span class="badge bg-light text-dark me-1">{{${v}}}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-chart-line me-1"></i>${template.usageCount || 0} uses
+                                </small>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" data-template-action="preview" data-template-id="${template._id}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-secondary" data-template-action="edit" data-template-id="${template._id}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" data-template-action="delete" data-template-id="${template._id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Make loadTemplatesData globally available
+        window.loadTemplatesData = loadTemplatesData;
+
         // Load messages data
         async function loadMessagesData() {
             try {
@@ -800,6 +890,10 @@
                 case 'messages':
                     // Messages data will be loaded by initializeMessagesPage()
                     console.log('Messages section loaded - data will be loaded by initializeMessagesPage()');
+                    break;
+                case 'templates':
+                    console.log('Templates section loaded - loading templates');
+                    await loadTemplatesData();
                     break;
                 case 'chatbot':
                     console.log('Chatbot section loaded - initializing chatbot management');
@@ -1074,7 +1168,12 @@
 
                 // Load additional overview data
                 await loadApiKeyData();
-                await loadOverviewSessionDropdowns();
+                // Load session dropdowns silently (don't show errors if no sessions exist)
+                try {
+                    await loadOverviewSessionDropdowns();
+                } catch (error) {
+                    console.log('Session dropdowns not available (this is normal if no sessions exist yet):', error.message);
+                }
                 await loadUsageChart();
                 await loadBotConfiguration();
 
@@ -1100,9 +1199,38 @@
                 
                 if (!apiKeyInput || !apiKeyButtonsContainer) return;
 
-                // Get current user data
-                const currentUser = window.currentUser || {};
-                const hasApiKey = currentUser.apiKey && currentUser.apiKey !== 'Not generated';
+                // Fetch fresh user data from backend to get the latest API key
+                let currentUser = window.currentUser || {};
+                let hasApiKey = false;
+                
+                try {
+                    const token = sessionStorage.getItem('authToken');
+                    if (token) {
+                        const response = await fetch('/api/auth/profile', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.user) {
+                                currentUser = data.user;
+                                // Update window.currentUser with fresh data
+                                window.currentUser = currentUser;
+                                // Also update sessionStorage
+                                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                            }
+                        }
+                    }
+                } catch (fetchError) {
+                    console.error('Error fetching user profile:', fetchError);
+                    // Fall back to cached user data
+                }
+
+                // Check if API key exists in the database
+                hasApiKey = currentUser.apiKey && currentUser.apiKey !== 'Not generated' && currentUser.apiKey.trim() !== '';
 
                 if (hasApiKey) {
                     apiKeyInput.value = currentUser.apiKey;
@@ -1130,6 +1258,13 @@
 
                 // Re-initialize API key button functionality
                 initializeApiKeyButtons();
+                
+                // Initialize generate button if it was just created
+                if (!hasApiKey) {
+                    setTimeout(() => {
+                        initializeGenerateApiKeyButton();
+                    }, 100);
+                }
             } catch (error) {
                 console.error('Error loading API key data:', error);
             }
@@ -1184,8 +1319,15 @@
 
                 // Get sessions data
                 console.log('Fetching sessions from API...');
-                const sessionsResponse = await makeApiCall('/api/whatsapp/sessions');
-                console.log('Sessions API response:', sessionsResponse);
+                let sessionsResponse;
+                try {
+                    sessionsResponse = await makeApiCall('/api/whatsapp/sessions');
+                    console.log('Sessions API response:', sessionsResponse);
+                } catch (apiError) {
+                    // Silently handle API errors - this is normal for new users without sessions
+                    console.log('Sessions API call failed (this is normal if no sessions exist):', apiError.message);
+                    sessionsResponse = { success: true, sessions: [], data: [] };
+                }
                 console.log('Response type:', typeof sessionsResponse);
                 console.log('Response keys:', Object.keys(sessionsResponse || {}));
 
@@ -1303,15 +1445,16 @@
                     console.log('Bot session dropdown populated with', botDefaultSessionSelect.options.length - 1, 'sessions');
                 }
 
-                // Show user-friendly message if no connected sessions
+                // Log info if no connected sessions (this is normal for new users, not an error)
                 if (connectedSessions.length === 0) {
-                    console.warn('No connected sessions found. Users need to connect a WhatsApp session first.');
+                    console.log('No connected sessions found. Users can create sessions after generating an API key.');
                 }
 
             } catch (error) {
-                console.error('Error loading session dropdowns:', error);
+                // Only log error, don't show toast - this is expected for new users without sessions
+                console.log('Session dropdowns not available:', error.message);
                 
-                // Show error in dropdowns
+                // Silently update dropdowns to show no sessions available
                 const dropdowns = [
                     document.getElementById('quick-session-select'),
                     document.getElementById('bulk-session-select'),
@@ -1320,7 +1463,7 @@
 
                 dropdowns.forEach(dropdown => {
                     if (dropdown) {
-                        dropdown.innerHTML = '<option value="">Error loading sessions</option>';
+                        dropdown.innerHTML = '<option value="">No sessions available</option>';
                     }
                 });
             }
@@ -1568,97 +1711,6 @@
                         console.log('Sessions refreshed successfully');
                     } catch (error) {
                         console.error('Error refreshing sessions:', error);
-                    } finally {
-                        this.disabled = false;
-                        this.innerHTML = originalContent;
-                    }
-                });
-            }
-
-            // Fix session status button
-            const fixSessionStatusBtn = document.getElementById('fix-session-status-btn');
-            if (fixSessionStatusBtn) {
-                fixSessionStatusBtn.addEventListener('click', async function(e) {
-                    e.preventDefault();
-                    const originalContent = this.innerHTML;
-                    this.disabled = true;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    
-                    try {
-                        // Get all sessions first
-                        const sessionsResponse = await makeApiCall('/api/whatsapp/sessions');
-                        let sessions = [];
-                        
-                        if (sessionsResponse.success && sessionsResponse.data) {
-                            sessions = Array.isArray(sessionsResponse.data) ? sessionsResponse.data : 
-                                      (sessionsResponse.data.sessions || []);
-                        } else if (Array.isArray(sessionsResponse.data)) {
-                            sessions = sessionsResponse.data;
-                        } else if (Array.isArray(sessionsResponse)) {
-                            sessions = sessionsResponse;
-                        }
-
-                        // Find sessions that need fixing (isConnected=true but status=pending)
-                        const sessionsToFix = sessions.filter(session => 
-                            session.isConnected === true && session.status === 'pending' && session.phoneNumber
-                        );
-
-                        if (sessionsToFix.length === 0) {
-                            alert('No sessions found that need status fixing.');
-                            return;
-                        }
-
-                        let fixedCount = 0;
-                        let errorCount = 0;
-
-                        for (const session of sessionsToFix) {
-                            try {
-                                const result = await makeApiCall(`/api/whatsapp/sessions/${session.sessionId}/fix-status`, {
-                                    method: 'POST'
-                                });
-                                
-                                if (result.success) {
-                                    fixedCount++;
-                                    console.log(`Fixed status for session ${session.sessionId}:`, result);
-                                } else {
-                                    errorCount++;
-                                    console.error(`Failed to fix session ${session.sessionId}:`, result);
-                                }
-                            } catch (error) {
-                                errorCount++;
-                                console.error(`Error fixing session ${session.sessionId}:`, error);
-                            }
-                        }
-
-                        // Show results and refresh dropdowns
-                        alert(`Session status fix completed!\nFixed: ${fixedCount}\nErrors: ${errorCount}`);
-                        await loadOverviewSessionDropdowns();
-
-                    } catch (error) {
-                        console.error('Error fixing session status:', error);
-                        alert('Failed to fix session status. Check console for details.');
-                    } finally {
-                        this.disabled = false;
-                        this.innerHTML = originalContent;
-                    }
-                });
-            }
-
-            // Test load sessions button (for debugging)
-            const testLoadSessionsBtn = document.getElementById('test-load-sessions-btn');
-            if (testLoadSessionsBtn) {
-                testLoadSessionsBtn.addEventListener('click', async function() {
-                    const originalContent = this.innerHTML;
-                    this.disabled = true;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    
-                    try {
-                        console.log('=== MANUAL TEST: Loading sessions ===');
-                        await loadOverviewSessionDropdowns();
-                        alert('Session loading test completed. Check console for details.');
-                    } catch (error) {
-                        console.error('Test failed:', error);
-                        alert('Test failed: ' + error.message);
                     } finally {
                         this.disabled = false;
                         this.innerHTML = originalContent;
@@ -2123,15 +2175,37 @@
             initializeApiKeyButtons();
         }, 100);
 
-        // Generate API key functionality
-        const generateBtn = document.getElementById('generate-api-key');
-        if (generateBtn) {
-            generateBtn.addEventListener('click', async function () {
+        // Generate API key functionality - Use event delegation for dynamic buttons
+        function handleGenerateApiKeyClick(event) {
+            const generateBtn = event.target.closest('#generate-api-key');
+            if (!generateBtn) return;
+            
+            event.preventDefault();
+            event.stopPropagation();
+            
+            // Prevent multiple clicks
+            if (generateBtn.disabled) {
+                console.log('Button already processing, ignoring click');
+                return;
+            }
+            
+            (async function() {
+                const originalContent = generateBtn.innerHTML;
+                const originalDisabled = generateBtn.disabled;
+                
                 try {
+                    // Show loading state
+                    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+                    generateBtn.disabled = true;
+                    
+                    console.log('Generating API key...');
+                    console.log('Auth token exists:', !!getJwtToken());
+                    
                     const data = await makeApiCall('/api/auth/generate-api-key', {
                         method: 'POST'
                     });
-
+                    
+                    console.log('API key generation response:', data);
 
                     // Get reference to the API key input field
                     const apiKeyInputField = document.getElementById('api-key');
@@ -2183,27 +2257,89 @@
                         throw new Error('API key input field not found');
                     }
 
-                    // Replace generate button with toggle and copy buttons
-                    const inputGroup = generateBtn.parentElement;
-                    generateBtn.outerHTML = `
-                            <button class="btn btn-outline-secondary" type="button" id="toggle-api-key">
-                                <i class="fas fa-eye" id="api-key-icon"></i>
-                            </button>
-                            <button class="btn btn-outline-secondary" type="button" id="copy-api-key">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        `;
+                    // Reload API key data to update the UI with the proper buttons
+                    await loadApiKeyData();
 
-                    // Re-initialize API key buttons after generating new key
-                    setTimeout(() => {
-                        initializeApiKeyButtons();
-                    }, 100);
+                    // Show success message
+                    if (typeof showToast === 'function') {
+                        showToast('API key generated successfully!', 'success');
+                    } else {
+                        console.log('✅ API key generated successfully!');
+                    }
+
+                    // Reload overview section to update UI only if we're on the overview page
+                    const currentSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                    if (currentSection === 'overview') {
+                        setTimeout(async () => {
+                            try {
+                                // Just reload the session dropdowns, not the entire page
+                                await loadOverviewSessionDropdowns();
+                            } catch (error) {
+                                // Silently handle - this is normal for new users without sessions
+                                console.log('Session dropdowns will be available after creating sessions');
+                            }
+                        }, 300);
+                    }
 
                 } catch (error) {
-                    alert('Error generating API key: ' + error.message);
+                    console.error('Error generating API key:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
+                    
+                    // Restore button state
+                    generateBtn.innerHTML = originalContent;
+                    generateBtn.disabled = originalDisabled;
+                    
+                    // Show detailed error message
+                    let errorMessage = 'Error generating API key';
+                    if (error.message) {
+                        errorMessage += ': ' + error.message;
+                    }
+                    
+                    if (error.message && error.message.includes('not logged in')) {
+                        errorMessage = 'Please log in to generate an API key';
+                        window.location.href = '/login';
+                    } else if (error.message && error.message.includes('401')) {
+                        errorMessage = 'Session expired. Please log in again';
+                        window.location.href = '/login?session=expired';
+                    }
+                    
+                    if (typeof showToast === 'function') {
+                        showToast(errorMessage, 'error');
+                    } else {
+                        alert(errorMessage);
+                    }
                 }
-            });
+            })();
         }
+        
+        // Use event delegation for generate button (works even if button is created dynamically)
+        document.addEventListener('click', handleGenerateApiKeyClick);
+        console.log('✅ Generate API key event delegation set up');
+        
+        // Also try to initialize immediately if button exists
+        function initializeGenerateApiKeyButton() {
+            const generateBtn = document.getElementById('generate-api-key');
+            if (generateBtn) {
+                console.log('✅ Generate API key button found, event delegation already set up');
+                // Test click handler
+                generateBtn.addEventListener('click', function(e) {
+                    console.log('Direct click handler also attached (backup)');
+                });
+            } else {
+                console.log('⚠️ Generate API key button not found yet (will work when created via event delegation)');
+            }
+        }
+        
+        // Initialize on page load
+        setTimeout(() => {
+            initializeGenerateApiKeyButton();
+        }, 500);
+        
+        // Note: loadApiKeyData will call initializeGenerateApiKeyButton when it creates the button
 
         // Session management - use event delegation for dynamic content
         document.addEventListener('click', async function (e) {
@@ -2370,6 +2506,290 @@
                         }
                         alert('Error deleting session: ' + error.message);
                     }
+                }
+            }
+        });
+
+        // Refresh session status functionality - use event delegation
+        document.addEventListener('click', async function (e) {
+            if (e.target.closest('[data-action="refresh-session"]')) {
+                const button = e.target.closest('[data-action="refresh-session"]');
+                const sessionId = button.getAttribute('data-session');
+                
+                try {
+                    // Show loading state
+                    const originalContent = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
+                    button.disabled = true;
+                    button.classList.add('disabled');
+
+                    // Fetch fresh session data
+                    const response = await makeApiCall(`/api/whatsapp/sessions/${sessionId}`);
+                    
+                    if (response.success && response.session) {
+                        const session = response.session;
+                        
+                        // Find the session card
+                        const sessionCard = button.closest('.session-card');
+                        if (sessionCard) {
+                            // Update the status badge
+                            const badge = sessionCard.querySelector('.badge');
+                            if (badge) {
+                                badge.className = `badge bg-${session.status === 'connected' ? 'success' : session.status === 'connecting' ? 'warning' : 'secondary'}`;
+                                badge.textContent = session.status.charAt(0).toUpperCase() + session.status.slice(1);
+                            }
+                            
+                            // Update phone number
+                            const phoneElement = sessionCard.querySelectorAll('p')[1];
+                            if (phoneElement) {
+                                phoneElement.innerHTML = `<strong>Phone:</strong> ${session.phoneNumber || 'Not connected'}`;
+                            }
+                            
+                            // Update status text
+                            const statusElement = sessionCard.querySelectorAll('p')[2];
+                            if (statusElement) {
+                                statusElement.innerHTML = `<strong>Status:</strong> ${session.status}`;
+                            }
+                        }
+                        
+                        // Show success feedback
+                        button.innerHTML = '<i class="fas fa-check me-1"></i>Refreshed';
+                        button.classList.remove('btn-outline-secondary');
+                        button.classList.add('btn-success');
+                        
+                        setTimeout(() => {
+                            button.innerHTML = originalContent;
+                            button.classList.remove('btn-success');
+                            button.classList.add('btn-outline-secondary');
+                            button.disabled = false;
+                            button.classList.remove('disabled');
+                        }, 1500);
+                        
+                        // If status changed to connected, reload session dropdowns
+                        if (session.status === 'connected') {
+                            setTimeout(() => {
+                                if (typeof loadOverviewSessionDropdowns === 'function') {
+                                    loadOverviewSessionDropdowns();
+                                }
+                            }, 500);
+                        }
+                        
+                    } else {
+                        throw new Error('Failed to fetch session data');
+                    }
+
+                } catch (error) {
+                    console.error('Error refreshing session:', error);
+                    
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                    button.classList.remove('disabled');
+
+                    alert('Error refreshing session: ' + error.message);
+                }
+            }
+        });
+
+        // Template management event handlers
+        
+        // Create new template button
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('#create-template-btn')) {
+                e.preventDefault();
+                const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+                document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-file-alt me-2"></i>Create Template';
+                document.getElementById('template-form').reset();
+                document.getElementById('template-id').value = '';
+                modal.show();
+            }
+        });
+
+        // Save template button
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('#save-template-btn')) {
+                e.preventDefault();
+                const button = e.target.closest('#save-template-btn');
+                const originalContent = button.innerHTML;
+                
+                try {
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+                    button.disabled = true;
+
+                    const templateId = document.getElementById('template-id').value;
+                    const name = document.getElementById('template-name').value;
+                    const category = document.getElementById('template-category').value;
+                    const content = document.getElementById('template-content').value;
+                    const description = document.getElementById('template-description').value;
+                    const isActive = document.getElementById('template-active').checked;
+
+                    if (!name || !category || !content) {
+                        alert('Please fill in all required fields');
+                        button.innerHTML = originalContent;
+                        button.disabled = false;
+                        return;
+                    }
+
+                    const url = templateId ? `/api/templates/${templateId}` : '/api/templates';
+                    const method = templateId ? 'PUT' : 'POST';
+
+                    const response = await makeApiCall(url, {
+                        method,
+                        body: JSON.stringify({
+                            name,
+                            category,
+                            content,
+                            description,
+                            isActive
+                        })
+                    });
+
+                    if (response.success) {
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('templateModal'));
+                        modal.hide();
+                        
+                        if (typeof showToast === 'function') {
+                            showToast(templateId ? 'Template updated successfully!' : 'Template created successfully!', 'success');
+                        }
+                        
+                        // Reload templates
+                        if (typeof window.loadTemplatesData === 'function') {
+                            await window.loadTemplatesData();
+                        }
+                    }
+
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+
+                } catch (error) {
+                    console.error('Error saving template:', error);
+                    button.innerHTML = originalContent;
+                    button.disabled = false;
+                    alert('Error saving template: ' + error.message);
+                }
+            }
+        });
+
+        // Edit template
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('[data-action="edit-template"]')) {
+                e.preventDefault();
+                const button = e.target.closest('[data-action="edit-template"]');
+                const templateId = button.getAttribute('data-template-id');
+
+                try {
+                    const response = await makeApiCall(`/api/templates/${templateId}`);
+                    
+                    if (response.success && response.data) {
+                        const template = response.data;
+                        
+                        document.getElementById('template-id').value = template._id;
+                        document.getElementById('template-name').value = template.name;
+                        document.getElementById('template-category').value = template.category;
+                        document.getElementById('template-content').value = template.content;
+                        document.getElementById('template-description').value = template.description || '';
+                        document.getElementById('template-active').checked = template.isActive;
+                        
+                        document.getElementById('templateModalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Template';
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+                        modal.show();
+                    }
+                } catch (error) {
+                    console.error('Error loading template:', error);
+                    alert('Error loading template: ' + error.message);
+                }
+            }
+        });
+
+        // Delete template
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('[data-action="delete-template"]')) {
+                e.preventDefault();
+                const button = e.target.closest('[data-action="delete-template"]');
+                const templateId = button.getAttribute('data-template-id');
+
+                if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+                    return;
+                }
+
+                try {
+                    const originalContent = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    button.disabled = true;
+
+                    await makeApiCall(`/api/templates/${templateId}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (typeof showToast === 'function') {
+                        showToast('Template deleted successfully!', 'success');
+                    }
+
+                    // Reload templates
+                    if (typeof window.loadTemplatesData === 'function') {
+                        await window.loadTemplatesData();
+                    }
+
+                } catch (error) {
+                    console.error('Error deleting template:', error);
+                    alert('Error deleting template: ' + error.message);
+                }
+            }
+        });
+
+        // Preview template
+        document.addEventListener('click', async function(e) {
+            if (e.target.closest('[data-action="preview-template"]')) {
+                e.preventDefault();
+                const button = e.target.closest('[data-action="preview-template"]');
+                const templateId = button.getAttribute('data-template-id');
+
+                try {
+                    const response = await makeApiCall(`/api/templates/${templateId}`);
+                    
+                    if (response.success && response.data) {
+                        const template = response.data;
+                        
+                        document.getElementById('preview-template-name').textContent = template.name;
+                        document.getElementById('preview-template-content').textContent = template.content;
+                        document.getElementById('preview-template-category').textContent = template.category.toUpperCase();
+                        
+                        // Create variable inputs
+                        const variablesForm = document.getElementById('preview-variables-form');
+                        if (template.variables && template.variables.length > 0) {
+                            variablesForm.innerHTML = template.variables.map(v => `
+                                <div class="mb-2">
+                                    <label class="form-label small">${v}</label>
+                                    <input type="text" class="form-control form-control-sm" 
+                                           data-variable="${v}" placeholder="Enter ${v}">
+                                </div>
+                            `).join('');
+                            
+                            // Update preview on input
+                            variablesForm.addEventListener('input', function() {
+                                let previewContent = template.content;
+                                template.variables.forEach(v => {
+                                    const input = variablesForm.querySelector(`[data-variable="${v}"]`);
+                                    if (input && input.value) {
+                                        const regex = new RegExp(`\\{\\{${v}\\}\\}`, 'g');
+                                        previewContent = previewContent.replace(regex, input.value);
+                                    }
+                                });
+                                document.getElementById('preview-result').textContent = previewContent;
+                            });
+                            
+                            document.getElementById('preview-result').textContent = template.content;
+                        } else {
+                            variablesForm.innerHTML = '<p class="text-muted small">No variables in this template</p>';
+                            document.getElementById('preview-result').textContent = template.content;
+                        }
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('previewTemplateModal'));
+                        modal.show();
+                    }
+                } catch (error) {
+                    console.error('Error loading template preview:', error);
+                    alert('Error loading template preview: ' + error.message);
                 }
             }
         });
@@ -2741,6 +3161,9 @@
                             }, 500);
                         }
 
+                        // Reload API key data to ensure UI is in sync
+                        await loadApiKeyData();
+
                         // Show success message
                         alert('API key regenerated successfully! Please update any applications using the old key.');
                     } else if (!apiKey) {
@@ -2748,11 +3171,6 @@
                     } else {
                         throw new Error('API key input field not found');
                     }
-
-                    // Reset button state
-                    this.innerHTML = originalContent;
-                    this.disabled = false;
-                    this.classList.remove('disabled');
 
                 } catch (error) {
                     console.error('Error regenerating API key:', error);
@@ -2869,6 +3287,60 @@
             });
         }
 
+        // Refresh sessions page button
+        const refreshSessionsPageBtn = document.getElementById('refresh-sessions-page-btn');
+        if (refreshSessionsPageBtn) {
+            const newRefreshBtn = refreshSessionsPageBtn.cloneNode(true);
+            refreshSessionsPageBtn.parentNode.replaceChild(newRefreshBtn, refreshSessionsPageBtn);
+
+            newRefreshBtn.addEventListener('click', async function () {
+                const originalContent = this.innerHTML;
+                
+                try {
+                    // Show loading state
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
+                    this.disabled = true;
+                    this.classList.add('disabled');
+
+                    // Reload the sessions section page
+                    if (typeof loadSectionPage === 'function') {
+                        await loadSectionPage('sessions');
+                    }
+
+                    // Also refresh sessions data
+                    if (typeof window.loadSessionsData === 'function') {
+                        await window.loadSessionsData();
+                    }
+
+                    // Show success feedback
+                    this.innerHTML = '<i class="fas fa-check me-1"></i>Refreshed';
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-success');
+
+                    // Show toast notification
+                    if (typeof showToast === 'function') {
+                        showToast('Sessions refreshed successfully!', 'success');
+                    }
+
+                    // Reset button after delay
+                    setTimeout(() => {
+                        this.innerHTML = originalContent;
+                        this.classList.remove('btn-success');
+                        this.classList.add('btn-outline-secondary');
+                        this.disabled = false;
+                        this.classList.remove('disabled');
+                    }, 1500);
+
+                } catch (error) {
+                    console.error('Error refreshing sessions:', error);
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    this.classList.remove('disabled');
+                    alert('Error refreshing sessions: ' + error.message);
+                }
+            });
+        }
+
         // Create first session button
         const createFirstSessionBtn = document.getElementById('create-first-session-btn');
         if (createFirstSessionBtn) {
@@ -2962,73 +3434,6 @@
                     } else {
                         alert('Error creating session: ' + error.message);
                     }
-                }
-            });
-        }
-
-        // Debug QR button
-        const debugQRBtn = document.getElementById('debug-qr-btn');
-        if (debugQRBtn) {
-            // Remove existing event listeners to prevent duplicates
-            const newDebugQRBtn = debugQRBtn.cloneNode(true);
-            debugQRBtn.parentNode.replaceChild(newDebugQRBtn, debugQRBtn);
-
-            newDebugQRBtn.addEventListener('click', async function () {
-                let originalContent = this.innerHTML;
-                
-                try {
-                    // Show loading state
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Testing...';
-                    this.disabled = true;
-
-                    const response = await makeApiCall('/api/whatsapp/debug/qr');
-                    
-                    // Reset button state
-                    this.innerHTML = originalContent;
-                    this.disabled = false;
-
-                    if (response.success) {
-                        // Show QR code in modal
-                        const modalElement = document.getElementById('qrCodeModal');
-                        const container = document.getElementById('qr-code-container');
-                        
-                        if (container && response.qrResult.success) {
-                            container.innerHTML = `
-                                <div class="text-center">
-                                    <h5 class="text-success mb-3">
-                                        <i class="fas fa-check-circle me-2"></i>QR Generation Test Successful!
-                                    </h5>
-                                    <div class="qr-code-wrapper mb-3">
-                                        <img src="${response.qrResult.dataURL}" 
-                                             alt="Test QR Code" 
-                                             class="img-fluid border rounded shadow-sm"
-                                             style="max-width: 280px; background: white; padding: 10px;">
-                                    </div>
-                                    <div class="alert alert-info">
-                                        <strong>Test Results:</strong><br>
-                                        <small>Text: ${response.testText}</small><br>
-                                        <small>Validation: ${response.validation.valid ? 'Valid' : 'Invalid'}</small>
-                                    </div>
-                                    <p class="text-muted small">This confirms that QR code generation is working properly.</p>
-                                </div>
-                            `;
-                            
-                            // Show modal
-                            const modal = new bootstrap.Modal(modalElement);
-                            modal.show();
-                        } else {
-                            alert('QR generation test failed: ' + (response.qrResult.error || 'Unknown error'));
-                        }
-                    } else {
-                        alert('Debug test failed: ' + (response.error || 'Unknown error'));
-                    }
-                } catch (error) {
-                    // Reset button state
-                    this.innerHTML = originalContent;
-                    this.disabled = false;
-                    
-                    console.error('Debug QR test error:', error);
-                    alert('Debug test error: ' + error.message);
                 }
             });
         }
@@ -3299,13 +3704,16 @@
                             if (qrCode) {
                                 console.log('QR code is ready, displaying...');
                                 await displayQRCode(sessionId, { success: true, qrCode, status: 'ready' });
-                                return; // Success, stop polling
+                                // Don't stop polling - continue to detect when user scans
+                                if (attempts < maxAttempts) {
+                                    setTimeout(pollForQRCode, 3000); // Continue polling to detect scan
+                                }
+                                return;
                             }
                             break;
                             
                         case 'connected':
                             console.log('Session connected, closing modal...');
-                            showSuccessMessage('WhatsApp session connected successfully!');
                             
                             // Update the modal content to show success
                             const container = document.getElementById('qr-code-container');
@@ -3317,27 +3725,66 @@
                                         </div>
                                         <h4 class="text-success mb-3">Connected Successfully!</h4>
                                         <p class="text-muted">Your WhatsApp session is now active and ready to use.</p>
-                                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
-                                            <i class="fas fa-check me-2"></i>Continue
-                                        </button>
+                                        <p class="small text-muted">This window will close automatically...</p>
                                     </div>
+                                `;
+                            }
+                            
+                            // Update modal title
+                            const modalTitle = document.querySelector('#qrCodeModal .modal-title');
+                            if (modalTitle) {
+                                modalTitle.innerHTML = `
+                                    <i class="fas fa-check-circle me-2 text-success"></i>WhatsApp Connected
                                 `;
                             }
                             
                             // Close modal after a short delay
                             setTimeout(() => {
                                 const modal = bootstrap.Modal.getInstance(document.getElementById('qrCodeModal'));
-                                if (modal) modal.hide();
+                                if (modal) {
+                                    modal.hide();
+                                    // Show success toast after modal closes
+                                    setTimeout(() => {
+                                        showSuccessMessage('WhatsApp session connected successfully!');
+                                    }, 300);
+                                }
                             }, 2000);
                             
-                            // Refresh sessions data immediately and after a delay
+                            // Get current active section before refreshing
+                            const activeSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                            
+                            // Refresh sessions data immediately
                             if (typeof window.loadSessionsData === 'function') {
                                 window.loadSessionsData();
-                                // Refresh again after 3 seconds to ensure UI is updated
-                                setTimeout(() => {
-                                    window.loadSessionsData();
-                                }, 3000);
                             }
+                            
+                            // Reload the current section page to show updated data
+                            setTimeout(() => {
+                                if (typeof loadSectionPage === 'function') {
+                                    console.log(`Reloading section after connection: ${activeSection}`);
+                                    loadSectionPage(activeSection || 'overview');
+                                }
+                            }, 1000);
+                            
+                            // Refresh overview session dropdowns if on overview
+                            if (activeSection === 'overview' && typeof loadOverviewSessionDropdowns === 'function') {
+                                setTimeout(() => {
+                                    loadOverviewSessionDropdowns();
+                                }, 1500);
+                            }
+                            
+                            // Final refresh to ensure everything is synced
+                            setTimeout(() => {
+                                if (typeof window.loadSessionsData === 'function') {
+                                    window.loadSessionsData();
+                                }
+                                // Reload section again to be absolutely sure
+                                if (typeof loadSectionPage === 'function') {
+                                    console.log(`Final section reload: ${activeSection}`);
+                                    loadSectionPage(activeSection || 'overview');
+                                }
+                            }, 3000);
+                            
                             return;
                             
                         case 'error':
@@ -4042,12 +4489,12 @@ window.initializeMessageButtons = function() {
         const composeBtn = document.getElementById('compose-message');
         if (composeBtn) {
             console.log('Found compose button, attaching event listener');
-            composeBtn.addEventListener('click', function(e) {
+            composeBtn.addEventListener('click', async function(e) {
                 e.preventDefault();
                 console.log('Compose button clicked');
                 
                 // Load sessions for compose modal
-                window.loadSessionsForCompose();
+                await window.loadSessionsForCompose();
                 
                 // Show the modal
                 const modal = new bootstrap.Modal(document.getElementById('composeMessageModal'));
@@ -4169,29 +4616,42 @@ window.loadSessionsForCompose = async function() {
         composeSession.innerHTML = '<option value="">Loading sessions...</option>';
         
         const response = await window.makeApiCall('/api/whatsapp/sessions');
-        console.log('Sessions for compose:', response);
+        console.log('Sessions API response:', response);
         
         let sessions = [];
         if (response && response.success) {
+            // The API returns { success: true, sessions: [...] }
             if (response.sessions && Array.isArray(response.sessions)) {
                 sessions = response.sessions;
             } else if (response.data && Array.isArray(response.data)) {
                 sessions = response.data;
+            } else if (response.data && response.data.sessions && Array.isArray(response.data.sessions)) {
+                sessions = response.data.sessions;
             }
         }
         
-        composeSession.innerHTML = '<option value="">Select a connected session</option>';
+        console.log('Total sessions found:', sessions.length);
+        console.log('Sessions data:', sessions);
         
         // Only show connected sessions
-        const connectedSessions = sessions.filter(session => 
-            session.isConnected === true || session.connected === true || 
-            session.status === 'connected' || session.status === 'ready'
-        );
+        const connectedSessions = sessions.filter(session => {
+            console.log(`Session ${session.sessionId}:`, {
+                isConnected: session.isConnected,
+                connected: session.connected,
+                status: session.status
+            });
+            return session.isConnected === true || session.connected === true || 
+                   session.status === 'connected' || session.status === 'ready';
+        });
+        
+        console.log('Connected sessions:', connectedSessions.length);
+        
+        composeSession.innerHTML = '<option value="">Select a connected session</option>';
         
         if (connectedSessions.length === 0) {
             const option = document.createElement('option');
             option.value = '';
-            option.textContent = 'No connected sessions available';
+            option.textContent = sessions.length > 0 ? 'No connected sessions (connect a session first)' : 'No sessions available (create one first)';
             option.disabled = true;
             composeSession.appendChild(option);
         } else {
@@ -4204,7 +4664,7 @@ window.loadSessionsForCompose = async function() {
             });
         }
         
-        console.log(`Loaded ${connectedSessions.length} connected sessions for compose`);
+        console.log(`✓ Loaded ${connectedSessions.length} connected sessions for compose`);
         
     } catch (error) {
         console.error('Error loading sessions for compose:', error);
@@ -4247,19 +4707,25 @@ window.sendComposedMessageInline = async function() {
         let response;
         
         if (mediaFile) {
-            // Send media message
+            // Send media message using fetch directly for proper FormData handling
             const formData = new FormData();
             formData.append('to', phone);
             formData.append('media', mediaFile);
-            if (text) formData.append('caption', text);
+            if (text) {
+                formData.append('caption', text);
+            }
             
-            response = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
+            const apiKey = window.getApiKey ? window.getApiKey() : sessionStorage.getItem('apiKey');
+            
+            const fetchResponse = await fetch(`/api/whatsapp/sessions/${sessionId}/media`, {
                 method: 'POST',
                 headers: {
-                    'x-api-key': window.getApiKey()
+                    'x-api-key': apiKey
                 },
                 body: formData
             });
+            
+            response = await fetchResponse.json();
         } else {
             // Send text message
             response = await window.makeApiCall(`/api/whatsapp/sessions/${sessionId}/messages`, {
@@ -4271,14 +4737,15 @@ window.sendComposedMessageInline = async function() {
             });
         }
         
-        if (response && (response.success || response.ok)) {
+        if (response && response.success) {
             alert('Message sent successfully!');
             
             // Clear form
             document.getElementById('compose-phone').value = '';
             document.getElementById('compose-text').value = '';
             document.getElementById('compose-media').value = '';
-            document.getElementById('char-count').textContent = '0';
+            const charCount = document.getElementById('char-count');
+            if (charCount) charCount.textContent = '0';
             
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('composeMessageModal'));
@@ -6747,6 +7214,453 @@ function formatRelativeTime(timestamp) {
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
     return time.toLocaleDateString();
+}
+
+// ===================================
+// Template Management Event Handlers
+// ===================================
+
+// New Template button handler
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#create-template-btn')) {
+        e.preventDefault();
+        showTemplateModal();
+    }
+});
+
+// Template tab navigation
+document.addEventListener('click', function(e) {
+    const tabBtn = e.target.closest('[data-template-category]');
+    if (tabBtn) {
+        e.preventDefault();
+        
+        // Update active tab
+        document.querySelectorAll('[data-template-category]').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        tabBtn.classList.add('active');
+        
+        // Get category and filter templates
+        const category = tabBtn.getAttribute('data-template-category');
+        filterTemplatesByCategory(category);
+    }
+});
+
+// Template action buttons (Preview, Edit, Delete, Use)
+document.addEventListener('click', async function(e) {
+    const previewBtn = e.target.closest('[data-template-action="preview"]');
+    const editBtn = e.target.closest('[data-template-action="edit"]');
+    const deleteBtn = e.target.closest('[data-template-action="delete"]');
+    const useBtn = e.target.closest('[data-template-action="use"]');
+    
+    if (previewBtn) {
+        e.preventDefault();
+        const templateId = previewBtn.getAttribute('data-template-id');
+        await previewTemplate(templateId);
+    } else if (editBtn) {
+        e.preventDefault();
+        const templateId = editBtn.getAttribute('data-template-id');
+        await editTemplate(templateId);
+    } else if (deleteBtn) {
+        e.preventDefault();
+        const templateId = deleteBtn.getAttribute('data-template-id');
+        await deleteTemplate(templateId);
+    } else if (useBtn) {
+        e.preventDefault();
+        const templateId = useBtn.getAttribute('data-template-id');
+        await useTemplate(templateId);
+    }
+});
+
+// Template form submission
+document.addEventListener('submit', async function(e) {
+    if (e.target.id === 'template-form') {
+        e.preventDefault();
+        await saveTemplate();
+    }
+});
+
+// Use Template button in preview modal
+document.addEventListener('click', function(e) {
+    if (e.target.closest('#use-template-btn')) {
+        e.preventDefault();
+        if (currentPreviewTemplateId) {
+            useTemplateFromPreview(currentPreviewTemplateId);
+        }
+    }
+});
+
+// Use template from preview modal
+async function useTemplateFromPreview(templateId) {
+    try {
+        const response = await makeApiCall(`/api/templates/${templateId}`);
+        
+        if (response.success && response.data) {
+            const template = response.data;
+            
+            // Close preview modal
+            const previewModal = bootstrap.Modal.getInstance(document.getElementById('previewTemplateModal'));
+            if (previewModal) {
+                previewModal.hide();
+            }
+            
+            // Store template in sessionStorage
+            sessionStorage.setItem('selectedTemplate', JSON.stringify(template));
+            
+            // Increment usage count
+            await makeApiCall(`/api/templates/${templateId}/use`, { method: 'POST' });
+            
+            // Navigate to messages section
+            document.querySelector('[data-section="messages"]').click();
+            
+            // Wait for messages section to load
+            setTimeout(async () => {
+                // Load sessions first
+                await window.loadSessionsForCompose();
+                
+                // Check if template has variables
+                if (template.variables && template.variables.length > 0) {
+                    // Show variable input modal
+                    showTemplateVariableModal(template);
+                } else {
+                    // No variables, just fill the compose textarea
+                    const composeTextarea = document.getElementById('compose-text');
+                    if (composeTextarea) {
+                        composeTextarea.value = template.content;
+                    }
+                    
+                    // Show the compose modal
+                    const composeModal = new bootstrap.Modal(document.getElementById('composeMessageModal'));
+                    composeModal.show();
+                }
+            }, 500);
+        }
+    } catch (error) {
+        console.error('Error using template:', error);
+        alert('Error loading template: ' + error.message);
+    }
+}
+
+// Show modal to fill in template variables
+function showTemplateVariableModal(template) {
+    // Create a modal dynamically for variable input
+    const modalHTML = `
+        <div class="modal fade" id="templateVariableModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-edit me-2"></i>Fill Template Variables
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">Please provide values for the template variables:</p>
+                        <form id="template-variable-form">
+                            ${template.variables.map(variable => `
+                                <div class="mb-3">
+                                    <label class="form-label">{{${variable}}}</label>
+                                    <input type="text" class="form-control" id="var-${variable}" 
+                                           data-variable="${variable}" placeholder="Enter value for ${variable}" required>
+                                </div>
+                            `).join('')}
+                        </form>
+                        <div class="alert alert-info">
+                            <strong>Preview:</strong>
+                            <div id="template-preview" class="mt-2" style="white-space: pre-wrap; font-family: monospace;">
+                                ${template.content}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" id="apply-template-variables">
+                            <i class="fas fa-check me-2"></i>Use Template
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('templateVariableModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('templateVariableModal'));
+    modal.show();
+    
+    // Update preview as user types
+    template.variables.forEach(variable => {
+        const input = document.getElementById(`var-${variable}`);
+        if (input) {
+            input.addEventListener('input', () => {
+                updateTemplatePreview(template);
+            });
+        }
+    });
+    
+    // Handle apply button
+    document.getElementById('apply-template-variables').addEventListener('click', () => {
+        const filledContent = fillTemplateVariables(template);
+        
+        // Validate all variables are filled
+        const emptyVariables = template.variables.filter(v => {
+            const input = document.getElementById(`var-${v}`);
+            return !input || !input.value.trim();
+        });
+        
+        if (emptyVariables.length > 0) {
+            alert(`Please fill in all variables: ${emptyVariables.join(', ')}`);
+            return;
+        }
+        
+        // Close variable modal
+        modal.hide();
+        
+        // Fill compose textarea with processed content
+        setTimeout(() => {
+            const composeTextarea = document.getElementById('compose-text');
+            if (composeTextarea) {
+                composeTextarea.value = filledContent;
+            }
+            
+            // Show compose modal
+            const composeModal = new bootstrap.Modal(document.getElementById('composeMessageModal'));
+            composeModal.show();
+            
+            // Clean up the variable modal
+            setTimeout(() => {
+                const varModal = document.getElementById('templateVariableModal');
+                if (varModal) varModal.remove();
+            }, 500);
+        }, 300);
+    });
+}
+
+// Update template preview with current variable values
+function updateTemplatePreview(template) {
+    const preview = document.getElementById('template-preview');
+    if (!preview) return;
+    
+    let content = template.content;
+    template.variables.forEach(variable => {
+        const input = document.getElementById(`var-${variable}`);
+        if (input && input.value) {
+            const regex = new RegExp(`\\{\\{${variable}\\}\\}`, 'g');
+            content = content.replace(regex, input.value);
+        }
+    });
+    
+    preview.textContent = content;
+}
+
+// Fill template variables with user input
+function fillTemplateVariables(template) {
+    let content = template.content;
+    template.variables.forEach(variable => {
+        const input = document.getElementById(`var-${variable}`);
+        if (input && input.value) {
+            const regex = new RegExp(`\\{\\{${variable}\\}\\}`, 'g');
+            content = content.replace(regex, input.value);
+        }
+    });
+    return content;
+}
+
+// Show template modal (create or edit)
+function showTemplateModal(template = null) {
+    const modal = new bootstrap.Modal(document.getElementById('templateModal'));
+    const modalTitle = document.querySelector('#templateModal .modal-title');
+    const form = document.getElementById('template-form');
+    
+    // Reset form
+    form.reset();
+    
+    if (template) {
+        // Edit mode
+        modalTitle.textContent = 'Edit Template';
+        document.getElementById('template-id').value = template._id;
+        document.getElementById('template-name').value = template.name;
+        document.getElementById('template-category').value = template.category;
+        document.getElementById('template-content').value = template.content;
+        document.getElementById('template-description').value = template.description || '';
+        document.getElementById('template-active').checked = template.isActive;
+    } else {
+        // Create mode
+        modalTitle.textContent = 'Create New Template';
+        document.getElementById('template-id').value = '';
+        document.getElementById('template-active').checked = true;
+    }
+    
+    modal.show();
+}
+
+// Save template (create or update)
+async function saveTemplate() {
+    try {
+        const templateId = document.getElementById('template-id').value;
+        const formData = {
+            name: document.getElementById('template-name').value,
+            category: document.getElementById('template-category').value,
+            content: document.getElementById('template-content').value,
+            description: document.getElementById('template-description').value,
+            isActive: document.getElementById('template-active').checked
+        };
+        
+        const url = templateId 
+            ? `/api/templates/${templateId}` 
+            : '/api/templates';
+        const method = templateId ? 'PUT' : 'POST';
+        
+        const response = await makeApiCall(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('templateModal'));
+            modal.hide();
+            
+            // Show success message
+            showToast(templateId ? 'Template updated successfully!' : 'Template created successfully!', 'success');
+            
+            // Reload templates
+            await loadTemplatesData();
+        } else {
+            alert('Error: ' + (response.message || 'Failed to save template'));
+        }
+    } catch (error) {
+        console.error('Error saving template:', error);
+        alert('Error saving template: ' + error.message);
+    }
+}
+
+// Preview template
+let currentPreviewTemplateId = null;
+
+async function previewTemplate(templateId) {
+    try {
+        const response = await makeApiCall(`/api/templates/${templateId}`);
+        
+        if (response.success && response.data) {
+            const template = response.data;
+            currentPreviewTemplateId = templateId; // Store for "Use Template" button
+            
+            const modal = new bootstrap.Modal(document.getElementById('previewTemplateModal'));
+            
+            document.getElementById('preview-template-name').textContent = template.name;
+            document.getElementById('preview-template-category').textContent = 
+                template.category.charAt(0).toUpperCase() + template.category.slice(1);
+            document.getElementById('preview-template-content').textContent = template.content;
+            
+            // Show variables section if there are any
+            const variablesSection = document.getElementById('preview-variables');
+            if (template.variables && template.variables.length > 0) {
+                variablesSection.style.display = 'block';
+                const form = document.getElementById('preview-variables-form');
+                form.innerHTML = template.variables.map(v => `
+                    <div class="mb-2">
+                        <label class="form-label">{{${v}}}</label>
+                        <input type="text" class="form-control form-control-sm" id="var-${v}" placeholder="Enter value for ${v}">
+                    </div>
+                `).join('');
+            } else {
+                variablesSection.style.display = 'none';
+            }
+            
+            modal.show();
+        }
+    } catch (error) {
+        console.error('Error previewing template:', error);
+        alert('Error loading template preview: ' + error.message);
+    }
+}
+
+// Edit template
+async function editTemplate(templateId) {
+    try {
+        const response = await makeApiCall(`/api/templates/${templateId}`);
+        
+        if (response.success && response.data) {
+            showTemplateModal(response.data);
+        }
+    } catch (error) {
+        console.error('Error loading template:', error);
+        alert('Error loading template: ' + error.message);
+    }
+}
+
+// Delete template
+async function deleteTemplate(templateId) {
+    if (!confirm('Are you sure you want to delete this template?')) {
+        return;
+    }
+    
+    try {
+        const response = await makeApiCall(`/api/templates/${templateId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.success) {
+            showToast('Template deleted successfully!', 'success');
+            await loadTemplatesData();
+        } else {
+            alert('Error: ' + (response.message || 'Failed to delete template'));
+        }
+    } catch (error) {
+        console.error('Error deleting template:', error);
+        alert('Error deleting template: ' + error.message);
+    }
+}
+
+// Use template (navigate to messages and pre-fill)
+async function useTemplate(templateId) {
+    try {
+        const response = await makeApiCall(`/api/templates/${templateId}`);
+        
+        if (response.success && response.data) {
+            const template = response.data;
+            
+            // Store template content in sessionStorage
+            sessionStorage.setItem('selectedTemplate', JSON.stringify(template));
+            
+            // Increment usage count
+            await makeApiCall(`/api/templates/${templateId}/use`, { method: 'POST' });
+            
+            // Navigate to messages section
+            document.querySelector('[data-section="messages"]').click();
+            
+            // Show toast
+            showToast('Template loaded! Fill in variables and select a session to send.', 'info');
+        }
+    } catch (error) {
+        console.error('Error using template:', error);
+        alert('Error loading template: ' + error.message);
+    }
+}
+
+// Filter templates by category
+function filterTemplatesByCategory(category) {
+    const allCards = document.querySelectorAll('.template-card');
+    
+    allCards.forEach(card => {
+        const cardCategory = card.getAttribute('data-category');
+        
+        if (category === 'all' || cardCategory === category) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
 }
 </script>
 

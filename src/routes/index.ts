@@ -5,6 +5,7 @@ import analyticsRoutes from './analytics';
 import dashboardRoutes from './dashboard';
 import webhookRoutes from './webhooks';
 import paymentRoutes from './payments';
+import templateRoutes from './templates';
 import { authenticateToken, authenticateApiKey } from '../middleware/auth';
 
 const router = express.Router();
@@ -42,6 +43,7 @@ router.use('/whatsapp', authenticateApiKey, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
 router.use('/webhooks', authenticateToken, webhookRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/templates', templateRoutes);
 router.use('/dashboard', dashboardRoutes);
 
 // 404 handler for API routes

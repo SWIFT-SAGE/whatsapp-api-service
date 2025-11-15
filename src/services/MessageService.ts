@@ -91,9 +91,8 @@ class MessageService {
 
       let result;
       if (messageData.type === 'media' && messageData.mediaUrl) {
-        // Send media message
-        const media = await this.prepareMediaMessage(messageData.mediaUrl);
-        result = await whatsappService.sendMedia(sessionId, messageData.to, media, messageData.mediaCaption);
+        // Send media message from URL
+        result = await whatsappService.sendMediaFromUrl(sessionId, messageData.to, messageData.mediaUrl, messageData.mediaCaption);
       } else {
         // Send text message
         const options = messageData.quotedMessageId ? { quotedMessageId: messageData.quotedMessageId } : undefined;

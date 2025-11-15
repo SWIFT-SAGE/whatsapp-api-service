@@ -10,3 +10,4 @@ pnpm-lock.yaml
 /.wwebjs_cache/*
 /.wwebjs_auth/
 .vercel
+/temp/*

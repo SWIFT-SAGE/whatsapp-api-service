@@ -49,6 +49,14 @@ const sendMediaValidation = [
   body('caption').optional().isLength({ max: 1024 }).withMessage('Caption too long')
 ];
 
+const sendMediaFromPathValidation = [
+  param('sessionId').notEmpty().withMessage('Session ID is required'),
+  body('to').notEmpty().withMessage('Recipient is required'),
+  body('filePath').optional().isString().withMessage('File path must be a string'),
+  body('fileUrl').optional().isURL().withMessage('File URL must be valid'),
+  body('caption').optional().isLength({ max: 1024 }).withMessage('Caption too long')
+];
+
 const getMessagesValidation = [
   param('sessionId').notEmpty().withMessage('Session ID is required'),
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
@@ -85,6 +93,7 @@ router.delete('/sessions/:sessionId', WhatsAppController.deleteSession);
 // Message routes
 router.post('/sessions/:sessionId/messages', sendMessageValidation, handleValidationErrors, WhatsAppController.sendMessage);
 router.post('/sessions/:sessionId/media', upload.single('media'), sendMediaValidation, handleValidationErrors, WhatsAppController.sendMedia);
+router.post('/sessions/:sessionId/media-from-path', sendMediaFromPathValidation, handleValidationErrors, WhatsAppController.sendMediaFromPath);
 router.get('/sessions/:sessionId/messages', getMessagesValidation, handleValidationErrors, WhatsAppController.getMessages);
 
 export default router;

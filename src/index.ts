@@ -666,8 +666,37 @@ app.get('/logout', (req, res) => {
   res.redirect('/login?logout=true');
 });
 
+// Debug endpoint to check OAuth configuration
+app.get('/debug/oauth-config', (req, res) => {
+  const googleOAuthConfig = require('./config/google-oauth').googleOAuthConfig;
+  res.json({
+    environment: config.env,
+    isProduction: config.isProduction,
+    callbackURL: googleOAuthConfig.callbackURL,
+    clientID: googleOAuthConfig.clientID.substring(0, 30) + '...',
+    envVars: {
+      NODE_ENV: process.env.NODE_ENV,
+      GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL,
+      PRODUCTION_URL: process.env.PRODUCTION_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      PORT: process.env.PORT
+    },
+    expectedInGoogleConsole: 'http://localhost:3000/auth/google/callback'
+  });
+});
+
 // Google OAuth routes
-app.get('/auth/google', passport.authenticate('google', { 
+app.get('/auth/google', (req, res, next) => {
+  const googleOAuthConfig = require('./config/google-oauth').googleOAuthConfig;
+  logger.info('🔐 Google OAuth Initiation:', {
+    callbackURL: googleOAuthConfig.callbackURL,
+    clientID: googleOAuthConfig.clientID.substring(0, 30) + '...',
+    requestedURL: req.url,
+    host: req.get('host'),
+    protocol: req.protocol
+  });
+  next();
+}, passport.authenticate('google', { 
   scope: ['profile', 'email'],
   prompt: 'select_account'
 }));

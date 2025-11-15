@@ -286,7 +286,7 @@ export class WhatsAppController {
   }
 
   /**
-   * Send media message
+   * Send media message (via file upload)
    */
   async sendMedia(req: Request, res: Response): Promise<void> {
     try {
@@ -372,51 +372,400 @@ export class WhatsAppController {
         return;
       }
 
-      // Create media object
-      const media = {
-        mimetype: req.file.mimetype,
-        data: req.file.buffer.toString('base64'),
-        filename: req.file.originalname
-      };
-
-      // Send media via WhatsApp
-      const result = await WhatsAppService.sendMedia(sessionId, to, media as any, caption);
-
-      if (!result.success) {
-        res.status(400).json({ error: result.error });
+      // Check file size limit (16MB)
+      const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB in bytes
+      if (req.file.size > MAX_FILE_SIZE) {
+        res.status(400).json({ 
+          success: false,
+          error: `File is too large. Maximum size is 16MB. Your file is ${(req.file.size / (1024 * 1024)).toFixed(2)}MB`,
+          code: 'FILE_TOO_LARGE'
+        });
         return;
       }
 
-      // Log message
-      const messageLog = new MessageLog({
-        userId,
-        sessionId: session._id,
-        messageId: result.messageId,
-        direction: 'outbound',
-        type: req.file.mimetype.startsWith('image/') ? 'image' : 
-              req.file.mimetype.startsWith('video/') ? 'video' : 
-              req.file.mimetype.startsWith('audio/') ? 'audio' : 'document',
-        from: session.phoneNumber || '',
-        to,
-        content: caption,
-        fileName: req.file.originalname,
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
-        status: 'sent'
-      });
-      await messageLog.save();
+      logger.info(`Preparing media: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
 
-      // Increment user message count
-      await (req.user as IUser).incrementMessageCount();
+      // Save file temporarily
+      const fs = await import('fs');
+      const path = await import('path');
+      const crypto = await import('crypto');
+      
+      const tempDir = path.join(process.cwd(), 'temp');
+      
+      // Create temp directory if it doesn't exist
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      let processedBuffer = req.file.buffer;
+      let processedMimetype = req.file.mimetype;
+      let processedFilename = req.file.originalname;
+      
+      // AUTO-CONVERT IMAGES: PNG/WEBP/GIF to JPEG
+      const isImage = req.file.mimetype.startsWith('image/');
+      const needsImageConversion = isImage && (
+        req.file.mimetype === 'image/png' || 
+        req.file.mimetype === 'image/webp' ||
+        req.file.mimetype === 'image/gif'
+      );
+      
+      if (needsImageConversion) {
+        try {
+          logger.info(`Converting ${req.file.mimetype} to JPEG for better WhatsApp compatibility...`);
+          const sharp = await import('sharp');
+          
+          // Convert to JPEG with good quality
+          processedBuffer = await sharp.default(req.file.buffer)
+            .jpeg({ quality: 90, progressive: true })
+            .toBuffer();
+          
+          processedMimetype = 'image/jpeg';
+          processedFilename = req.file.originalname.replace(/\.(png|webp|gif)$/i, '.jpg');
+          
+          logger.info(`Image converted successfully: ${req.file.originalname} -> ${processedFilename}`);
+          logger.info(`Size change: ${req.file.size} bytes -> ${processedBuffer.length} bytes`);
+        } catch (conversionError) {
+          logger.error('Image conversion failed, using original:', conversionError);
+          // If conversion fails, continue with original file
+          processedBuffer = req.file.buffer;
+          processedMimetype = req.file.mimetype;
+          processedFilename = req.file.originalname;
+        }
+      }
+      
+      // AUTO-CONVERT VIDEOS: AVI/MOV/MKV to MP4
+      const isVideo = req.file.mimetype.startsWith('video/');
+      const needsVideoConversion = isVideo && (
+        req.file.mimetype === 'video/avi' ||
+        req.file.mimetype === 'video/x-msvideo' ||
+        req.file.mimetype === 'video/quicktime' || // MOV
+        req.file.mimetype === 'video/x-matroska' || // MKV
+        req.file.mimetype === 'video/webm'
+      );
+      
+      if (needsVideoConversion) {
+        try {
+          logger.info(`Converting ${req.file.mimetype} to MP4 for better WhatsApp compatibility...`);
+          
+          // Save original video temporarily
+          const tempInputPath = path.join(tempDir, `input_${crypto.randomBytes(8).toString('hex')}${path.extname(req.file.originalname)}`);
+          const tempOutputPath = path.join(tempDir, `output_${crypto.randomBytes(8).toString('hex')}.mp4`);
+          
+          fs.writeFileSync(tempInputPath, req.file.buffer);
+          
+          // Use fluent-ffmpeg to convert video
+          const ffmpeg = await import('fluent-ffmpeg');
+          
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg.default(tempInputPath)
+              .output(tempOutputPath)
+              .videoCodec('libx264') // H.264 codec
+              .audioCodec('aac') // AAC audio
+              .format('mp4')
+              .outputOptions([
+                '-preset fast', // Fast encoding
+                '-crf 23', // Good quality
+                '-movflags +faststart' // Enable streaming
+              ])
+              .on('end', () => {
+                logger.info('Video conversion completed');
+                resolve();
+              })
+              .on('error', (err: Error) => {
+                logger.error('Video conversion error:', err);
+                reject(err);
+              })
+              .run();
+          });
+          
+          // Read converted video
+          processedBuffer = fs.readFileSync(tempOutputPath);
+          processedMimetype = 'video/mp4';
+          processedFilename = req.file.originalname.replace(/\.(avi|mov|mkv|webm)$/i, '.mp4');
+          
+          // Clean up temp files
+          try {
+            fs.unlinkSync(tempInputPath);
+            fs.unlinkSync(tempOutputPath);
+          } catch (cleanupErr) {
+            logger.warn('Failed to clean up video conversion temp files:', cleanupErr);
+          }
+          
+          logger.info(`Video converted successfully: ${req.file.originalname} -> ${processedFilename}`);
+          logger.info(`Size change: ${req.file.size} bytes -> ${processedBuffer.length} bytes`);
+        } catch (conversionError) {
+          logger.error('Video conversion failed, using original:', conversionError);
+          // If conversion fails, continue with original file
+          processedBuffer = req.file.buffer;
+          processedMimetype = req.file.mimetype;
+          processedFilename = req.file.originalname;
+        }
+      }
+      
+      // Generate unique filename
+      const uniqueFilename = `${crypto.randomBytes(16).toString('hex')}_${processedFilename}`;
+      const tempFilePath = path.join(tempDir, uniqueFilename);
+      
+      // Save file temporarily
+      fs.writeFileSync(tempFilePath, processedBuffer);
+      logger.info(`File saved temporarily: ${tempFilePath}`);
 
-      res.json({
-        success: true,
-        messageId: result.messageId,
-        remainingMessages: rateLimitResult.remainingPoints ? rateLimitResult.remainingPoints - 1 : undefined
-      });
+      try {
+        // Send media using file path method (more reliable)
+        const result = await WhatsAppService.sendMedia(sessionId, to, tempFilePath, caption);
+
+        if (!result.success) {
+          logger.error(`Media send failed: ${result.error}`);
+          res.status(400).json({ 
+            success: false,
+            error: result.error || 'Failed to send media',
+            code: 'MEDIA_SEND_FAILED'
+          });
+          return;
+        }
+
+        logger.info(`Media sent successfully: ${result.messageId}`);
+
+        // Log message
+        const messageLog = new MessageLog({
+          userId,
+          sessionId: session._id,
+          messageId: result.messageId,
+          direction: 'outbound',
+          type: processedMimetype.startsWith('image/') ? 'image' : 
+                processedMimetype.startsWith('video/') ? 'video' : 
+                processedMimetype.startsWith('audio/') ? 'audio' : 'document',
+          from: session.phoneNumber || '',
+          to,
+          content: caption,
+          fileName: processedFilename,
+          fileSize: processedBuffer.length,
+          mimeType: processedMimetype,
+          status: 'sent'
+        });
+        await messageLog.save();
+
+        // Increment user message count
+        await (req.user as IUser).incrementMessageCount();
+
+        res.json({
+          success: true,
+          messageId: result.messageId,
+          remainingMessages: rateLimitResult.remainingPoints ? rateLimitResult.remainingPoints - 1 : undefined
+        });
+      } finally {
+        // Clean up temporary file
+        try {
+          if (fs.existsSync(tempFilePath)) {
+            fs.unlinkSync(tempFilePath);
+            logger.info(`Temporary file cleaned up: ${tempFilePath}`);
+          }
+        } catch (cleanupError) {
+          logger.error(`Failed to clean up temporary file: ${tempFilePath}`, cleanupError);
+        }
+      }
     } catch (error) {
       logger.error('Error sending media:', error);
       res.status(500).json({ error: 'Failed to send media' });
+    }
+  }
+
+  /**
+   * Send media from file path or URL
+   */
+  async sendMediaFromPath(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+      const { to, filePath, fileUrl, caption } = req.body;
+      const userId = (req.user as IUser)._id.toString();
+
+      // Input validation
+      if (!to) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Phone number (to) is required',
+          code: 'MISSING_PHONE_NUMBER'
+        });
+        return;
+      }
+
+      if (!filePath && !fileUrl) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Either filePath or fileUrl is required',
+          code: 'MISSING_MEDIA_SOURCE'
+        });
+        return;
+      }
+
+      if (caption && caption.length > 1024) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Caption is too long. Maximum length is 1024 characters.',
+          code: 'CAPTION_TOO_LONG'
+        });
+        return;
+      }
+
+      // Verify session ownership
+      const session = await WhatsappSession.findOne({ sessionId, userId });
+      if (!session) {
+        res.status(404).json({ 
+          success: false,
+          error: 'Session not found',
+          code: 'SESSION_NOT_FOUND'
+        });
+        return;
+      }
+
+      // Check both database and live connection status
+      const liveStatus = await WhatsAppService.getSessionStatus(sessionId);
+      const isConnected = session.isConnected && liveStatus.connected;
+
+      if (!isConnected) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is not connected. Please connect your WhatsApp session first.',
+          code: 'SESSION_NOT_CONNECTED',
+          sessionStatus: {
+            database: session.isConnected,
+            live: liveStatus.connected,
+            phoneNumber: session.phoneNumber
+          }
+        });
+        return;
+      }
+
+      // Verify session has a phone number (additional validation)
+      if (!session.phoneNumber) {
+        res.status(400).json({ 
+          success: false,
+          error: 'Session is connected but phone number not available. Please reconnect your session.',
+          code: 'PHONE_NUMBER_MISSING'
+        });
+        return;
+      }
+
+      // Check rate limit
+      const rateLimitResult = await RateLimitService.canSendMessage(userId, (req.user as IUser).subscription.plan);
+      if (!rateLimitResult.allowed) {
+        res.status(429).json({
+          error: 'Message limit exceeded',
+          remainingPoints: rateLimitResult.remainingPoints,
+          resetTime: rateLimitResult.resetTime
+        });
+        return;
+      }
+
+      logger.info(`Preparing media from ${fileUrl ? 'URL' : 'file path'}: ${fileUrl || filePath}`);
+
+      // Create MessageMedia object
+      const { MessageMedia } = await import('whatsapp-web.js');
+      let media: any;
+      let fileName: string;
+      let fileSize: number = 0;
+      let mimeType: string = 'application/octet-stream';
+
+      let result;
+      
+      try {
+        if (fileUrl) {
+          // Send media from URL using new service method
+          logger.info(`Sending media from URL: ${fileUrl}`);
+          result = await WhatsAppService.sendMediaFromUrl(sessionId, to, fileUrl, caption);
+          fileName = fileUrl.split('/').pop() || 'media-from-url';
+        } else {
+          // Send media from file path
+          logger.info(`Sending media from file path: ${filePath}`);
+          const path = await import('path');
+          const fs = await import('fs');
+          
+          // Security: Prevent directory traversal
+          const resolvedPath = path.resolve(filePath);
+          
+          // Check if file exists
+          if (!fs.existsSync(resolvedPath)) {
+            res.status(400).json({ 
+              success: false,
+              error: 'File not found at the specified path',
+              code: 'FILE_NOT_FOUND'
+            });
+            return;
+          }
+
+          // Get file stats
+          const stats = fs.statSync(resolvedPath);
+          fileSize = stats.size;
+          
+          // Check file size limit (16MB)
+          const MAX_FILE_SIZE = 16 * 1024 * 1024;
+          if (fileSize > MAX_FILE_SIZE) {
+            res.status(400).json({ 
+              success: false,
+              error: `File is too large. Maximum size is 16MB. Your file is ${(fileSize / (1024 * 1024)).toFixed(2)}MB`,
+              code: 'FILE_TOO_LARGE'
+            });
+            return;
+          }
+
+          fileName = path.basename(resolvedPath);
+          
+          // Send using new service method (directly from file path)
+          result = await WhatsAppService.sendMedia(sessionId, to, resolvedPath, caption);
+        }
+
+        if (!result.success) {
+          logger.error(`Media send failed: ${result.error}`);
+          res.status(400).json({ 
+            success: false,
+            error: result.error || 'Failed to send media',
+            code: 'MEDIA_SEND_FAILED'
+          });
+          return;
+        }
+
+        logger.info(`Media sent successfully: ${result.messageId}`);
+
+        // Log message
+        const messageLog = new MessageLog({
+          userId,
+          sessionId: session._id,
+          messageId: result.messageId,
+          direction: 'outbound',
+          type: 'image', // Will be updated based on actual type
+          from: session.phoneNumber || '',
+          to,
+          content: caption,
+          fileName: fileName,
+          status: 'sent'
+        });
+        await messageLog.save();
+
+        // Increment user message count
+        await (req.user as IUser).incrementMessageCount();
+
+        res.json({
+          success: true,
+          messageId: result.messageId,
+          fileName: fileName,
+          remainingMessages: rateLimitResult.remainingPoints ? rateLimitResult.remainingPoints - 1 : undefined
+        });
+      } catch (mediaError: any) {
+        logger.error(`Error sending media: ${mediaError.message}`, mediaError);
+        res.status(400).json({ 
+          success: false,
+          error: `Failed to send media: ${mediaError.message}`,
+          code: 'MEDIA_SEND_FAILED'
+        });
+        return;
+      }
+    } catch (error) {
+      logger.error('Error sending media from path:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to send media',
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   }
 
@@ -732,7 +1081,25 @@ export class WhatsAppController {
         return;
       }
 
-      // Check if session is already connected in database first
+      // Check live WhatsApp client status first for most accurate info
+      const liveStatus = await WhatsAppService.getSessionStatus(sessionId);
+      if (liveStatus.connected) {
+        logger.info(`Session ${sessionId} is connected (live client check)`);
+        res.json({
+          success: true,
+          status: 'connected',
+          qrCode: null,
+          sessionId,
+          message: 'Session is connected',
+          error: null,
+          phoneNumber: liveStatus.info?.wid?.user || session.phoneNumber,
+          createdAt: session.createdAt,
+          lastUpdated: new Date()
+        });
+        return;
+      }
+
+      // Check if session is already connected in database
       if (session.isConnected || session.status === 'connected') {
         logger.info(`Session ${sessionId} is already connected (from database)`);
         res.json({
@@ -748,6 +1115,7 @@ export class WhatsAppController {
         return;
       }
 
+      // Check QR manager for QR code status
       const qrSession = QRCodeManager.getSession(sessionId);
       
       if (!qrSession) {
@@ -756,6 +1124,31 @@ export class WhatsAppController {
           success: true,
           status: 'not_found',
           message: 'QR session not found'
+        });
+        return;
+      }
+
+      // If QR manager says connected, update database and return connected
+      if (qrSession.status === 'connected') {
+        logger.info(`QR manager shows connected, updating database for ${sessionId}`);
+        // Update database to reflect connected status
+        await WhatsappSession.findOneAndUpdate(
+          { sessionId },
+          { 
+            isConnected: true, 
+            status: 'connected',
+            lastActivity: new Date()
+          }
+        );
+        res.json({
+          success: true,
+          status: 'connected',
+          qrCode: null,
+          sessionId,
+          message: 'Session is connected',
+          error: null,
+          createdAt: qrSession.createdAt,
+          lastUpdated: qrSession.lastUpdated
         });
         return;
       }

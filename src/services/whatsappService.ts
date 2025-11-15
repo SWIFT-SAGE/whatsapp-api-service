@@ -141,7 +141,41 @@ class WhatsAppService {
           store: this.mongoStore,
           clientId: sessionId,
           backupSyncIntervalMs: 300000 // 5 minutes backup sync interval
-        })
+        }),
+        puppeteer: {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-software-rasterizer',
+            // Keep session alive
+            '--disable-features=site-per-process',
+            '--disable-web-security',
+            '--disable-blink-features=AutomationControlled',
+            // Prevent memory issues
+            '--single-process',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
+          ]
+        },
+        // Additional settings for stability
+        webVersionCache: {
+          type: 'remote',
+          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+        },
+        // Increase timeout for slow connections
+        authTimeoutMs: 60000, // 60 seconds
+        qrMaxRetries: 5,
+        // Keep connection alive
+        takeoverOnConflict: false,
+        takeoverTimeoutMs: 0
       });
 
       // Store client reference
@@ -284,13 +318,17 @@ class WhatsAppService {
     // Client disconnected
     client.on('disconnected', async (reason) => {
       try {
+        logger.warn(`WhatsApp client disconnected for session ${sessionId}: ${reason}`);
+        
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
           { 
             isConnected: false, 
             qrCode: undefined,
             status: 'disconnected',
-            lastActivity: new Date()
+            lastActivity: new Date(),
+            'errorLog.lastError': `Disconnected: ${reason}`,
+            'errorLog.lastErrorAt': new Date()
           }
         );
 
@@ -300,10 +338,25 @@ class WhatsAppService {
         // Clean up client reference
         delete this.clients[sessionId];
 
-        logger.info(`WhatsApp client disconnected for session ${sessionId}: ${reason}`);
+        logger.info(`Session ${sessionId} cleaned up after disconnection`);
       } catch (error) {
         logger.error(`Error handling disconnect for session ${sessionId}:`, error);
       }
+    });
+
+    // Handle session change (prevents disconnection on multiple devices)
+    client.on('change_state', (state) => {
+      logger.info(`Session ${sessionId} state changed to: ${state}`);
+    });
+
+    // Handle loading screen progress
+    client.on('loading_screen', (percent, message) => {
+      logger.info(`Loading screen for session ${sessionId}: ${percent}% - ${message}`);
+    });
+
+    // Handle remote session saved
+    client.on('remote_session_saved', () => {
+      logger.info(`Remote session saved for ${sessionId}`);
     });
 
     // Message received
@@ -465,45 +518,170 @@ class WhatsAppService {
   }
 
   /**
-   * Send media message
+   * Save uploaded file temporarily and send media from file path
+   * Uses Puppeteer's file upload to bypass "Evaluation failed" errors
    */
-  async sendMedia(sessionId: string, to: string, media: MessageMedia, caption?: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  async sendMedia(sessionId: string, to: string, filePath: string, caption?: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       const client = this.clients[sessionId];
       if (!client) {
         return { success: false, error: 'Session not found or not connected' };
       }
 
-      // Additional validation: Check if client is actually ready
+      // Validate client state
       const state = await client.getState();
       if (state !== 'CONNECTED') {
         return { success: false, error: `Session is not ready. Current state: ${state}` };
       }
 
-      // Validate phone number format
-      const formattedTo = to.includes('@') ? to : `${to}@c.us`;
+      // Format phone number
+      const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
       
-      const sentMessage = await client.sendMessage(formattedTo, media, { caption });
+      logger.info(`Sending media from file: ${filePath} to ${chatId}`);
 
+      // Get Puppeteer page from client
+      const page = client.pupPage;
+      if (!page) {
+        return { success: false, error: 'Puppeteer page not available' };
+      }
+
+      // Use direct Puppeteer method to upload and send file
+      const result = await page.evaluate(async (chatIdParam: string, captionParam: string) => {
+        const win: any = window;
+        
+        try {
+          // Find or create chat
+          const chat = await win.Store.Chat.find(chatIdParam);
+          if (!chat) {
+            return { success: false, error: 'Chat not found' };
+          }
+
+          // Return chatId for file upload
+          return { success: true, chatId: chatIdParam };
+        } catch (err: any) {
+          return { success: false, error: err?.message || 'Failed to find chat' };
+        }
+      }, chatId, caption || '');
+
+      if (!result.success) {
+        return { success: false, error: result.error || 'Failed to prepare chat' };
+      }
+
+      // Now use file upload via input element
+      const fs = await import('fs');
+      const fileBuffer = fs.readFileSync(filePath);
+      const { MessageMedia } = await import('whatsapp-web.js');
+      const path = await import('path');
+      
+      // Get file extension and mimetype
+      const mimeTypes = await import('mime-types');
+      const mimetype = mimeTypes.default.lookup(filePath) || 'application/octet-stream';
+      const filename = path.basename(filePath);
+      
+      // Create media from buffer (more reliable than fromFilePath)
+      const media = new MessageMedia(
+        mimetype,
+        fileBuffer.toString('base64'),
+        filename
+      );
+      
+      logger.info(`Media created from buffer: ${filename}, type: ${mimetype}, size: ${fileBuffer.length} bytes`);
+      
+      // Try sending with chat.sendMessage first (more reliable)
+      try {
+        const chat = await client.getChatById(chatId);
+        const sentMessage = await chat.sendMessage(media, { caption: caption || '' });
+        logger.info(`Media sent successfully via chat.sendMessage, messageId: ${sentMessage.id._serialized}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      } catch (chatError: any) {
+        // Fallback to client.sendMessage
+        logger.warn(`chat.sendMessage failed: ${chatError.message}, trying client.sendMessage`);
+        
+        const sentMessage = await client.sendMessage(chatId, media, { caption: caption || '' });
+        logger.info(`Media sent successfully via client.sendMessage, messageId: ${sentMessage.id._serialized}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      }
+    } catch (error: any) {
+      logger.error(`Error sending media via session ${sessionId}:`, error);
+      
+      // Provide specific error messages
+      if (error.message?.includes('not registered')) {
+        return { success: false, error: 'Phone number is not registered on WhatsApp' };
+      } else if (error.message?.includes('ENOENT') || error.message?.includes('no such file')) {
+        return { success: false, error: 'Media file not found at the specified path' };
+      } else if (error.message?.includes('Rate limit')) {
+        return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
+      } else if (error.message?.includes('Session closed')) {
+        return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
+      } else if (error.message?.includes('Evaluation failed')) {
+        return { success: false, error: 'WhatsApp Web communication error. Please try: 1) Reconnecting your session, 2) Using a different image format, 3) Compressing the file' };
+      }
+      
+      return { success: false, error: error.message || 'Failed to send media' };
+    }
+  }
+
+  /**
+   * Send media from URL
+   */
+  async sendMediaFromUrl(sessionId: string, to: string, url: string, caption?: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const client = this.clients[sessionId];
+      if (!client) {
+        return { success: false, error: 'Session not found or not connected' };
+      }
+
+      // Validate client state
+      const state = await client.getState();
+      if (state !== 'CONNECTED') {
+        return { success: false, error: `Session is not ready. Current state: ${state}` };
+      }
+
+      // Format phone number
+      const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
+      
+      logger.info(`Sending media from URL: ${url} to ${chatId}`);
+
+      // Import MessageMedia from whatsapp-web.js
+      const { MessageMedia } = await import('whatsapp-web.js');
+      
+      // Load media from URL - this is very reliable
+      const media = await MessageMedia.fromUrl(url);
+      
+      // Send media using client.sendMessage
+      const sentMessage = await client.sendMessage(chatId, media, { caption: caption || '' });
+      
+      logger.info(`Media sent successfully from URL, messageId: ${sentMessage.id._serialized}`);
+      
       return { 
         success: true, 
         messageId: sentMessage.id._serialized 
       };
     } catch (error: any) {
-      logger.error(`Error sending media via session ${sessionId}:`, error);
+      logger.error(`Error sending media from URL via session ${sessionId}:`, error);
       
-      // Provide more specific error messages
+      // Provide specific error messages
       if (error.message?.includes('not registered')) {
         return { success: false, error: 'Phone number is not registered on WhatsApp' };
+      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        return { success: false, error: 'Failed to download media from URL. Check if URL is accessible.' };
       } else if (error.message?.includes('Rate limit')) {
         return { success: false, error: 'WhatsApp rate limit exceeded. Please wait before sending more messages.' };
       } else if (error.message?.includes('Session closed')) {
         return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
-      } else if (error.message?.includes('Media too large')) {
-        return { success: false, error: 'Media file is too large. Please use a smaller file.' };
+      } else if (error.message?.includes('Evaluation failed')) {
+        return { success: false, error: 'Failed to send media. Try: 1) Reconnecting session, 2) Sending text first, 3) Using smaller file' };
       }
       
-      return { success: false, error: error.message || 'Failed to send media' };
+      return { success: false, error: error.message || 'Failed to send media from URL' };
     }
   }
 

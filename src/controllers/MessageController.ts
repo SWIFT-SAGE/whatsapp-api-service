@@ -211,50 +211,72 @@ export class MessageController {
 
       try {
         // Send media via WhatsApp service
-        const mediaData = {
-          data: file.buffer,
-          mimetype: file.mimetype,
-          filename: file.originalname
-        };
-        const result = await WhatsAppService.sendMedia(sessionId, to, {
-          data: mediaData.data.toString('base64'),
-          mimetype: mediaData.mimetype,
-          filename: mediaData.filename
-        }, caption);
+        // Save file temporarily first
+        const fs = await import('fs');
+        const path = await import('path');
+        const crypto = await import('crypto');
         
-        messageLog.status = 'sent';
-        messageLog.messageId = result.messageId || messageId;
-        if ('mediaUrl' in result) {
-            messageLog.mediaUrl = typeof result.mediaUrl === 'string' ? result.mediaUrl : undefined;
+        const tempDir = path.join(process.cwd(), 'temp');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
         }
-        await messageLog.save();
-
-        await (req.user as IUser).incrementMessageCount();
-
-        res.json({
-          success: true,
-          message: 'Media sent successfully',
-          data: {
-            messageId: messageLog.messageId,
-            status: 'sent',
-            type: mediaType,
-            to,
-            timestamp: messageLog.createdAt
+        
+        const uniqueFilename = `${crypto.randomBytes(16).toString('hex')}_${file.originalname}`;
+        const tempFilePath = path.join(tempDir, uniqueFilename);
+        
+        fs.writeFileSync(tempFilePath, file.buffer);
+        
+        try {
+          const result = await WhatsAppService.sendMedia(sessionId, to, tempFilePath, caption);
+        
+          messageLog.status = 'sent';
+          messageLog.messageId = result.messageId || messageId;
+          if ('mediaUrl' in result) {
+              messageLog.mediaUrl = typeof result.mediaUrl === 'string' ? result.mediaUrl : undefined;
           }
-        } as ApiResponse);
+          await messageLog.save();
 
-      } catch (sendError) {
-        messageLog.status = 'failed';
-        messageLog.errorMessage = sendError instanceof Error ? sendError.message : 'Unknown error';
-        await messageLog.save();
+          await (req.user as IUser).incrementMessageCount();
 
+          res.json({
+            success: true,
+            message: 'Media sent successfully',
+            data: {
+              messageId: messageLog.messageId,
+              status: 'sent',
+              type: mediaType,
+              to,
+              timestamp: messageLog.createdAt
+            }
+          } as ApiResponse);
+        } catch (sendError) {
+          messageLog.status = 'failed';
+          messageLog.errorMessage = sendError instanceof Error ? sendError.message : 'Unknown error';
+          await messageLog.save();
+
+          res.status(500).json({
+            success: false,
+            message: 'Failed to send media',
+            data: {
+              messageId: messageLog.messageId,
+              error: messageLog.errorMessage
+            }
+          } as ApiResponse);
+        } finally {
+          // Clean up temporary file
+          try {
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+          } catch (cleanupError) {
+            logger.error('Failed to clean up temp file:', cleanupError);
+          }
+        }
+      } catch (error) {
+        logger.error('Error preparing media:', error);
         res.status(500).json({
           success: false,
-          message: 'Failed to send media',
-          data: {
-            messageId: messageLog.messageId,
-            error: messageLog.errorMessage
-          }
+          message: 'Failed to prepare media'
         } as ApiResponse);
       }
 
