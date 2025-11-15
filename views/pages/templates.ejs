@@ -933,7 +933,7 @@ Thank you!"></textarea>
       document.getElementById('template-form').dataset.editId = templateId;
       document.getElementById('template-modal').classList.add('active');
     } catch (error) {
-      alert('Failed to load template: ' + error.message);
+      showToast('Failed to load template: ' + error.message, 'error');
     }
   }
 
@@ -982,12 +982,12 @@ Thank you!"></textarea>
     
     const variable = input.value.trim();
     if (!variable) {
-      alert('Please enter a variable name');
+      showToast('Please enter a variable name', 'warning');
       return;
     }
     
     if (currentVariables.includes(variable)) {
-      alert(`Variable "${variable}" already exists`);
+      showToast(`Variable "${variable}" already exists`, 'warning');
       return;
     }
     
@@ -1116,7 +1116,7 @@ Thank you!"></textarea>
       
       const result = await response.json();
       if (result.success) {
-        alert(`Template ${isEdit ? 'updated' : 'created'} successfully!`);
+        showToast(`Template ${isEdit ? 'updated' : 'created'} successfully!`, 'success');
         delete form.dataset.editId;
         closeModal();
         await loadTemplates();
@@ -1124,7 +1124,7 @@ Thank you!"></textarea>
         throw new Error(result.message || 'Failed to save template');
       }
     } catch (error) {
-      alert('Failed to save template: ' + error.message);
+      showToast('Failed to save template: ' + error.message, 'error');
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -1143,7 +1143,7 @@ Thank you!"></textarea>
     const variablesContainer = document.getElementById('send-variables');
     
     if (!input || !modal) {
-      alert('Modal not found');
+      showToast('Modal not found', 'error');
       return;
     }
     
@@ -1196,12 +1196,12 @@ Thank you!"></textarea>
     const to = formData.get('to');
     
     if (!sessionId || !sessionId.trim()) {
-      alert('Please enter Session ID');
+      showToast('Please enter Session ID', 'warning');
       return false;
     }
     
     if (!to || !to.trim()) {
-      alert('Please enter recipient phone number');
+      showToast('Please enter recipient phone number', 'warning');
       return false;
     }
     
@@ -1249,7 +1249,7 @@ Thank you!"></textarea>
 
       if (result.success) {
         const message = result.message || 'Template sent successfully!';
-        alert(message);
+        showToast(message, 'success');
         closeSendModal();
         form.reset();
       } else {
@@ -1264,12 +1264,12 @@ Thank you!"></textarea>
           }
         }
         
-        alert('Error: ' + errorMsg);
+        showToast('Error: ' + errorMsg, 'error');
         console.error('Template send failed:', result);
       }
     } catch (error) {
       console.error('Send error:', error);
-      alert('Failed to send template: ' + (error.message || 'Network error'));
+      showToast('Failed to send template: ' + (error.message || 'Network error'), 'error');
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
@@ -1293,13 +1293,13 @@ Thank you!"></textarea>
 
       const result = await response.json();
       if (result.success) {
-        alert('Template deleted successfully!');
+        showToast('Template deleted successfully!', 'success');
         await loadTemplates();
       } else {
         throw new Error(result.message || 'Failed to delete');
       }
     } catch (error) {
-      alert('Failed to delete template: ' + error.message);
+      showToast('Failed to delete template: ' + error.message, 'error');
     }
   }
 
@@ -1309,7 +1309,7 @@ Thank you!"></textarea>
   
   function addPollOption() {
     if (currentPollOptions.length >= 12) {
-      alert('Maximum 12 poll options allowed');
+      showToast('Maximum 12 poll options allowed', 'warning');
       return;
     }
     
@@ -1319,7 +1319,7 @@ Thank you!"></textarea>
   
   function removePollOption(index) {
     if (currentPollOptions.length <= 2) {
-      alert('Minimum 2 poll options required');
+      showToast('Minimum 2 poll options required', 'warning');
       return;
     }
     currentPollOptions.splice(index, 1);

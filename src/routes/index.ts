@@ -3,9 +3,9 @@ import authRoutes from './auth';
 import whatsappRoutes from './whatsapp';
 import analyticsRoutes from './analytics';
 import dashboardRoutes from './dashboard';
-import webhookRoutes from './webhooks';
 import paymentRoutes from './payments';
 import templateRoutes from './templates';
+import botRoutes from './bot';
 import { authenticateToken, authenticateApiKey } from '../middleware/auth';
 
 const router = express.Router();
@@ -29,7 +29,7 @@ router.get('/', (req, res) => {
       auth: '/api/auth',
       whatsapp: '/api/whatsapp',
       analytics: '/api/analytics',
-      webhooks: '/api/webhooks',
+      bot: '/api/bot',
       payments: '/api/payments',
       health: '/api/health'
     },
@@ -43,7 +43,7 @@ router.use('/auth', authRoutes);
 import { flexibleAuth } from '../middleware/flexAuth';
 router.use('/whatsapp', flexibleAuth, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
-router.use('/webhooks', authenticateToken, webhookRoutes);
+router.use('/bot', authenticateToken, botRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/templates', templateRoutes);
 router.use('/dashboard', dashboardRoutes);

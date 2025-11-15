@@ -110,9 +110,9 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       token = authHeader.split(' ')[1]; // Bearer TOKEN
     }
     
-    // If no token in header, check cookies
+    // If no token in header, check cookies (try multiple cookie names)
     if (!token) {
-      token = req.cookies?.authToken;
+      token = req.cookies?.authToken || req.cookies?.token || req.cookies?.jwt;
     }
     
     if (!token) {

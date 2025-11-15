@@ -6,11 +6,10 @@ import whatsappService from './whatsappService';
 import emailService from './EmailService';
 import rateLimitService from './rateLimitService';
 import analyticsService from './AnalyticsService';
-import webhookService from './WebhookService';
 import notificationService from './NotificationService';
 
 // Service exports
-export { userService, sessionService, messageService, whatsappService, emailService, rateLimitService, analyticsService, webhookService, notificationService };
+export { userService, sessionService, messageService, whatsappService, emailService, rateLimitService, analyticsService, notificationService };
 
 // Type exports
 export type { CreateUserData, UpdateUserData, LoginData, ChangePasswordData, UserStats } from './UserService';
@@ -44,11 +43,6 @@ export interface ServiceConfig {
   analytics: {
     enabled: boolean;
     retentionDays: number;
-  };
-  webhooks: {
-    enabled: boolean;
-    maxRetries: number;
-    retryDelay: number;
   };
   rateLimiting: {
     enabled: boolean;
@@ -88,11 +82,6 @@ export const defaultServiceConfig: ServiceConfig = {
     enabled: process.env.ANALYTICS_ENABLED !== 'false',
     retentionDays: parseInt(process.env.ANALYTICS_RETENTION_DAYS || '365')
   },
-  webhooks: {
-    enabled: process.env.WEBHOOKS_ENABLED !== 'false',
-    maxRetries: parseInt(process.env.WEBHOOK_MAX_RETRIES || '3'),
-    retryDelay: parseInt(process.env.WEBHOOK_RETRY_DELAY || '5000')
-  },
   rateLimiting: {
     enabled: process.env.RATE_LIMITING_ENABLED !== 'false',
     redis: {
@@ -129,7 +118,6 @@ export class ServiceManager {
     this.services.set('user', userService);
     this.services.set('session', sessionService);
     this.services.set('message', messageService);
-    this.services.set('webhook', webhookService);
     this.services.set('analytics', analyticsService);
     this.services.set('email', emailService);
     this.services.set('notification', notificationService);
@@ -195,7 +183,6 @@ export class ServiceManager {
       { name: 'user', service: userService },
       { name: 'session', service: sessionService },
       { name: 'message', service: messageService },
-      { name: 'webhook', service: webhookService },
       { name: 'analytics', service: analyticsService },
       { name: 'email', service: emailService },
       { name: 'notification', service: notificationService },

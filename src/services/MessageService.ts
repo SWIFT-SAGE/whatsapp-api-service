@@ -3,13 +3,11 @@ import { MessageMedia } from 'whatsapp-web.js';
 import MessageLog, { IMessageLog } from '../models/MessageLog';
 import WhatsappSession from '../models/WhatsappSession';
 import User from '../models/User';
-import Webhook from '../models/Webhook';
 import whatsappService from './whatsappService';
 import rateLimitService from './rateLimitService';
 import { AppError, ValidationError, NotFoundError, AuthenticationError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import axios from 'axios';
-import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 
@@ -110,14 +108,6 @@ class MessageService {
           type: messageData.type || 'text',
           mediaUrl: messageData.mediaUrl,
           status: 'sent'
-        });
-
-        // Trigger webhooks
-        await this.triggerWebhooks(userId, session._id, 'message.sent', {
-          messageId: result.messageId,
-          to: messageData.to,
-          content: messageData.message,
-          type: messageData.type || 'text'
         });
 
         logger.info(`Message sent successfully: ${result.messageId}`);
@@ -549,56 +539,6 @@ class MessageService {
     } catch (error) {
       logger.error('Error logging outbound message:', error);
     }
-  }
-
-  /**
-   * Trigger webhooks for message events
-   */
-  private async triggerWebhooks(userId: string, sessionId: Types.ObjectId, event: string, data: any): Promise<void> {
-    try {
-      const webhooks = await Webhook.find({
-        userId,
-        sessionId,
-        event,
-        isActive: true
-      });
-      
-      for (const webhook of webhooks) {
-        try {
-          const payload = {
-            event,
-            timestamp: new Date().toISOString(),
-            sessionId: sessionId.toString(),
-            data
-          };
-
-          const signature = this.generateWebhookSignature(JSON.stringify(payload), webhook.secret || '');
-
-          await axios.post(webhook.url, payload, {
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Webhook-Signature': signature,
-              ...Object.fromEntries(webhook.headers || new Map())
-            },
-            timeout: webhook.timeout || 5000
-          });
-
-          await webhook.incrementSuccess();
-        } catch (error) {
-          await webhook.incrementFailure(error instanceof Error ? error.message : 'Unknown error');
-          logger.error(`Webhook delivery failed for ${webhook.url}:`, error);
-        }
-      }
-    } catch (error) {
-      logger.error('Error triggering webhooks:', error);
-    }
-  }
-
-  /**
-   * Generate webhook signature
-   */
-  private generateWebhookSignature(payload: string, secret: string): string {
-    return crypto.createHmac('sha256', secret).update(payload).digest('hex');
   }
 
   /**

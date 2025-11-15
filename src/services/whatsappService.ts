@@ -428,6 +428,9 @@ class WhatsAppService {
    */
   private async handleIncomingMessage(message: Message, sessionId: string, userId: string): Promise<void> {
     try {
+      // Skip if message is from self
+      if (message.fromMe) return;
+
       // Log the message
       await this.logMessage(message, sessionId, userId, 'inbound');
 
@@ -435,23 +438,29 @@ class WhatsAppService {
       const session = await WhatsappSession.findOne({ sessionId });
       if (!session) return;
 
-      // Emit message to user (will be implemented when socket.io is available)
-      // io.to(userId).emit('message-received', {
-      //   sessionId,
-      //   from: message.from,
-      //   body: message.body,
-      //   type: message.type,
-      //   timestamp: message.timestamp
-      // });
+      // Try bot processing first
+      const BotService = require('./BotService').default;
+      const contact = await message.getContact();
+      
+      const botProcessed = await BotService.processMessage({
+        userId,
+        sessionId: session._id.toString(),
+        chatId: message.from,
+        messageBody: message.body || '',
+        isGroup: message.from.includes('@g.us'),
+        contactName: contact.pushname || contact.name || 'User'
+      });
 
-      // Auto-reply if enabled
+      // If bot handled the message, skip auto-reply
+      if (botProcessed) {
+        logger.info(`Bot handled message from ${message.from}`);
+        return;
+      }
+
+      // Auto-reply if enabled and bot didn't handle
       if (session.settings.autoReply && session.settings.autoReplyMessage) {
         await this.sendMessage(sessionId, message.from, session.settings.autoReplyMessage);
       }
-
-      // Bot processing (if bot is active)
-      // This would integrate with the bot service
-      // await this.processBotResponse(message, sessionId, userId);
     } catch (error) {
       logger.error('Error handling incoming message:', error);
     }

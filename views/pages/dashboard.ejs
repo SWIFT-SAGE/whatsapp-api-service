@@ -177,9 +177,6 @@
                             <a href="#" class="nav-link" data-section="chatbot" id="chatbot-nav">
                                 <i class="fas fa-robot me-2"></i>Chatbot
                             </a>
-                            <a href="#" class="nav-link" data-section="webhooks">
-                                <i class="fas fa-project-diagram me-2"></i>Webhooks
-                            </a>
                             <a href="#" class="nav-link" data-section="analytics">
                                 <i class="fas fa-chart-pie me-2"></i>Analytics
                             </a>
@@ -766,22 +763,6 @@
             }
         }
 
-        async function loadWebhooksData() {
-            try {
-                console.log('Loading webhooks data...');
-                
-                // Initialize webhook management functionality
-                setTimeout(() => {
-                    window.initializeWebhookButtons();
-                }, 500);
-                
-                // Load existing webhooks
-                await window.loadWebhooks();
-                
-            } catch (error) {
-                console.error('Error loading webhooks data:', error);
-            }
-        }
 
         async function loadAnalyticsData() {
             try {
@@ -878,9 +859,6 @@
                 case 'chatbot':
                     console.log('Chatbot section loaded - initializing chatbot management');
                     await loadChatbotData();
-                    break;
-                case 'webhooks':
-                    await loadWebhooksData();
                     break;
                 case 'analytics':
                     await loadAnalyticsData();
@@ -1065,21 +1043,6 @@
                                     console.error('Inline fallback failed:', error);
                                 }
                             }
-                        }
-                    }, 100);
-                }
-                
-                // Initialize webhooks page if we're on the webhooks section
-                if (section === 'webhooks') {
-                    console.log('Webhooks section detected, initializing...');
-                    setTimeout(() => {
-                        if (window.initializeWebhooksPage) {
-                            console.log('Calling window.initializeWebhooksPage()');
-                            window.initializeWebhooksPage();
-                        } else {
-                            console.log('window.initializeWebhooksPage not found, initializing manually...');
-                            // Initialize webhooks manually
-                            initializeWebhooksManually();
                         }
                     }, 100);
                 }
@@ -1729,13 +1692,6 @@
 
             // Refresh button is now part of the overview.ejs template
 
-            const testWebhookBtn = document.getElementById('test-webhook');
-            if (testWebhookBtn) {
-                testWebhookBtn.addEventListener('click', async function(e) {
-                    e.preventDefault();
-                    await testWebhookConnection();
-                });
-            }
 
             const exportContactsBtn = document.getElementById('export-contacts');
             if (exportContactsBtn) {
@@ -1762,7 +1718,7 @@
             const mediaFile = document.getElementById('quick-media').files[0];
 
             if (!sessionId || !phone || !message) {
-                alert('Please fill in all required fields');
+                showToast('Please fill in all required fields', 'warning');
                 return;
             }
 
@@ -1796,7 +1752,7 @@
                 }
 
                 if (response.success || response.ok) {
-                    alert('Message sent successfully!');
+                    showToast('Message sent successfully!', 'success');
                     // Reset form
                     document.getElementById('quick-message-form').reset();
                 } else {
@@ -1805,7 +1761,7 @@
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
-                alert('Failed to send message: ' + error.message);
+                showToast('Failed to send message: ' + error.message, 'error');
             }
         }
 
@@ -1815,12 +1771,12 @@
             const csvFile = document.getElementById('bulk-csv').files[0];
 
             if (!sessionId || !csvFile) {
-                alert('Please select a session and upload a CSV file');
+                showToast('Please select a session and upload a CSV file', 'warning');
                 return;
             }
 
             if (!csvFile.name.endsWith('.csv')) {
-                alert('Please upload a valid CSV file');
+                showToast('Please upload a valid CSV file', 'warning');
                 return;
             }
 
@@ -1830,7 +1786,7 @@
                 const lines = text.split('\n').filter(line => line.trim());
                 
                 if (lines.length < 2) {
-                    alert('CSV file must contain at least a header row and one data row');
+                    showToast('CSV file must contain at least a header row and one data row', 'warning');
                     return;
                 }
 
@@ -1847,12 +1803,12 @@
                 }
 
                 if (messages.length === 0) {
-                    alert('No valid messages found in CSV file');
+                    showToast('No valid messages found in CSV file', 'warning');
                     return;
                 }
 
                 if (messages.length > 100) {
-                    alert('Maximum 100 messages allowed per bulk upload');
+                    showToast('Maximum 100 messages allowed per bulk upload', 'warning');
                     return;
                 }
 
@@ -1879,7 +1835,7 @@
                     }
                 }
 
-                alert(`Bulk upload completed!\nSuccessful: ${successCount}\nFailed: ${failCount}`);
+                showToast(`Bulk upload completed! Successful: ${successCount}, Failed: ${failCount}`, successCount > 0 ? 'success' : 'warning');
                 document.getElementById('bulk-upload-form').reset();
 
                 // TODO: Replace with proper bulk endpoint when available
@@ -1907,7 +1863,7 @@
                 */
             } catch (error) {
                 console.error('Error uploading bulk messages:', error);
-                alert('Failed to upload bulk messages: ' + error.message);
+                showToast('Failed to upload bulk messages: ' + error.message, 'error');
             }
         }
 
@@ -1921,7 +1877,7 @@
             const botEnabled = document.getElementById('bot-enabled').checked;
 
             if (!botName || !welcomeMessage || !fallbackMessage) {
-                alert('Please fill in all required fields (Bot Name, Welcome Message, Fallback Message)');
+                showToast('Please fill in all required fields (Bot Name, Welcome Message, Fallback Message)', 'warning');
                 return;
             }
 
@@ -1938,7 +1894,7 @@
                 };
 
                 localStorage.setItem('botConfiguration', JSON.stringify(botConfig));
-                alert('Bot configuration saved locally! (Backend integration coming soon)');
+                showToast('Bot configuration saved locally! (Backend integration coming soon)', 'info');
 
                 // TODO: Uncomment when backend endpoint is ready
                 /*
@@ -1948,7 +1904,7 @@
                 });
 
                 if (response.success) {
-                    alert('Bot configuration saved successfully!');
+                    showToast('Bot configuration saved successfully!', 'success');
                 } else {
                     alert('Failed to save bot configuration: ' + (response.message || 'Unknown error'));
                 }
@@ -1999,29 +1955,6 @@
             window.URL.revokeObjectURL(url);
         }
 
-        // Test webhook connection
-        async function testWebhookConnection() {
-            try {
-                // For now, show a placeholder message until webhook endpoint is implemented
-                alert('Webhook testing functionality will be available once webhook endpoints are configured.\n\nTo test webhooks manually:\n1. Configure your webhook URL in the settings\n2. Send a test message\n3. Check your webhook endpoint for incoming data');
-                
-                // TODO: Uncomment when webhook endpoint is ready
-                /*
-                const response = await makeApiCall('/api/webhooks/test', {
-                    method: 'POST'
-                });
-
-                if (response.success) {
-                    alert('Webhook test successful! Check your webhook endpoint for the test message.');
-                } else {
-                    alert('Webhook test failed: ' + (response.message || 'Unknown error'));
-                }
-                */
-            } catch (error) {
-                console.error('Error testing webhook:', error);
-                alert('Webhook test failed: ' + error.message);
-            }
-        }
 
         // Export contact list
         async function exportContactList() {
@@ -2081,9 +2014,9 @@
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
                     
-                    alert('Dashboard data backup created successfully!');
+                    showToast('Dashboard data backup created successfully!', 'success');
                 } else {
-                    alert('Failed to backup data: No data available');
+                    showToast('Failed to backup data: No data available', 'warning');
                 }
 
                 // TODO: Replace with proper messages export endpoint when available
@@ -2306,7 +2239,7 @@
                     if (typeof showToast === 'function') {
                         showToast(errorMessage, 'error');
                     } else {
-                        alert(errorMessage);
+                        showToast(errorMessage, 'error');
                     }
                 }
             })();
@@ -2391,7 +2324,7 @@
                             sessionCard.style.opacity = '1';
                         }
 
-                        alert('Error disconnecting session: ' + error.message);
+                        showToast('Error disconnecting session: ' + error.message, 'error');
                     }
                 }
             }
@@ -2444,7 +2377,7 @@
                         `;
                     }
 
-                    alert('Error connecting session: ' + error.message);
+                    showToast('Error connecting session: ' + error.message, 'error');
                 }
             }
         });
@@ -2500,7 +2433,7 @@
                         if (sessionCard) {
                             sessionCard.style.opacity = '1';
                         }
-                        alert('Error deleting session: ' + error.message);
+                        showToast('Error deleting session: ' + error.message, 'error');
                     }
                 }
             }
@@ -2619,7 +2552,7 @@
                     const isActive = document.getElementById('template-active').checked;
 
                     if (!name || !category || !content) {
-                        alert('Please fill in all required fields');
+                        showToast('Please fill in all required fields', 'warning');
                         button.innerHTML = originalContent;
                         button.disabled = false;
                         return;
@@ -2830,10 +2763,10 @@
                     body: JSON.stringify(profileData)
                 });
 
-                alert('Profile updated successfully!');
+                showToast('Profile updated successfully!', 'success');
                 await loadProfileData(); // Refresh the profile data
             } catch (error) {
-                alert('Error updating profile: ' + error.message);
+                showToast('Error updating profile: ' + error.message, 'error');
             }
         });
 
@@ -2866,10 +2799,10 @@
                     body: JSON.stringify(passwordData)
                 });
 
-                alert('Password changed successfully!');
+                showToast('Password changed successfully!', 'success');
                 this.reset();
             } catch (error) {
-                alert('Error changing password: ' + error.message);
+                showToast('Error changing password: ' + error.message, 'error');
             }
         });
 
@@ -3249,7 +3182,7 @@
                             }
                         }, 1000);
                     } else {
-                        alert('Session created successfully!');
+                        showToast('Session created successfully!', 'success');
                         // Refresh sessions data instead of reloading page
                         loadSessionsData();
                         // Also refresh overview stats
@@ -3392,7 +3325,7 @@
                             }
                         }, 1000);
                     } else {
-                        alert('Session created successfully!');
+                        showToast('Session created successfully!', 'success');
                         // Refresh sessions data instead of reloading page
                         loadSessionsData();
                         // Also refresh overview stats
@@ -3453,7 +3386,7 @@
                     }
                 } catch (error) {
                     console.error('Error connecting session:', error);
-                    alert('Error connecting session: ' + error.message);
+                    showToast('Error connecting session: ' + error.message, 'error');
                 } finally {
                     this.innerHTML = originalContent;
                     this.disabled = false;
@@ -3484,7 +3417,7 @@
                     });
                     
                     if (response.success) {
-                        alert('Session disconnected successfully!');
+                        showToast('Session disconnected successfully!', 'success');
                         // Refresh sessions data
                         loadSessionsData();
                     } else {
@@ -3492,7 +3425,7 @@
                     }
                 } catch (error) {
                     console.error('Error disconnecting session:', error);
-                    alert('Error disconnecting session: ' + error.message);
+                    showToast('Error disconnecting session: ' + error.message, 'error');
                 } finally {
                     this.innerHTML = originalContent;
                     this.disabled = false;
@@ -3523,7 +3456,7 @@
                     });
                     
                     if (response.success) {
-                        alert('Session deleted successfully!');
+                        showToast('Session deleted successfully!', 'success');
                         // Refresh sessions data
                         loadSessionsData();
                     } else {
@@ -4181,7 +4114,7 @@
             }
 
             if (response.success) {
-                alert('Message sent successfully!');
+                showToast('Message sent successfully!', 'success');
                 document.getElementById('compose-message-form').reset();
                 updateCharCount(); // Reset character count
                 
@@ -4718,7 +4651,7 @@ window.sendComposedMessageInline = async function() {
         }
         
         if (response && response.success) {
-            alert('Message sent successfully!');
+            showToast('Message sent successfully!', 'success');
             
             // Clear form
             document.getElementById('compose-phone').value = '';
@@ -5114,195 +5047,300 @@ window.populateSessionFilter = function(sessions) {
     console.log(`Added ${sessions.length} sessions to filter dropdown`);
 };
 
+// ============================================================================
+// CHATBOT MANAGEMENT - Production Ready
+// ============================================================================
+
 // Load chatbot data and initialize chatbot management
 window.loadChatbotData = async function() {
     console.log('Loading chatbot data...');
     try {
-        // Initialize chatbot management buttons
-        setTimeout(() => {
-            window.initializeChatbotButtons();
-        }, 500);
+        // Load sessions for bot creation
+        await loadSessionsForBot();
         
-        // Load existing chatbot rules
-        await window.loadChatbotRules();
+        // Load existing bot
+        await loadBotConfiguration();
+        
+        // Initialize event listeners
+        initializeChatbotEventListeners();
+        
+        // Check AI status
+        checkAIStatus();
         
     } catch (error) {
         console.error('Error loading chatbot data:', error);
+        showToast('Failed to load chatbot data', 'error');
     }
 };
 
-// Initialize chatbot management buttons
-window.initializeChatbotButtons = function() {
-    console.log('Initializing chatbot management buttons...');
-    
-    // Add chatbot rule button
-    const addRuleBtn = document.getElementById('add-chatbot-rule-btn');
-    if (addRuleBtn) {
-        console.log('Found add chatbot rule button, attaching event listener');
-        addRuleBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Add chatbot rule button clicked');
-            window.showAddChatbotRuleModal();
-        });
-    } else {
-        console.error('Add chatbot rule button not found');
-    }
-    
-    // Initialize any existing rule buttons
-    window.initializeChatbotRuleButtons();
-};
-
-// Load existing chatbot rules
-window.loadChatbotRules = async function() {
-    console.log('Loading chatbot rules...');
+// Load sessions for bot creation
+async function loadSessionsForBot() {
     try {
-        const rulesContainer = document.getElementById('chatbot-rules');
-        if (!rulesContainer) {
-            console.error('Chatbot rules container not found');
-            return;
+        const response = await makeApiCall('/api/whatsapp/sessions');
+        let sessions = [];
+        
+        if (response && response.success && response.data) {
+            sessions = Array.isArray(response.data) ? response.data : 
+                      (response.data.sessions || []);
         }
         
-        // Show loading state
-        rulesContainer.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary mb-3" role="status">
-                    <span class="visually-hidden">Loading...</span>
+        const sessionSelect = document.getElementById('bot-session-id');
+        if (sessionSelect) {
+            sessionSelect.innerHTML = '<option value="">Select a session...</option>' +
+                sessions.filter(s => s.status === 'connected').map(session => `
+                    <option value="${session._id}">${session.sessionId} - ${session.phoneNumber || 'No phone'}</option>
+                `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading sessions:', error);
+    }
+}
+
+// Load bot configuration
+async function loadBotConfiguration() {
+    try {
+        const response = await makeApiCall('/api/bot');
+        
+        if (response && response.success && response.data && response.data.length > 0) {
+            const bot = response.data[0]; // Get first bot
+            const flows = bot.flows || [];
+            
+            // Update botManager
+            window.botManager.setCurrentBot(bot);
+            window.botManager.setCurrentFlows(flows);
+            
+            updateBotUI();
+        } else {
+            window.botManager.setCurrentBot(null);
+            window.botManager.setCurrentFlows([]);
+            updateBotUI();
+        }
+    } catch (error) {
+        console.error('Error loading bot:', error);
+        window.botManager.setCurrentBot(null);
+        window.botManager.setCurrentFlows([]);
+        updateBotUI();
+    }
+}
+
+// Update bot UI
+function updateBotUI() {
+    const currentBot = window.botManager.currentBot();
+    const currentFlows = window.botManager.currentFlows();
+    
+    // Update bot status card
+    if (currentBot) {
+        document.getElementById('bot-name').textContent = currentBot.name;
+        document.getElementById('bot-description').textContent = currentBot.description || 'No description';
+        document.getElementById('bot-status-badge').textContent = currentBot.isActive ? 'Active' : 'Inactive';
+        document.getElementById('bot-status-badge').className = `badge ${currentBot.isActive ? 'bg-success' : 'bg-secondary'}`;
+        document.getElementById('bot-flows-count').textContent = `${currentFlows.length} Flows`;
+        
+        // Update analytics
+        document.getElementById('bot-total-conversations').textContent = currentBot.analytics?.totalConversations || 0;
+        document.getElementById('bot-total-messages').textContent = currentBot.analytics?.totalMessages || 0;
+        document.getElementById('bot-last-used').textContent = currentBot.analytics?.lastUsed ? 
+            new Date(currentBot.analytics.lastUsed).toLocaleString() : 'Never';
+        
+        // Enable buttons
+        document.getElementById('toggle-bot-btn').disabled = false;
+        document.getElementById('edit-bot-btn').disabled = false;
+        document.getElementById('add-flow-btn').disabled = false;
+        document.getElementById('test-message-input').disabled = false;
+        document.getElementById('test-bot-btn').disabled = false;
+        
+        // Update toggle button
+        const toggleBtn = document.getElementById('toggle-bot-btn');
+        toggleBtn.innerHTML = currentBot.isActive ? 
+            '<i class="fas fa-pause me-2"></i>Deactivate Bot' : 
+            '<i class="fas fa-play me-2"></i>Activate Bot';
+        toggleBtn.className = currentBot.isActive ? 'btn btn-sm btn-outline-warning' : 'btn btn-sm btn-outline-success';
+        
+        // Render flows
+        renderFlows();
+    } else {
+        document.getElementById('bot-name').textContent = 'No Bot Configured';
+        document.getElementById('bot-description').textContent = 'Create a bot to start automating conversations';
+        document.getElementById('bot-status-badge').textContent = 'Inactive';
+        document.getElementById('bot-status-badge').className = 'badge bg-secondary';
+        document.getElementById('bot-flows-count').textContent = '0 Flows';
+        
+        // Reset analytics
+        document.getElementById('bot-total-conversations').textContent = '0';
+        document.getElementById('bot-total-messages').textContent = '0';
+        document.getElementById('bot-last-used').textContent = 'Never';
+        
+        // Disable buttons
+        document.getElementById('toggle-bot-btn').disabled = true;
+        document.getElementById('edit-bot-btn').disabled = true;
+        document.getElementById('add-flow-btn').disabled = true;
+        document.getElementById('test-message-input').disabled = true;
+        document.getElementById('test-bot-btn').disabled = true;
+        
+        // Show empty state
+        const flowsContainer = document.getElementById('bot-flows-container');
+        if (flowsContainer) {
+            flowsContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-robot fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Bot Configured</h5>
+                    <p class="text-muted">Create a bot to start adding conversation flows</p>
+                    <button class="btn btn-primary" onclick="document.getElementById('create-bot-btn').click()">
+                        <i class="fas fa-plus me-2"></i>Create Your First Bot
+                    </button>
                 </div>
-                <p class="text-muted">Loading chatbot rules...</p>
+            `;
+        }
+    }
+}
+
+// Render flows
+function renderFlows() {
+    const currentFlows = window.botManager.currentFlows();
+    const container = document.getElementById('bot-flows-container');
+    if (!container) return;
+    
+    if (!currentFlows || currentFlows.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-stream fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Flows Yet</h5>
+                <p class="text-muted">Add your first conversation flow</p>
+                <button class="btn btn-primary" onclick="openFlowModal()">
+                    <i class="fas fa-plus me-2"></i>Add First Flow
+                </button>
             </div>
         `;
-        
-        // Make API call to get chatbot rules
-        const response = await window.makeApiCall('/api/chatbot/rules');
-        console.log('Chatbot rules response:', response);
-        
-        let rules = [];
-        if (response && response.success && response.data) {
-            rules = Array.isArray(response.data) ? response.data : (response.data.rules || []);
-        } else if (Array.isArray(response)) {
-            rules = response;
-        }
-        
-        console.log('Loaded chatbot rules:', rules);
-        
-        if (rules.length === 0) {
-            rulesContainer.innerHTML = `
-                <div class="text-center py-4">
-                    <i class="fas fa-robot fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No chatbot rules yet</h5>
-                    <p class="text-muted">Create your first chatbot rule to get started</p>
-                    <button class="btn btn-primary" onclick="window.showAddChatbotRuleModal()">
-                        <i class="fas fa-plus me-2"></i>Add First Rule
-                    </button>
-                </div>
-            `;
-        } else {
-            window.renderChatbotRules(rules);
-        }
-        
-    } catch (error) {
-        console.error('Error loading chatbot rules:', error);
-        const rulesContainer = document.getElementById('chatbot-rules');
-        if (rulesContainer) {
-            rulesContainer.innerHTML = `
-                <div class="text-center py-4 text-danger">
-                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
-                    <h5>Error loading chatbot rules</h5>
-                    <p>Please try refreshing the page</p>
-                    <button class="btn btn-outline-primary" onclick="window.loadChatbotRules()">
-                        <i class="fas fa-sync-alt me-2"></i>Retry
-                    </button>
-                </div>
-            `;
-        }
+        return;
     }
-};
-
-// Render chatbot rules
-window.renderChatbotRules = function(rules) {
-    const rulesContainer = document.getElementById('chatbot-rules');
-    if (!rulesContainer) return;
     
-    rulesContainer.innerHTML = rules.map(rule => `
-        <div class="card mb-3" data-rule-id="${rule.id || rule._id}">
+    container.innerHTML = currentFlows.map(flow => `
+        <div class="card flow-card mb-3">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <h6 class="card-title">${rule.name || 'Unnamed Rule'}</h6>
-                        <p class="card-text text-muted mb-2">
-                            <strong>Trigger:</strong> ${rule.trigger || 'No trigger set'}
-                        </p>
-                        <p class="card-text text-muted mb-2">
-                            <strong>Response:</strong> ${rule.response || 'No response set'}
-                        </p>
-                        <div class="d-flex gap-2">
-                            <span class="badge ${rule.enabled ? 'bg-success' : 'bg-secondary'}">
-                                ${rule.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                            <span class="badge bg-info">
-                                ${rule.type || 'text'} match
-                            </span>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h6 class="mb-1">${flow.name}</h6>
+                        <small class="text-muted">
+                            <i class="fas fa-bolt me-1"></i>
+                            Trigger: <strong>${flow.trigger?.value || 'N/A'}</strong>
+                        </small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge ${flow.isActive ? 'bg-success' : 'bg-secondary'}">
+                            ${flow.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="editFlow('${flow.id}')">
+                                    <i class="fas fa-edit me-2"></i>Edit
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="deleteFlow('${flow.id}')">
+                                    <i class="fas fa-trash me-2 text-danger"></i>Delete
+                                </a></li>
+                            </ul>
                         </div>
                     </div>
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="window.editChatbotRule('${rule.id || rule._id}')">
-                                <i class="fas fa-edit me-2"></i>Edit
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="window.toggleChatbotRule('${rule.id || rule._id}', ${!rule.enabled})">
-                                <i class="fas fa-${rule.enabled ? 'pause' : 'play'} me-2"></i>${rule.enabled ? 'Disable' : 'Enable'}
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="#" onclick="window.deleteChatbotRule('${rule.id || rule._id}')">
-                                <i class="fas fa-trash me-2"></i>Delete
-                            </a></li>
-                        </ul>
-                    </div>
+                </div>
+                <div class="responses-list">
+                    <small class="text-muted d-block mb-2">
+                        <i class="fas fa-reply me-1"></i>Responses (${flow.responses?.length || 0}):
+                    </small>
+                    ${(flow.responses || []).map((resp, idx) => `
+                        <div class="response-item p-2 mb-2 rounded">
+                            <small>
+                                <strong>${idx + 1}.</strong> 
+                                <span class="badge bg-primary">${resp.type}</span>
+                                ${resp.content ? resp.content.substring(0, 50) + '...' : 'No content'}
+                                ${resp.delay ? `<span class="badge bg-info ms-2">${resp.delay}ms delay</span>` : ''}
+                            </small>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         </div>
     `).join('');
-    
-    // Initialize rule buttons after rendering
-    setTimeout(() => {
-        window.initializeChatbotRuleButtons();
-    }, 100);
-};
+}
 
-// Initialize chatbot rule buttons
-window.initializeChatbotRuleButtons = function() {
-    console.log('Initializing chatbot rule buttons...');
-    // Additional rule-specific button initialization can go here
-};
-
-// Show add chatbot rule modal
-window.showAddChatbotRuleModal = function() {
-    console.log('Showing add chatbot rule modal...');
-    alert('Chatbot rule creation modal will be implemented soon!\n\nThis feature will allow you to:\n- Create trigger keywords\n- Set automated responses\n- Configure rule conditions\n- Enable/disable rules');
-};
-
-// Edit chatbot rule
-window.editChatbotRule = function(ruleId) {
-    console.log('Editing chatbot rule:', ruleId);
-    alert(`Edit chatbot rule ${ruleId} - Coming soon!`);
-};
-
-// Toggle chatbot rule
-window.toggleChatbotRule = function(ruleId, enable) {
-    console.log('Toggling chatbot rule:', ruleId, 'enable:', enable);
-    alert(`${enable ? 'Enable' : 'Disable'} chatbot rule ${ruleId} - Coming soon!`);
-};
-
-// Delete chatbot rule
-window.deleteChatbotRule = function(ruleId) {
-    console.log('Deleting chatbot rule:', ruleId);
-    if (confirm('Are you sure you want to delete this chatbot rule?')) {
-        alert(`Delete chatbot rule ${ruleId} - Coming soon!`);
+// Check AI status
+function checkAIStatus() {
+    // This would check if AI is configured
+    // For now, we'll assume it's enabled based on environment
+    const aiEnabled = true; // This should come from backend
+    const aiStatus = document.getElementById('ai-status-indicator');
+    if (aiStatus) {
+        aiStatus.textContent = aiEnabled ? 'Enabled' : 'Disabled';
+        aiStatus.className = `badge ${aiEnabled ? 'bg-success' : 'bg-secondary'}`;
     }
-};
+}
+
+// Initialize event listeners
+function initializeChatbotEventListeners() {
+    // Create Bot
+    const createBotBtn = document.getElementById('create-bot-btn');
+    if (createBotBtn) {
+        createBotBtn.onclick = () => openBotModal();
+    }
+    
+    // Edit Bot
+    const editBotBtn = document.getElementById('edit-bot-btn');
+    if (editBotBtn) {
+        editBotBtn.onclick = () => openBotModal(window.botManager.currentBot());
+    }
+    
+    // Toggle Bot
+    const toggleBotBtn = document.getElementById('toggle-bot-btn');
+    if (toggleBotBtn) {
+        toggleBotBtn.onclick = () => toggleBot();
+    }
+    
+    // Refresh
+    const refreshBtn = document.getElementById('refresh-bot-btn');
+    if (refreshBtn) {
+        refreshBtn.onclick = () => loadBotConfiguration();
+    }
+    
+    // Add Flow
+    const addFlowBtn = document.getElementById('add-flow-btn');
+    if (addFlowBtn) {
+        addFlowBtn.onclick = () => openFlowModal();
+    }
+    
+    // Save Bot
+    const saveBotBtn = document.getElementById('save-bot-btn');
+    if (saveBotBtn) {
+        saveBotBtn.onclick = () => saveBot();
+    }
+    
+    // Save Flow
+    const saveFlowBtn = document.getElementById('save-flow-btn');
+    if (saveFlowBtn) {
+        saveFlowBtn.onclick = () => saveFlow();
+    }
+    
+    // Test Bot
+    const testBotBtn = document.getElementById('test-bot-btn');
+    if (testBotBtn) {
+        testBotBtn.onclick = () => testBot();
+    }
+    
+    // Add Response
+    const addResponseBtn = document.getElementById('add-response-btn');
+    if (addResponseBtn) {
+        addResponseBtn.onclick = () => addResponse();
+    }
+    
+    // Working hours toggle
+    const workingHoursToggle = document.getElementById('bot-working-hours-enabled');
+    if (workingHoursToggle) {
+        workingHoursToggle.onchange = function() {
+            document.getElementById('working-hours-config').style.display = 
+                this.checked ? 'block' : 'none';
+        };
+    }
+}
 
 // Initialize webhook management buttons
 window.initializeWebhookButtons = function() {

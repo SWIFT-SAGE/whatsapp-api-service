@@ -707,10 +707,17 @@ function initializeMessageEventListeners() {
             this.disabled = true;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             
-            loadMessagesData(currentPage, currentLimit).finally(() => {
-                this.disabled = false;
-                this.innerHTML = originalContent;
-            });
+            loadMessagesData(currentPage, currentLimit)
+                .then(() => {
+                    showToast('Messages refreshed successfully!', 'success');
+                })
+                .catch((error) => {
+                    showToast('Failed to refresh messages', 'error');
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.innerHTML = originalContent;
+                });
         });
     }
 
@@ -867,12 +874,12 @@ async function sendComposedMessage() {
         const mediaFile = document.getElementById('compose-media').files[0];
 
         if (!sessionId || !phone) {
-            alert('Please select a session and enter a phone number');
+            showToast('Please select a session and enter a phone number', 'warning');
             return;
         }
 
         if (!text && !mediaFile) {
-            alert('Please enter a message or select a media file');
+            showToast('Please enter a message or select a media file', 'warning');
             return;
         }
 
@@ -918,7 +925,7 @@ async function sendComposedMessage() {
         }
 
         if (response.success) {
-            alert('Message sent successfully!');
+            showToast('Message sent successfully!', 'success');
             
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('composeMessageModal'));
@@ -936,7 +943,7 @@ async function sendComposedMessage() {
 
     } catch (error) {
         console.error('Error sending message:', error);
-        alert('Failed to send message: ' + error.message);
+        showToast('Failed to send message: ' + error.message, 'error');
     } finally {
         const sendButton = document.getElementById('send-composed-message');
         if (sendButton) {
@@ -1041,11 +1048,11 @@ async function exportMessages() {
         link.click();
         document.body.removeChild(link);
 
-        console.log(`Exported ${filteredMessages.length} messages to CSV`);
+        showToast(`Exported ${filteredMessages.length} messages to CSV successfully!`, 'success');
 
     } catch (error) {
         console.error('Error exporting messages:', error);
-        alert('Failed to export messages: ' + error.message);
+        showToast('Failed to export messages: ' + error.message, 'error');
     } finally {
         const exportButton = document.getElementById('export-messages');
         exportButton.disabled = false;

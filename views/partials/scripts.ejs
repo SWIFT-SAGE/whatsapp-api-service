@@ -53,7 +53,72 @@
             // Force redirect to login
             window.location.replace('/login?logout=true');
         };
+        
+        /**
+         * Universal Toast Notification System
+         * Usage: showToast('Message here', 'success|error|warning|info', duration)
+         */
+        window.showToast = function(message, type = 'success', duration = 4000) {
+            // Icon mapping for different toast types
+            const icons = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-circle',
+                'warning': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle'
+            };
+            
+            // Get the toast template
+            const template = document.getElementById('toast-template');
+            if (!template) {
+                console.error('Toast template not found');
+                return;
+            }
+            
+            // Clone the template
+            const toast = template.cloneNode(true);
+            toast.id = 'toast-' + Date.now();
+            toast.style.display = '';
+            
+            // Add type-specific class
+            toast.classList.add('toast-' + type);
+            
+            // Set icon
+            const icon = toast.querySelector('.toast-icon');
+            if (icon) {
+                icon.className = 'toast-icon me-2 ' + (icons[type] || icons['info']);
+            }
+            
+            // Set message
+            const messageElement = toast.querySelector('.toast-message');
+            if (messageElement) {
+                messageElement.textContent = message;
+            }
+            
+            // Add to container
+            const container = document.querySelector('.toast-container');
+            if (container) {
+                container.appendChild(toast);
+                
+                // Initialize Bootstrap toast
+                const bsToast = new bootstrap.Toast(toast, {
+                    autohide: true,
+                    delay: duration
+                });
+                
+                // Show the toast
+                bsToast.show();
+                
+                // Remove from DOM after hidden
+                toast.addEventListener('hidden.bs.toast', function() {
+                    toast.remove();
+                });
+            }
+        };
+        
+        // Alias for convenience
+        window.toast = window.showToast;
     </script>
     
     <script src="/app.js"></script>
+    <script src="/bot-manager.js"></script>
 

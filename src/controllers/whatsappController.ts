@@ -785,8 +785,12 @@ export class WhatsAppController {
         return;
       }
 
-      // Build query
-      const query: any = { sessionId: session._id };
+      // Build query - ONLY show outbound messages (sent from dashboard/API)
+      const query: any = { 
+        sessionId: session._id,
+        direction: 'outbound' // Only show messages sent by the user
+      };
+      
       if (contact) {
         query.$or = [
           { from: contact },
@@ -805,12 +809,14 @@ export class WhatsAppController {
 
       res.json({
         success: true,
-        messages,
-        pagination: {
-          page: Number(page),
-          limit: Number(limit),
-          total: totalMessages,
-          pages: Math.ceil(totalMessages / Number(limit))
+        data: {
+          messages,
+          pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total: totalMessages,
+            pages: Math.ceil(totalMessages / Number(limit))
+          }
         }
       });
     } catch (error) {

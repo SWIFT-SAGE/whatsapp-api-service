@@ -1,14 +1,66 @@
-    <!-- Toast Notifications -->
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-        <div id="notification-toast" class="toast" role="alert">
-            <div class="toast-header">
-                <i class="fas fa-check-circle text-success me-2"></i>
-                <strong class="me-auto">Success</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body">
-                Message sent successfully!
+    <!-- Toast Notifications Container -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <!-- Toast template (will be cloned by JavaScript) -->
+        <div id="toast-template" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true" style="display: none;">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="toast-icon me-2"></i>
+                    <span class="toast-message"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     </div>
+
+    <style>
+        /* Toast Styling */
+        .toast-container {
+            z-index: 9999 !important;
+        }
+        
+        .toast {
+            min-width: 300px;
+            max-width: 500px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .toast.toast-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .toast.toast-error {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        
+        .toast.toast-warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+        
+        .toast.toast-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        
+        .toast-icon {
+            font-size: 1.2rem;
+        }
+        
+        .toast-message {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .toast .btn-close-white {
+            filter: brightness(0) invert(1);
+        }
+        
+        .toast.toast-warning .btn-close-white {
+            filter: none;
+        }
+    </style>
 

@@ -3,7 +3,6 @@ export { default as User, IUser } from './User';
 export { default as WhatsappSession, IWhatsappSession } from './WhatsappSession';
 export { default as MessageLog, IMessageLog } from './MessageLog';
 export { default as ApiKey, IApiKey } from './ApiKey';
-export { default as Webhook, IWebhook } from './Webhook';
 export { default as Analytics, IAnalytics } from './Analytics';
 export { default as Contact, IContact } from './Contact';
 
@@ -16,7 +15,6 @@ export const ModelNames = {
   WHATSAPP_SESSION: 'WhatsappSession',
   MESSAGE_LOG: 'MessageLog',
   API_KEY: 'ApiKey',
-  WEBHOOK: 'Webhook',
   ANALYTICS: 'Analytics',
   CONTACT: 'Contact'
 } as const;
