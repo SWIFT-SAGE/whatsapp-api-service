@@ -126,9 +126,99 @@ export const builtInTemplates: BuiltInTemplateDefinition[] = [
       buttonTitle: 'Welcome to Swift Sage',
       buttonFooter: 'Your Web Development Partner',
       buttons: [
-        { id: 'services', body: '🛍️ Our Services' },
-        { id: 'pricing', body: '💰 Pricing' },
-        { id: 'contact', body: '📞 Contact Us' }
+        { id: 'services', body: '🛍️ Our Services', type: 'reply' },
+        { id: 'pricing', body: '💰 Pricing', type: 'reply' },
+        { id: 'contact', body: '📞 Contact Us', type: 'reply' }
+      ]
+    }
+  },
+  {
+    id: 'promoCode',
+    name: 'Promo Code with Copy Button',
+    description: 'Share promo code with easy copy button',
+    category: 'marketing',
+    type: 'buttons',
+    variables: ['name', 'code', 'discount', 'expiry'],
+    content: {
+      text: '🎉 *Special Offer for {{name}}!*\n\nGet {{discount}}% OFF on your next purchase!\n\nUse promo code: *{{code}}*\n\n⏰ Valid until: {{expiry}}',
+      buttonTitle: 'Limited Time Offer',
+      buttonFooter: 'Terms and conditions apply',
+      buttons: [
+        { id: 'copy_code', body: '📋 Copy Code', type: 'copy', copyText: '{{code}}' },
+        { id: 'shop_now', body: '🛍️ Shop Now', type: 'url', url: 'https://swiftsage.com/shop' },
+        { id: 'terms', body: '📄 Terms', type: 'reply' }
+      ]
+    }
+  },
+  {
+    id: 'apiDocumentation',
+    name: 'API Documentation Link',
+    description: 'Share API docs with quick access button',
+    category: 'notification',
+    type: 'buttons',
+    variables: ['name', 'apiKey'],
+    content: {
+      text: '👋 Hi *{{name}}*,\n\nYour API key is ready!\n\n🔑 API Key: `{{apiKey}}`\n\nAccess our comprehensive documentation to get started.',
+      buttonTitle: 'API Access',
+      buttonFooter: 'Swift Sage API v2.0',
+      buttons: [
+        { id: 'copy_key', body: '📋 Copy API Key', type: 'copy', copyText: '{{apiKey}}' },
+        { id: 'docs', body: '📖 View Docs', type: 'url', url: 'https://docs.swiftsage.com' },
+        { id: 'support', body: '💬 Support', type: 'reply' }
+      ]
+    }
+  },
+  {
+    id: 'courseEnrollment',
+    name: 'Course Enrollment with Links',
+    description: 'Course enrollment confirmation with access links',
+    category: 'transactional',
+    type: 'buttons',
+    variables: ['name', 'courseName', 'enrollmentCode'],
+    content: {
+      text: '🎓 *Congratulations {{name}}!*\n\nYou\'re enrolled in: *{{courseName}}*\n\n📝 Enrollment Code: `{{enrollmentCode}}`\n\nStart learning today!',
+      buttonTitle: 'Course Access',
+      buttonFooter: 'Happy Learning!',
+      buttons: [
+        { id: 'start_course', body: '▶️ Start Course', type: 'url', url: 'https://learn.swiftsage.com/course' },
+        { id: 'copy_code', body: '📋 Copy Code', type: 'copy', copyText: '{{enrollmentCode}}' },
+        { id: 'schedule', body: '📅 View Schedule', type: 'reply' }
+      ]
+    }
+  },
+  {
+    id: 'downloadApp',
+    name: 'App Download Links',
+    description: 'Share app download links for iOS and Android',
+    category: 'marketing',
+    type: 'buttons',
+    variables: ['name'],
+    content: {
+      text: '📱 *Download Our App, {{name}}!*\n\nGet the best experience with our mobile app.\n\n✨ Features:\n• Real-time notifications\n• Offline access\n• Faster performance\n• Exclusive mobile deals',
+      buttonTitle: 'Get the App',
+      buttonFooter: 'Available on iOS & Android',
+      buttons: [
+        { id: 'ios', body: '🍎 App Store', type: 'url', url: 'https://apps.apple.com/app/swiftsage' },
+        { id: 'android', body: '🤖 Play Store', type: 'url', url: 'https://play.google.com/store/apps/swiftsage' },
+        { id: 'web', body: '🌐 Use Web Version', type: 'url', url: 'https://app.swiftsage.com' }
+      ]
+    }
+  },
+  {
+    id: 'referralProgram',
+    name: 'Referral Program with Copy Link',
+    description: 'Share referral link with copy button',
+    category: 'marketing',
+    type: 'buttons',
+    variables: ['name', 'referralCode', 'referralLink', 'reward'],
+    content: {
+      text: '🎁 *Refer & Earn, {{name}}!*\n\nShare your unique referral link and earn {{reward}} for each friend who signs up!\n\n🔗 Your Referral Code: *{{referralCode}}*\n\nShare the love and get rewarded! 💰',
+      buttonTitle: 'Referral Program',
+      buttonFooter: 'Unlimited referrals',
+      buttons: [
+        { id: 'copy_link', body: '📋 Copy Link', type: 'copy', copyText: '{{referralLink}}' },
+        { id: 'share', body: '📤 Share Now', type: 'url', url: '{{referralLink}}' },
+        { id: 'my_rewards', body: '💰 My Rewards', type: 'reply' }
       ]
     }
   },

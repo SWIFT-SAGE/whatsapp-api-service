@@ -158,12 +158,18 @@ class WhatsAppService {
             '--disable-features=site-per-process',
             '--disable-web-security',
             '--disable-blink-features=AutomationControlled',
-            // Prevent memory issues
-            '--single-process',
+            // Prevent memory issues (removed --single-process as it can cause timeouts)
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding'
-          ]
+            '--disable-renderer-backgrounding',
+            // Additional stability flags
+            '--disable-infobars',
+            '--window-position=0,0',
+            '--ignore-certifcate-errors',
+            '--ignore-certifcate-errors-spki-list',
+            '--disable-features=IsolateOrigins,site-per-process'
+          ],
+          timeout: 120000 // 2 minutes timeout for puppeteer
         },
         // Additional settings for stability
         webVersionCache: {
@@ -171,7 +177,7 @@ class WhatsAppService {
           remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
         },
         // Increase timeout for slow connections
-        authTimeoutMs: 60000, // 60 seconds
+        authTimeoutMs: 120000, // 120 seconds (2 minutes)
         qrMaxRetries: 5,
         // Keep connection alive
         takeoverOnConflict: false,
@@ -188,10 +194,10 @@ class WhatsAppService {
       logger.info(`Initializing WhatsApp client for session: ${sessionId}`);
       
       try {
-        // Set a timeout for client initialization (increased to 60 seconds)
+        // Set a timeout for client initialization (increased to 120 seconds for slow connections)
         const initPromise = client.initialize();
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Client initialization timeout')), 60000); // 60 seconds
+          setTimeout(() => reject(new Error('Client initialization timeout')), 200000); // 120 seconds (2 minutes)
         });
         
         await Promise.race([initPromise, timeoutPromise]);
@@ -592,11 +598,11 @@ class WhatsAppService {
         const chat = await client.getChatById(chatId);
         const sentMessage = await chat.sendMessage(media, { caption: caption || '' });
         logger.info(`Media sent successfully via chat.sendMessage, messageId: ${sentMessage.id._serialized}`);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
-        };
+
+      return { 
+        success: true, 
+        messageId: sentMessage.id._serialized 
+      };
       } catch (chatError: any) {
         // Fallback to client.sendMessage
         logger.warn(`chat.sendMessage failed: ${chatError.message}, trying client.sendMessage`);
@@ -653,8 +659,7 @@ class WhatsAppService {
       // Import MessageMedia from whatsapp-web.js
       const { MessageMedia } = await import('whatsapp-web.js');
       
-      // Load media from URL - this is very reliable
-      const media = await MessageMedia.fromUrl(url);
+      const media = await MessageMedia.fromUrl(url, { unsafeMime: true });
       
       // Send media using client.sendMessage
       const sentMessage = await client.sendMessage(chatId, media, { caption: caption || '' });
@@ -706,15 +711,48 @@ class WhatsAppService {
       
       logger.info(`Sending button message to ${chatId}`);
 
-      // Send button message
-      const sentMessage = await client.sendMessage(chatId, buttons);
-      
-      logger.info(`Button message sent successfully, messageId: ${sentMessage.id._serialized}`);
-      
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
-      };
+      try {
+        // Try sending button message
+        const sentMessage = await client.sendMessage(chatId, buttons);
+        
+        logger.info(`Button message sent successfully, messageId: ${sentMessage.id._serialized}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      } catch (buttonError: any) {
+        // If buttons fail, send as formatted text with button options
+        logger.warn(`Button message failed, sending as formatted text: ${buttonError.message}`);
+        
+        // Extract button data and format as text
+        const buttonData = buttons as any;
+        let textMessage = buttonData.body || '';
+        
+        if (buttonData.title) {
+          textMessage = `*${buttonData.title}*\n\n${textMessage}`;
+        }
+        
+        if (buttonData.buttons && Array.isArray(buttonData.buttons)) {
+          textMessage += '\n\n_Please reply with:_\n';
+          buttonData.buttons.forEach((btn: any, index: number) => {
+            textMessage += `\n${index + 1}. ${btn.body || btn.text || 'Option'}`;
+          });
+        }
+        
+        if (buttonData.footer) {
+          textMessage += `\n\n_${buttonData.footer}_`;
+        }
+        
+        const sentMessage = await client.sendMessage(chatId, textMessage);
+        
+        logger.info(`Button message sent as text fallback, messageId: ${sentMessage.id._serialized}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      }
     } catch (error: any) {
       logger.error(`Error sending button message via session ${sessionId}:`, error);
       
@@ -751,15 +789,59 @@ class WhatsAppService {
       
       logger.info(`Sending list message to ${chatId}`);
 
-      // Send list message
-      const sentMessage = await client.sendMessage(chatId, list);
-      
-      logger.info(`List message sent successfully, messageId: ${sentMessage.id._serialized}`);
-      
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
-      };
+      try {
+        // Try sending list message
+        const sentMessage = await client.sendMessage(chatId, list);
+        
+        logger.info(`List message sent successfully, messageId: ${sentMessage.id._serialized}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      } catch (listError: any) {
+        // If list fails, send as formatted text
+        logger.warn(`List message failed, sending as formatted text: ${listError.message}`);
+        
+        // Extract list data and format as text
+        const listData = list as any;
+        let textMessage = '';
+        
+        if (listData.title) {
+          textMessage = `*${listData.title}*\n\n`;
+        }
+        
+        textMessage += listData.body || '';
+        
+        if (listData.sections && Array.isArray(listData.sections)) {
+          textMessage += '\n\n';
+          listData.sections.forEach((section: any, sIndex: number) => {
+            textMessage += `\n*${section.title}*\n`;
+            if (section.rows && Array.isArray(section.rows)) {
+              section.rows.forEach((row: any, rIndex: number) => {
+                textMessage += `${rIndex + 1}. *${row.title}*`;
+                if (row.description) {
+                  textMessage += `\n   _${row.description}_`;
+                }
+                textMessage += '\n';
+              });
+            }
+          });
+        }
+        
+        if (listData.footer) {
+          textMessage += `\n_${listData.footer}_`;
+        }
+        
+        const sentMessage = await client.sendMessage(chatId, textMessage);
+        
+        logger.info(`List message sent as text fallback, messageId: ${sentMessage.id._serialized}`);
+        
+        return { 
+          success: true, 
+          messageId: sentMessage.id._serialized 
+        };
+      }
     } catch (error: any) {
       logger.error(`Error sending list message via session ${sessionId}:`, error);
       

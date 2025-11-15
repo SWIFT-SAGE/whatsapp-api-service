@@ -343,17 +343,89 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  .button-item, .section-item {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .button-item-header, .section-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .button-item-header h4, .section-item-header h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  .remove-btn {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .remove-btn:hover {
+    background: #fecaca;
+  }
+
+  .button-type-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .button-type-option {
+    flex: 1;
+    padding: 0.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.875rem;
+    background: white;
+    transition: all 0.2s;
+  }
+
+  .button-type-option:hover {
+    border-color: #25d366;
+  }
+
+  .button-type-option.active {
+    border-color: #25d366;
+    background: #f0fdf4;
+    color: #166534;
+    font-weight: 600;
+  }
+
+  .row-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
 </style>
 
 <div class="templates-container">
   <div class="templates-header">
     <h1>📝 Message Templates</h1>
     <button class="btn-primary-template" onclick="window.templateFunctions.openCreateModal()">+ Create Template</button>
-        </div>
+    </div>
 
   <div class="templates-tabs">
     <button class="templates-tab active" data-tab="all" onclick="window.templateFunctions.switchTab('all')">All Templates</button>
-    <button class="templates-tab" data-tab="built-in" onclick="window.templateFunctions.switchTab('built-in')">Built-in</button>
     <button class="templates-tab" data-tab="custom" onclick="window.templateFunctions.switchTab('custom')">Custom</button>
     <button class="templates-tab" data-tab="marketing" onclick="window.templateFunctions.switchTab('marketing')">Marketing</button>
     <button class="templates-tab" data-tab="transactional" onclick="window.templateFunctions.switchTab('transactional')">Transactional</button>
@@ -362,8 +434,8 @@
   <div id="templates-content" class="template-loading">
     <div class="template-spinner"></div>
     <p>Loading templates...</p>
-    </div>
-</div>
+                    </div>
+                </div>
 
 <!-- Create/Edit Template Modal -->
 <div id="template-modal" class="template-modal">
@@ -376,7 +448,7 @@
       <div class="template-form-group">
         <label>Template Name *</label>
         <input type="text" name="name" required placeholder="e.g., Order Confirmation">
-                    </div>
+        </div>
 
       <div class="template-form-group">
         <label>Category</label>
@@ -386,21 +458,24 @@
           <option value="transactional">Transactional</option>
           <option value="notification">Notification</option>
                         </select>
-                    </div>
+                </div>
 
       <div class="template-form-group">
         <label>Type</label>
         <select name="type" onchange="window.templateFunctions.handleTypeChange(this.value)">
-          <option value="text">Text</option>
-          <option value="media">Media</option>
-          <option value="button">Button</option>
-          <option value="list">List</option>
+          <option value="text">📝 Text Message</option>
+          <option value="product">📦 Product</option>
+          <option value="order">📋 Order</option>
+          <option value="poll">📊 Poll</option>
+          <option value="list">📑 List</option>
         </select>
-                    </div>
+                </div>
 
-      <div class="template-form-group">
-        <label>Message Content *</label>
-        <textarea name="text" required placeholder="Use {{variableName}} for dynamic content
+      <!-- Text Message Configuration -->
+      <div id="text-config">
+        <div class="template-form-group">
+          <label>Message Content *</label>
+          <textarea name="text" placeholder="Use {{variableName}} for dynamic content
 
 Example:
 Hi *{{name}}*!
@@ -409,14 +484,179 @@ Your order {{orderId}} has been confirmed.
 Amount: ₹{{amount}}
 
 Thank you!"></textarea>
-        <small>Use *text* for bold, _text_ for italic, ~text~ for strikethrough</small>
-                        </div>
+          <small>Use *text* for bold, _text_ for italic, ~text~ for strikethrough</small>
+            </div>
+        </div>
 
-      <div class="template-form-group" id="media-url-group" style="display: none;">
-        <label>Media URL</label>
-        <input type="url" name="mediaUrl" placeholder="https://example.com/image.jpg">
-        <small>Enter image, video, or document URL</small>
+      <!-- Product Configuration -->
+      <div id="product-config" style="display: none;">
+        <div class="template-form-group">
+          <label>Product Image URL *</label>
+          <input type="url" name="productImage" placeholder="https://example.com/product.jpg">
+          <small>Public HTTPS URL to product image</small>
+                </div>
+        
+        <div class="template-form-group">
+          <label>Product ID *</label>
+          <input type="text" name="productId" placeholder="PROD-2024-001">
+          <small>Unique product identifier. Use {{variables}} if needed</small>
+            </div>
+        
+        <div class="template-form-group">
+          <label>Product Title *</label>
+          <input type="text" name="title" placeholder="Premium Wireless Headphones">
+          <small>Product name/title</small>
+        </div>
+
+        <div class="template-form-group">
+          <label>Product Description *</label>
+          <textarea name="productDescription" placeholder="High-quality noise-canceling headphones with 30-hour battery life. Perfect for music lovers and professionals."></textarea>
+          <small>Detailed product description</small>
+                </div>
+        
+        <div class="template-form-group">
+          <label>Currency Code *</label>
+          <select name="currencyCode">
+            <option value="INR">INR (₹)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+          </select>
+            </div>
+        
+        <div class="template-form-group">
+          <label>Price (Actual Amount) *</label>
+          <input type="number" name="priceAmount" placeholder="4999" step="0.01">
+          <small>Enter actual price (e.g., 4999 for ₹4,999). Will be converted automatically.</small>
+        </div>
+        
+        <div class="template-form-group">
+          <label>Product URL</label>
+          <input type="url" name="productUrl" placeholder="https://yourstore.com/products/headphones">
+          <small>Link to product page</small>
+        </div>
+        
+        <div class="template-form-group">
+          <label>Retailer/SKU ID</label>
+          <input type="text" name="retailerId" placeholder="SKU-WH-001">
+          <small>SKU or retailer identifier</small>
+    </div>
+</div>
+
+      <!-- Order Configuration -->
+      <div id="order-config" style="display: none;">
+        <div class="template-form-group">
+          <label>Order ID *</label>
+          <input type="text" name="orderId" placeholder="ORD-2024-001 or {{orderId}}">
+          <small>Unique order identifier. Use {{variables}} for dynamic values</small>
+            </div>
+        
+        <div class="template-form-group">
+          <label>Order Title *</label>
+          <input type="text" name="orderTitle" placeholder="Your Order Confirmation">
                     </div>
+
+        <div class="template-form-group">
+          <label>Order Message *</label>
+          <textarea name="orderMessage" placeholder="Thank you for your order! We will process it shortly and send tracking details."></textarea>
+          <small>Message to customer about the order</small>
+        </div>
+        
+        <div class="template-form-group">
+          <label>Thumbnail Image URL</label>
+          <input type="url" name="thumbnail" placeholder="https://example.com/order-thumb.jpg">
+          <small>Order thumbnail image</small>
+        </div>
+        
+        <div class="template-form-group">
+          <label>Order Status *</label>
+          <select name="orderStatus">
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+        <div class="template-form-group">
+          <label>Total Amount (Actual) *</label>
+          <input type="number" name="totalAmount" placeholder="15497" step="0.01">
+          <small>Total order amount. Will be converted automatically.</small>
+                    </div>
+
+        <div class="template-form-group">
+          <label>Currency *</label>
+          <select name="totalCurrencyCode">
+            <option value="INR">INR (₹)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+          </select>
+        </div>
+        
+        <div class="template-form-group">
+          <label>Order Items</label>
+          <div id="order-items-list"></div>
+          <button type="button" onclick="window.templateFunctions.addOrderItem()" class="btn-secondary-template" style="margin-top: 0.5rem;">+ Add Item</button>
+          <small>Add products included in this order</small>
+                        </div>
+                    </div>
+
+      <!-- Poll Configuration -->
+      <div id="poll-config" style="display: none;">
+        <div class="template-form-group">
+          <label>Poll Question *</label>
+          <input type="text" name="pollName" placeholder="How satisfied are you with our service?" maxlength="255">
+          <small>Max 255 characters. Use {{variables}} if needed</small>
+                    </div>
+
+        <div class="template-form-group">
+          <label>Selection Type *</label>
+          <select name="selectableOptionsCount">
+            <option value="1">Single Choice (Radio)</option>
+            <option value="2">Multiple Choice - Max 2</option>
+            <option value="3">Multiple Choice - Max 3</option>
+            <option value="0">Unlimited Choices</option>
+          </select>
+                        </div>
+        
+        <div class="template-form-group">
+          <label>Poll Options (2-12 options) *</label>
+          <div id="poll-options-list"></div>
+          <button type="button" onclick="window.templateFunctions.addPollOption()" class="btn-secondary-template" style="margin-top: 0.5rem;">+ Add Option</button>
+          <small>Minimum 2 options, maximum 12 options. Max 100 chars per option.</small>
+                    </div>
+            </div>
+
+      <!-- List Configuration -->
+      <div id="list-config" style="display: none;">
+        <div class="template-form-group">
+          <label>List Body Text</label>
+          <textarea name="listBody" placeholder="Main message text"></textarea>
+            </div>
+        
+        <div class="template-form-group">
+          <label>List Button Text</label>
+          <input type="text" name="listButtonText" placeholder="e.g., View Options">
+        </div>
+
+        <div class="template-form-group">
+          <label>List Title</label>
+          <input type="text" name="listTitle" placeholder="e.g., Select Service">
+    </div>
+
+        <div class="template-form-group">
+          <label>List Footer</label>
+          <input type="text" name="listFooter" placeholder="e.g., Contact us for help">
+</div>
+
+        <div class="template-form-group">
+          <label>List Sections</label>
+          <div id="sections-list"></div>
+          <button type="button" onclick="window.templateFunctions.addSection()" class="btn-secondary-template" style="margin-top: 0.5rem;">+ Add Section</button>
+            </div>
+                        </div>
 
       <div class="template-form-group">
         <label>Variables</label>
@@ -429,15 +669,15 @@ Thank you!"></textarea>
       <div class="template-form-group">
         <label>Description</label>
         <input type="text" name="description" placeholder="Brief description of this template">
-                        </div>
-
+                </div>
+                
       <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 2rem;">
         <button type="button" class="btn-secondary-template" onclick="window.templateFunctions.closeModal()">Cancel</button>
         <button type="submit" class="btn-primary-template">Save Template</button>
                     </div>
-                </form>
-            </div>
-</div>
+                    </form>
+                    </div>
+                </div>
 
 <!-- Send Template Modal -->
 <div id="send-modal" class="template-modal">
@@ -445,7 +685,7 @@ Thank you!"></textarea>
     <div class="template-modal-header">
       <h2>Send Template</h2>
       <button class="template-close-btn" onclick="window.templateFunctions.closeSendModal()">&times;</button>
-    </div>
+            </div>
     <form id="send-form" onsubmit="return window.templateFunctions.sendTemplate(event)">
       <input type="hidden" id="send-template-id">
       
@@ -477,7 +717,6 @@ Thank you!"></textarea>
   // Global state
   let currentTab = 'all';
   let allTemplates = [];
-  let builtInTemplates = [];
   let currentVariables = [];
 
   // Initialize templates when script loads
@@ -490,31 +729,21 @@ Thank you!"></textarea>
     console.log('=== loadTemplates called ===');
     try {
       console.log('Fetching templates from API...');
-      const [customRes, builtInRes] = await Promise.all([
-        fetch('/api/templates', {
-          credentials: 'include'
-        }),
-        fetch('/api/templates/built-in', {
-          credentials: 'include'
-        })
-      ]);
+      const customRes = await fetch('/api/templates', {
+        credentials: 'include'
+      });
 
       console.log('Custom templates response:', customRes.status);
-      console.log('Built-in templates response:', builtInRes.status);
 
-      if (!customRes.ok || !builtInRes.ok) {
-        throw new Error(`HTTP Error: ${customRes.status} / ${builtInRes.status}`);
+      if (!customRes.ok) {
+        throw new Error(`HTTP Error: ${customRes.status}`);
       }
 
       const customData = await customRes.json();
-      const builtInData = await builtInRes.json();
-
       allTemplates = customData.data || [];
-      builtInTemplates = builtInData.data || [];
 
       console.log('Templates loaded:', {
-        custom: allTemplates.length,
-        builtIn: builtInTemplates.length
+        custom: allTemplates.length
       });
 
       displayTemplates();
@@ -543,33 +772,12 @@ Thank you!"></textarea>
 
   function displayTemplates() {
     console.log('Displaying templates for tab:', currentTab);
-    console.log('builtInTemplates:', builtInTemplates);
     console.log('allTemplates:', allTemplates);
     
     let filtered = [];
 
-    if (currentTab === 'built-in') {
-      // builtInTemplates now contains full template definitions with id, name, type, etc.
-      filtered = builtInTemplates.map(tmpl => ({
-        _id: tmpl.id,
-        name: tmpl.name,
-        description: tmpl.description,
-        category: tmpl.category,
-        type: tmpl.type,
-        variables: tmpl.variables,
-        isBuiltIn: true
-      }));
-    } else if (currentTab === 'all') {
-      const builtInAsObjects = builtInTemplates.map(tmpl => ({
-        _id: tmpl.id,
-        name: tmpl.name,
-        description: tmpl.description,
-        category: tmpl.category,
-        type: tmpl.type,
-        variables: tmpl.variables,
-        isBuiltIn: true
-      }));
-      filtered = [...builtInAsObjects, ...allTemplates];
+    if (currentTab === 'all') {
+      filtered = allTemplates;
     } else if (currentTab === 'custom') {
       filtered = allTemplates.filter(t => t.category === 'custom' || !t.category);
     } else {
@@ -601,8 +809,6 @@ Thank you!"></textarea>
     
     if (template.description) {
       preview = template.description;
-    } else if (template.isBuiltIn) {
-      preview = `Built-in ${template.type} template`;
     } else if (template.content?.text) {
       preview = template.content.text.substring(0, 150);
     } else {
@@ -610,7 +816,7 @@ Thank you!"></textarea>
     }
 
     return `
-      <div class="template-card" onclick="window.templateFunctions.selectTemplate('${template._id || template.name}', ${template.isBuiltIn})">
+      <div class="template-card" onclick="window.templateFunctions.selectTemplate('${template._id || template.name}', false)">
         <div class="template-card-header">
           <div>
             <div class="template-name">${template.name}</div>
@@ -633,31 +839,31 @@ Thank you!"></textarea>
             <div class="template-stat">
               <span class="stat-label">Variables</span>
               <span class="stat-value">${template.variables?.length || 0}</span>
+                    </div>
                 </div>
-            </div>
         ` : `
           <div class="template-stats">
             <div class="template-stat">
               <span class="stat-label">Variables</span>
               <span class="stat-value">${template.variables?.length || 0}</span>
+                </div>
             </div>
-        </div>
         `}
         
         <div class="template-actions">
-          <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.openSendModal('${template._id || template.name}', ${template.isBuiltIn})" title="Send">
+          <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.openSendModal('${template._id || template.name}', false)" title="Send">
             📤
-          </button>
-          ${!template.isBuiltIn ? `
+                </button>
+          ${true ? `
             <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.editTemplate('${template._id}')" title="Edit">
               ✏️
             </button>
             <button class="btn-icon-template" onclick="event.stopPropagation(); window.templateFunctions.deleteTemplate('${template._id}')" title="Delete">
               🗑️
-            </button>
+                </button>
           ` : ''}
-    </div>
-</div>
+            </div>
+        </div>
     `;
   }
 
@@ -682,12 +888,22 @@ Thank you!"></textarea>
     document.getElementById('template-form').reset();
     delete document.getElementById('template-form').dataset.editId;
     currentVariables = [];
+    currentPollOptions = [];
+    currentOrderItems = [];
+    currentSections = [];
     document.getElementById('variables-list').innerHTML = '';
+    document.getElementById('poll-options-list').innerHTML = '';
+    document.getElementById('order-items-list').innerHTML = '';
+    document.getElementById('sections-list').innerHTML = '';
+    handleTypeChange('text');
     document.getElementById('template-modal').classList.add('active');
   }
 
   function closeModal() {
     document.getElementById('template-modal').classList.remove('active');
+    currentPollOptions = [];
+    currentOrderItems = [];
+    currentSections = [];
   }
 
   async function editTemplate(templateId) {
@@ -722,9 +938,41 @@ Thank you!"></textarea>
   }
 
   function handleTypeChange(type) {
-    const mediaUrlGroup = document.getElementById('media-url-group');
-    if (mediaUrlGroup) {
-      mediaUrlGroup.style.display = type === 'media' ? 'block' : 'none';
+    // Hide all config sections
+    const textConfig = document.getElementById('text-config');
+    const productConfig = document.getElementById('product-config');
+    const orderConfig = document.getElementById('order-config');
+    const pollConfig = document.getElementById('poll-config');
+    const listConfig = document.getElementById('list-config');
+    
+    if (textConfig) textConfig.style.display = 'none';
+    if (productConfig) productConfig.style.display = 'none';
+    if (orderConfig) orderConfig.style.display = 'none';
+    if (pollConfig) pollConfig.style.display = 'none';
+    if (listConfig) listConfig.style.display = 'none';
+    
+    // Show the selected config section
+    switch(type) {
+      case 'text':
+        if (textConfig) textConfig.style.display = 'block';
+        break;
+      case 'product':
+        if (productConfig) productConfig.style.display = 'block';
+        break;
+      case 'order':
+        if (orderConfig) orderConfig.style.display = 'block';
+        break;
+      case 'poll':
+        if (pollConfig) pollConfig.style.display = 'block';
+        // Initialize with 2 poll options if empty
+        if (currentPollOptions.length === 0) {
+          addPollOption();
+          addPollOption();
+        }
+        break;
+      case 'list':
+        if (listConfig) listConfig.style.display = 'block';
+        break;
     }
   }
 
@@ -761,7 +1009,7 @@ Thank you!"></textarea>
       <div class="variable-chip">
         {{${v}}}
         <button type="button" onclick="window.templateFunctions.removeVariable('${v}')">&times;</button>
-      </div>
+    </div>
     `).join('');
   }
 
@@ -784,16 +1032,62 @@ Thank you!"></textarea>
       const editId = form.dataset.editId;
       const isEdit = !!editId;
       
-      const contentObj = { text: formData.get('text') || '' };
-      const mediaUrl = formData.get('mediaUrl');
-      if (mediaUrl && mediaUrl.trim()) {
-        contentObj.mediaUrl = mediaUrl.trim();
+      const templateType = formData.get('type') || 'text';
+      const contentObj = {};
+      
+      // Build content based on template type
+      switch(templateType) {
+        case 'text':
+          contentObj.text = formData.get('text') || '';
+          break;
+          
+        case 'product':
+          contentObj.productImage = formData.get('productImage') || '';
+          contentObj.productId = formData.get('productId') || '';
+          contentObj.title = formData.get('title') || '';
+          contentObj.productDescription = formData.get('productDescription') || '';
+          contentObj.currencyCode = formData.get('currencyCode') || 'INR';
+          // Convert actual price to priceAmount1000 format
+          const priceAmount = parseFloat(formData.get('priceAmount')) || 0;
+          contentObj.priceAmount1000 = Math.round(priceAmount * 1000);
+          contentObj.productUrl = formData.get('productUrl') || '';
+          contentObj.retailerId = formData.get('retailerId') || '';
+          break;
+          
+        case 'order':
+          contentObj.orderId = formData.get('orderId') || '';
+          contentObj.orderTitle = formData.get('orderTitle') || '';
+          contentObj.orderMessage = formData.get('orderMessage') || '';
+          contentObj.thumbnail = formData.get('thumbnail') || '';
+          contentObj.orderStatus = formData.get('orderStatus') || 'pending';
+          contentObj.surface = 'catalog';
+          // Convert actual total to totalAmount1000 format
+          const totalAmount = parseFloat(formData.get('totalAmount')) || 0;
+          contentObj.totalAmount1000 = Math.round(totalAmount * 1000);
+          contentObj.totalCurrencyCode = formData.get('totalCurrencyCode') || 'INR';
+          contentObj.itemCount = currentOrderItems.length;
+          contentObj.orderItems = currentOrderItems.filter(item => item.productId && item.name);
+          break;
+          
+        case 'poll':
+          contentObj.pollName = formData.get('pollName') || '';
+          contentObj.pollOptions = currentPollOptions.filter(opt => opt.trim() !== '');
+          contentObj.selectableOptionsCount = parseInt(formData.get('selectableOptionsCount')) || 1;
+          break;
+          
+        case 'list':
+          contentObj.listBody = formData.get('listBody') || '';
+          contentObj.listButtonText = formData.get('listButtonText') || 'View Options';
+          contentObj.listTitle = formData.get('listTitle') || '';
+          contentObj.listFooter = formData.get('listFooter') || '';
+          contentObj.listSections = currentSections.filter(s => s.title.trim() !== '');
+          break;
       }
       
       const templateData = {
         name: formData.get('name'),
         category: formData.get('category') || 'custom',
-        type: formData.get('type') || 'text',
+        type: templateType,
         description: formData.get('description') || '',
         content: contentObj,
         variables: currentVariables || [],
@@ -842,7 +1136,7 @@ Thank you!"></textarea>
   }
 
   function openSendModal(templateId, isBuiltIn) {
-    console.log('Opening send modal for:', templateId, 'isBuiltIn:', isBuiltIn);
+    console.log('Opening send modal for:', templateId);
     
     const input = document.getElementById('send-template-id');
     const modal = document.getElementById('send-modal');
@@ -855,20 +1149,11 @@ Thank you!"></textarea>
     
     input.value = templateId;
     
-    // Get template variables based on whether it's built-in or custom
+    // Get template variables from custom template
     let templateVariables = [];
-    
-    if (isBuiltIn) {
-      // Find built-in template by ID and get its variables
-      const template = builtInTemplates.find(t => t.id === templateId);
-      templateVariables = template?.variables || [];
-      console.log('Built-in template found:', template);
-    } else {
-      // Find custom template and get its variables
-      const template = allTemplates.find(t => t._id === templateId);
-      templateVariables = template?.variables || [];
-      console.log('Custom template found:', template);
-    }
+    const template = allTemplates.find(t => t._id === templateId);
+    templateVariables = template?.variables || [];
+    console.log('Template found:', template);
     
     console.log('Template variables:', templateVariables);
     
@@ -881,7 +1166,7 @@ Thank you!"></textarea>
             <div style="margin-bottom: 1rem;">
               <label style="font-weight: normal; font-size: 0.875rem;">${v}</label>
               <input type="text" name="var_${v}" placeholder="Enter ${v}" class="form-control" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
-            </div>
+</div>
           `).join('')}
         </div>
       `;
@@ -1018,6 +1303,253 @@ Thank you!"></textarea>
     }
   }
 
+  // Poll Options Management
+  let currentPollOptions = [];
+  let currentOrderItems = [];
+  
+  function addPollOption() {
+    if (currentPollOptions.length >= 12) {
+      alert('Maximum 12 poll options allowed');
+      return;
+    }
+    
+    currentPollOptions.push('');
+    renderPollOptions();
+  }
+  
+  function removePollOption(index) {
+    if (currentPollOptions.length <= 2) {
+      alert('Minimum 2 poll options required');
+      return;
+    }
+    currentPollOptions.splice(index, 1);
+    renderPollOptions();
+  }
+  
+  function updatePollOption(index, value) {
+    currentPollOptions[index] = value;
+  }
+  
+  function renderPollOptions() {
+    const container = document.getElementById('poll-options-list');
+    if (!container) return;
+    
+    container.innerHTML = currentPollOptions.map((option, index) => `
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center;">
+        <span style="font-weight: 600; color: #6b7280; min-width: 2rem;">${index + 1}.</span>
+        <input type="text" 
+               value="${option}" 
+               onchange="window.templateFunctions.updatePollOption(${index}, this.value)"
+               placeholder="Option ${index + 1}"
+               maxlength="100"
+               style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+        <button type="button" 
+                onclick="window.templateFunctions.removePollOption(${index})"
+                class="remove-btn"
+                style="padding: 0.5rem 0.75rem;">
+          Remove
+        </button>
+      </div>
+    `).join('');
+  }
+  
+  // Order Items Management
+  function addOrderItem() {
+    const item = {
+      productId: '',
+      name: '',
+      imageUrl: '',
+      quantity: 1,
+      currency: 'INR',
+      priceAmount1000: 0
+    };
+    
+    currentOrderItems.push(item);
+    renderOrderItems();
+  }
+  
+  function removeOrderItem(index) {
+    currentOrderItems.splice(index, 1);
+    renderOrderItems();
+  }
+  
+  function updateOrderItem(index, field, value) {
+    currentOrderItems[index][field] = value;
+  }
+  
+  function renderOrderItems() {
+    const container = document.getElementById('order-items-list');
+    if (!container) return;
+    
+    container.innerHTML = currentOrderItems.map((item, index) => `
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; background: #f9fafb;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <h4 style="margin: 0; font-size: 0.875rem; font-weight: 600;">Item ${index + 1}</h4>
+          <button type="button" 
+                  onclick="window.templateFunctions.removeOrderItem(${index})"
+                  class="remove-btn">
+            Remove
+          </button>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+          <div>
+            <label style="display: block; font-size: 0.75rem; margin-bottom: 0.25rem; color: #6b7280;">Product ID *</label>
+            <input type="text" 
+                   value="${item.productId}" 
+                   onchange="window.templateFunctions.updateOrderItem(${index}, 'productId', this.value)"
+                   placeholder="PROD-001"
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 0.75rem; margin-bottom: 0.25rem; color: #6b7280;">Product Name *</label>
+            <input type="text" 
+                   value="${item.name}" 
+                   onchange="window.templateFunctions.updateOrderItem(${index}, 'name', this.value)"
+                   placeholder="Product Name"
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+          </div>
+          
+          <div style="grid-column: 1 / -1;">
+            <label style="display: block; font-size: 0.75rem; margin-bottom: 0.25rem; color: #6b7280;">Image URL</label>
+            <input type="url" 
+                   value="${item.imageUrl}" 
+                   onchange="window.templateFunctions.updateOrderItem(${index}, 'imageUrl', this.value)"
+                   placeholder="https://example.com/product.jpg"
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 0.75rem; margin-bottom: 0.25rem; color: #6b7280;">Quantity *</label>
+            <input type="number" 
+                   value="${item.quantity}" 
+                   onchange="window.templateFunctions.updateOrderItem(${index}, 'quantity', parseInt(this.value))"
+                   min="1"
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+          </div>
+          
+          <div>
+            <label style="display: block; font-size: 0.75rem; margin-bottom: 0.25rem; color: #6b7280;">Price (Actual) *</label>
+            <input type="number" 
+                   value="${item.priceAmount1000 / 1000}" 
+                   onchange="window.templateFunctions.updateOrderItem(${index}, 'priceAmount1000', parseFloat(this.value) * 1000)"
+                   step="0.01"
+                   placeholder="4999"
+                   style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  // List management
+  let currentSections = [];
+  
+  function addSection() {
+    const section = {
+      title: '',
+      rows: []
+    };
+    
+    currentSections.push(section);
+    renderSections();
+  }
+  
+  function removeSection(index) {
+    currentSections.splice(index, 1);
+    renderSections();
+  }
+  
+  function addRow(sectionIndex) {
+    if (!currentSections[sectionIndex].rows) {
+      currentSections[sectionIndex].rows = [];
+    }
+    
+    currentSections[sectionIndex].rows.push({
+      id: `row_${Date.now()}`,
+      title: '',
+      description: ''
+    });
+    
+    renderSections();
+  }
+  
+  function removeRow(sectionIndex, rowIndex) {
+    currentSections[sectionIndex].rows.splice(rowIndex, 1);
+    renderSections();
+  }
+  
+  function updateSectionField(sectionIndex, field, value) {
+    currentSections[sectionIndex][field] = value;
+  }
+  
+  function updateRowField(sectionIndex, rowIndex, field, value) {
+    currentSections[sectionIndex].rows[rowIndex][field] = value;
+  }
+  
+  function renderSections() {
+    const container = document.getElementById('sections-list');
+    if (!container) return;
+    
+    container.innerHTML = currentSections.map((section, sIndex) => `
+      <div class="section-item">
+        <div class="section-item-header">
+          <h4>Section ${sIndex + 1}</h4>
+          <button type="button" class="remove-btn" onclick="window.templateFunctions.removeSection(${sIndex})">Remove</button>
+        </div>
+        
+        <div style="margin-bottom: 0.75rem;">
+          <label style="display: block; font-size: 0.875rem; margin-bottom: 0.25rem;">Section Title *</label>
+          <input type="text" 
+                 value="${section.title}" 
+                 onchange="window.templateFunctions.updateSectionField(${sIndex}, 'title', this.value)"
+                 placeholder="e.g., Products"
+                 style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 4px;">
+        </div>
+        
+        <div>
+          <label style="display: block; font-size: 0.875rem; margin-bottom: 0.5rem; font-weight: 600;">Rows</label>
+          ${(section.rows || []).map((row, rIndex) => `
+            <div class="row-item">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-size: 0.75rem; font-weight: 600; color: #6b7280;">Row ${rIndex + 1}</span>
+                <button type="button" 
+                        onclick="window.templateFunctions.removeRow(${sIndex}, ${rIndex})"
+                        style="background: #fee2e2; color: #dc2626; border: none; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer;">
+                  Remove
+                </button>
+              </div>
+              
+              <div style="margin-bottom: 0.5rem;">
+                <input type="text" 
+                       value="${row.title}" 
+                       onchange="window.templateFunctions.updateRowField(${sIndex}, ${rIndex}, 'title', this.value)"
+                       placeholder="Row title"
+                       style="width: 100%; padding: 0.375rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+              </div>
+              
+              <div>
+                <input type="text" 
+                       value="${row.description || ''}" 
+                       onchange="window.templateFunctions.updateRowField(${sIndex}, ${rIndex}, 'description', this.value)"
+                       placeholder="Row description (optional)"
+                       style="width: 100%; padding: 0.375rem; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.875rem;">
+              </div>
+            </div>
+          `).join('')}
+          
+          <button type="button" 
+                  onclick="window.templateFunctions.addRow(${sIndex})" 
+                  class="btn-secondary-template" 
+                  style="margin-top: 0.5rem; font-size: 0.875rem; padding: 0.5rem 1rem;">
+            + Add Row
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
   // Expose functions globally
   window.templateFunctions = {
     loadTemplates,
@@ -1029,6 +1561,18 @@ Thank you!"></textarea>
     editTemplate,
     handleTypeChange,
     addVariable,
+    addPollOption,
+    removePollOption,
+    updatePollOption,
+    addOrderItem,
+    removeOrderItem,
+    updateOrderItem,
+    addSection,
+    removeSection,
+    addRow,
+    removeRow,
+    updateSectionField,
+    updateRowField,
     removeVariable,
     saveTemplate,
     openSendModal,

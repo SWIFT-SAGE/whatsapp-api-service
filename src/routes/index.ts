@@ -39,7 +39,9 @@ router.get('/', (req, res) => {
 
 // Route handlers
 router.use('/auth', authRoutes);
-router.use('/whatsapp', authenticateApiKey, whatsappRoutes);
+// Use flexible auth for WhatsApp routes (accepts both JWT token and API key)
+import { flexibleAuth } from '../middleware/flexAuth';
+router.use('/whatsapp', flexibleAuth, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
 router.use('/webhooks', authenticateToken, webhookRoutes);
 router.use('/payments', paymentRoutes);

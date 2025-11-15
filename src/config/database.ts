@@ -41,9 +41,9 @@ class DatabaseManager {
     
     // Production-grade connection options
     const options: mongoose.ConnectOptions = {
-      // Connection pool settings
-      maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE || '20'),
-      minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE || '5'),
+      // Connection pool settings (optimized for performance)
+      maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE || '50'), // Increased for better concurrency
+      minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE || '10'), // Increased minimum pool
       
       // Timeout settings (increased for better MongoDB Atlas compatibility)
       serverSelectionTimeoutMS: parseInt(process.env.DB_SERVER_SELECTION_TIMEOUT || '30000'),

@@ -5,27 +5,53 @@ export interface IMessageTemplate extends Document {
   name: string;
   description?: string;
   category: 'marketing' | 'transactional' | 'notification' | 'custom';
-  type: 'text' | 'media' | 'buttons' | 'list' | 'interactive';
+  type: 'text' | 'product' | 'order' | 'poll' | 'list' | 'interactive';
   content: {
-    // Text & Media
+    // Text
     text?: string;
-    mediaUrl?: string;
-    mediaType?: 'image' | 'video' | 'document' | 'audio';
-    caption?: string;
     
-    // Buttons (whatsapp-web.js Buttons class)
-    buttonTitle?: string; // Title shown above buttons
-    buttonFooter?: string; // Footer text
-    buttons?: Array<{
-      id: string;
-      body: string; // Button text
+    // Product (whatsapp-web.js Product class)
+    productImage?: string;
+    businessOwnerJid?: string;
+    productId?: string;
+    title?: string;
+    productDescription?: string;
+    currencyCode?: string;
+    priceAmount1000?: number; // Price × 1000
+    productUrl?: string;
+    retailerId?: string;
+    
+    // Order (whatsapp-web.js Order class)
+    orderId?: string;
+    thumbnail?: string;
+    itemCount?: number;
+    orderStatus?: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    surface?: 'catalog' | 'cart';
+    orderMessage?: string;
+    orderTitle?: string;
+    sellerJid?: string;
+    token?: string;
+    totalAmount1000?: number;
+    totalCurrencyCode?: string;
+    orderItems?: Array<{
+      productId: string;
+      name: string;
+      imageUrl: string;
+      quantity: number;
+      currency: string;
+      priceAmount1000: number;
     }>;
     
+    // Poll (whatsapp-web.js Poll class)
+    pollName?: string;
+    pollOptions?: string[];
+    selectableOptionsCount?: number; // 1 = single choice, 0 = unlimited, N = max N choices
+    
     // List (whatsapp-web.js List class)
-    listBody?: string; // Main text for list
-    listButtonText?: string; // Text on the button to open list
-    listTitle?: string; // Title at top of list
-    listFooter?: string; // Footer text
+    listBody?: string;
+    listButtonText?: string;
+    listTitle?: string;
+    listFooter?: string;
     listSections?: Array<{
       title: string;
       rows: Array<{
@@ -72,30 +98,59 @@ const MessageTemplateSchema: Schema = new Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'media', 'buttons', 'list', 'interactive'],
+      enum: ['text', 'product', 'order', 'poll', 'list', 'interactive'],
       required: true,
       default: 'text'
     },
   content: {
     type: {
-      // Text & Media
+      // Text
       text: String,
-      mediaUrl: String,
-      mediaType: {
-        type: String,
-        enum: ['image', 'video', 'document', 'audio']
-      },
-      caption: String,
       
-      // Buttons
-      buttonTitle: String,
-      buttonFooter: String,
-      buttons: [{
-        id: String,
-        body: String
+      // Product fields
+      productImage: String,
+      businessOwnerJid: String,
+      productId: String,
+      title: String,
+      productDescription: String,
+      currencyCode: String,
+      priceAmount1000: Number,
+      productUrl: String,
+      retailerId: String,
+      
+      // Order fields
+      orderId: String,
+      thumbnail: String,
+      itemCount: Number,
+      orderStatus: {
+        type: String,
+        enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
+      },
+      surface: {
+        type: String,
+        enum: ['catalog', 'cart']
+      },
+      orderMessage: String,
+      orderTitle: String,
+      sellerJid: String,
+      token: String,
+      totalAmount1000: Number,
+      totalCurrencyCode: String,
+      orderItems: [{
+        productId: String,
+        name: String,
+        imageUrl: String,
+        quantity: Number,
+        currency: String,
+        priceAmount1000: Number
       }],
       
-      // List
+      // Poll fields
+      pollName: String,
+      pollOptions: [String],
+      selectableOptionsCount: Number,
+      
+      // List fields
       listBody: String,
       listButtonText: String,
       listTitle: String,

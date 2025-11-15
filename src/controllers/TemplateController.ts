@@ -190,35 +190,15 @@ class TemplateController {
         return;
       }
       
-      // Check if using custom template or built-in
-      const builtInTemplates = TemplateService.getBuiltInTemplates();
-      const identifier = templateId || templateName;
-      
-      // Check if identifier matches a built-in template ID
-      const isBuiltIn = builtInTemplates.some(t => t.id === identifier || t.name === identifier);
-      
-      let result;
-      if (isBuiltIn) {
-        // Use built-in template
-        result = await TemplateService.sendTemplate({
-          sessionId,
-          to,
-          templateId,
-          templateName,
-          variables,
-          delay: delay || 2000
-        });
-      } else {
-        // Use custom template from database
-        result = await TemplateService.sendCustomTemplate(userId, {
-          sessionId,
-          to,
-          templateId,
-          templateName,
-          variables,
-          delay: delay || 2000
-        });
-      }
+      // Send custom template from database
+      const result = await TemplateService.sendCustomTemplate(userId, {
+        sessionId,
+        to,
+        templateId,
+        templateName,
+        variables,
+        delay: delay || 2000
+      });
       
       // Check if any messages were actually sent
       if (result.success && result.sent > 0) {
@@ -246,17 +226,16 @@ class TemplateController {
   }
 
   /**
-   * Get list of built-in templates
+   * Get list of built-in templates (removed - no longer supported)
    * GET /api/templates/built-in
    */
   async getBuiltInTemplates(req: Request, res: Response): Promise<void> {
     try {
-      const templates = TemplateService.getBuiltInTemplates();
-      
+      // Built-in templates removed
       res.json({
         success: true,
-        count: templates.length,
-        data: templates,
+        count: 0,
+        data: [],
         examples: {
           welcome: { name: 'John' },
           orderConfirmation: { name: 'John', orderId: 'ORD12345', amount: '2,499' },

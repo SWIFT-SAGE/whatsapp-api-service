@@ -327,19 +327,12 @@
                 throw new Error('User not logged in');
             }
 
-            // Determine authentication method based on endpoint
-            let headers;
-            if (endpoint.includes('/api/whatsapp/')) {
-                headers = getApiKeyHeaders();
-            } else if (endpoint.includes('/api/analytics/') || endpoint.includes('/api/user/') || endpoint.includes('/api/auth/')) {
-                headers = getJwtHeaders();
-            } else {
-                headers = getJwtHeaders();
-            }
-
+            // Use JWT authentication for dashboard (cookies are sent automatically)
+            // This works with the flexible auth middleware that accepts both JWT and API keys
             const response = await fetch(endpoint, {
+                credentials: 'include', // Include cookies for JWT authentication
                 headers: {
-                    ...headers,
+                    'Content-Type': 'application/json',
                     ...options.headers
                 },
                 ...options
@@ -554,18 +547,7 @@
                     }
                 }
                 
-                console.log('loadSessionsData - API key check:', {
-                    windowCurrentUserApiKey: window.currentUser?.apiKey,
-                    sessionStorageApiKey: storedUser ? JSON.parse(storedUser).apiKey : 'none',
-                    finalApiKey: apiKey
-                });
-
-                if (!apiKey || apiKey === 'Not generated') {
-                    showError('sessions', 'Please generate an API key first');
-                    hideLoading('sessions');
-                    return;
-                }
-
+                // No API key check needed - using JWT authentication from cookies
                 const response = await makeApiCall('/api/whatsapp/sessions');
                 console.log('Sessions API response:', response);
                 
@@ -646,8 +628,6 @@
 
                 if (error.message.includes('log in')) {
                     showError('sessions', 'Please log in to view sessions');
-                } else if (error.message.includes('API key')) {
-                    showError('sessions', 'Please generate an API key first');
                 } else {
                     showError('sessions', 'Failed to load sessions data: ' + error.message);
                 }
@@ -3288,14 +3268,6 @@
                     // Show user-friendly error message
                     if (error.message.includes('Maximum sessions reached')) {
                         alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
-                    } else if (error.message.includes('API key not found')) {
-                        alert('Please generate an API key first!\n\n1. Go to the Overview section\n2. Click "Generate API Key"\n3. Then return here to create sessions');
-                        
-                        // Redirect to overview section
-                        const overviewLink = document.querySelector('[data-section="overview"]');
-                        if (overviewLink) {
-                            overviewLink.click();
-                        }
                     } else {
                         alert('Error creating session: ' + error.message);
                     }
@@ -3439,14 +3411,6 @@
                     // Show user-friendly error message
                     if (error.message.includes('Maximum sessions reached')) {
                         alert('You have reached the maximum number of sessions for your plan. Please delete an existing session or upgrade your plan.');
-                    } else if (error.message.includes('API key not found')) {
-                        alert('Please generate an API key first!\n\n1. Go to the Overview section\n2. Click "Generate API Key"\n3. Then return here to create sessions');
-                        
-                        // Redirect to overview section
-                        const overviewLink = document.querySelector('[data-section="overview"]');
-                        if (overviewLink) {
-                            overviewLink.click();
-                        }
                     } else {
                         alert('Error creating session: ' + error.message);
                     }

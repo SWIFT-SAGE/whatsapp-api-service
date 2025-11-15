@@ -5,13 +5,10 @@
         <div class="d-flex flex-wrap gap-2">
             <div class="btn-group" role="group">
                 <input type="radio" class="btn-check" name="message-filter" id="filter-all" autocomplete="off" checked>
-                <label class="btn btn-outline-secondary" for="filter-all">All</label>
+                <label class="btn btn-outline-secondary" for="filter-all">All Sent</label>
                 
                 <input type="radio" class="btn-check" name="message-filter" id="filter-sent" autocomplete="off">
-                <label class="btn btn-outline-secondary" for="filter-sent">Sent</label>
-                
-                <input type="radio" class="btn-check" name="message-filter" id="filter-received" autocomplete="off">
-                <label class="btn btn-outline-secondary" for="filter-received">Received</label>
+                <label class="btn btn-outline-secondary" for="filter-sent">Delivered</label>
                 
                 <input type="radio" class="btn-check" name="message-filter" id="filter-failed" autocomplete="off">
                 <label class="btn btn-outline-secondary" for="filter-failed">Failed</label>
@@ -294,7 +291,21 @@ async function loadMessagesData(page = 1, limit = 20) {
 
         console.log('Total messages loaded:', allMessages.length);
 
-        // Apply filters
+        // Filter to show only OUTBOUND messages (sent from dashboard/API)
+        // This filters out incoming messages and only shows messages you sent
+        allMessages = allMessages.filter(msg => {
+            // Keep messages where direction is 'outbound' or 'sent'
+            // OR where the message was sent by the system (not received)
+            return msg.direction === 'outbound' || 
+                   msg.direction === 'sent' || 
+                   msg.direction === 'out' ||
+                   msg.fromMe === true ||
+                   (msg.type && msg.direction !== 'inbound' && msg.direction !== 'received');
+        });
+
+        console.log('Outbound messages after filtering:', allMessages.length);
+
+        // Apply additional filters
         let filteredMessages = allMessages;
         
         if (currentFilters.direction) {
@@ -552,15 +563,23 @@ async function loadSessionsForFilter() {
         
         let sessions = [];
         
-        if (response && response.success && response.data) {
-            sessions = Array.isArray(response.data) ? response.data : 
-                      (response.data.sessions || []);
-        } else if (response && Array.isArray(response.data)) {
-            sessions = response.data;
-        } else if (Array.isArray(response)) {
-            sessions = response;
-        } else {
-            console.warn('Unexpected response format:', response);
+        // Handle different response formats
+        if (response) {
+            if (response.success && response.sessions && Array.isArray(response.sessions)) {
+                sessions = response.sessions;
+            } else if (response.success && response.data) {
+                if (Array.isArray(response.data)) {
+                    sessions = response.data;
+                } else if (response.data.sessions && Array.isArray(response.data.sessions)) {
+                    sessions = response.data.sessions;
+                }
+            } else if (Array.isArray(response.sessions)) {
+                sessions = response.sessions;
+            } else if (Array.isArray(response.data)) {
+                sessions = response.data;
+            } else if (Array.isArray(response)) {
+                sessions = response;
+            }
         }
 
         console.log('Parsed sessions for filter:', sessions.length, sessions);
@@ -640,15 +659,15 @@ function initializeMessageEventListeners() {
             if (this.checked) {
                 const filterId = this.id;
                 if (filterId === 'filter-all') {
+                    // Show all sent messages (already filtered to outbound only)
                     currentFilters.direction = '';
                     currentFilters.status = '';
                 } else if (filterId === 'filter-sent') {
-                    currentFilters.direction = 'outbound';
-                    currentFilters.status = '';
-                } else if (filterId === 'filter-received') {
-                    currentFilters.direction = 'inbound';
-                    currentFilters.status = '';
+                    // Show only delivered messages
+                    currentFilters.direction = '';
+                    currentFilters.status = 'delivered';
                 } else if (filterId === 'filter-failed') {
+                    // Show only failed messages
                     currentFilters.direction = '';
                     currentFilters.status = 'failed';
                 }
@@ -956,6 +975,15 @@ async function exportMessages() {
                 console.warn(`Failed to get messages from session ${session.sessionId || session.id}:`, error);
             }
         }
+
+        // Filter to show only OUTBOUND messages (sent from dashboard/API)
+        allMessages = allMessages.filter(msg => {
+            return msg.direction === 'outbound' || 
+                   msg.direction === 'sent' || 
+                   msg.direction === 'out' ||
+                   msg.fromMe === true ||
+                   (msg.type && msg.direction !== 'inbound' && msg.direction !== 'received');
+        });
 
         // Apply current filters
         let filteredMessages = allMessages;

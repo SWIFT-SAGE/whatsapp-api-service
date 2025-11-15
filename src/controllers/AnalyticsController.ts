@@ -5,6 +5,7 @@ import WhatsappSession from '../models/WhatsappSession';
 import User, { IUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { ApiResponse } from '../types/common';
+import { cache, CacheKeys, CacheTTL } from '../config/cache';
 
 export class AnalyticsController {
   /**
@@ -14,6 +15,20 @@ export class AnalyticsController {
     try {
       const userId = (req.user as IUser)._id;
       const { period = '30d' } = req.query;
+
+      // Try to get from cache first
+      const cacheKey = CacheKeys.dashboardStats(userId.toString() + ':' + period);
+      const cachedStats = cache.get(cacheKey);
+      
+      if (cachedStats) {
+        logger.debug('Dashboard stats served from cache');
+        res.json({
+          success: true,
+          message: 'Dashboard statistics retrieved successfully (cached)',
+          data: cachedStats
+        } as ApiResponse);
+        return;
+      }
 
       // Calculate date range
       const now = new Date();
@@ -85,7 +100,7 @@ export class AnalyticsController {
         overview: {
           totalSessions,
           activeSessions,
-          totalMessages,
+          totalMessages: sentMessages, // Show only sent messages (outbound)
           sentMessages,
           receivedMessages,
           messageLimit: user?.subscription.messageLimit || 0,
@@ -102,6 +117,9 @@ export class AnalyticsController {
         }, {} as Record<string, number>),
         period
       };
+
+      // Cache the results for 2 minutes
+      cache.set(cacheKey, stats, CacheTTL.SHORT * 2);
 
       res.json({
         success: true,

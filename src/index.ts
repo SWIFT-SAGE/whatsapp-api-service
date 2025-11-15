@@ -100,8 +100,22 @@ app.use(passport.session() as any);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'views'));
 
-// Static files
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Static files with caching headers for better performance
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0, // Cache for 1 day in production
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Cache images, fonts, and other assets longer
+    if (filePath.match(/\.(jpg|jpeg|png|gif|webp|svg|ico|woff|woff2|ttf|eot)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable'); // 1 year
+    }
+    // Cache CSS and JS for shorter time
+    else if (filePath.match(/\.(css|js)$/)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+    }
+  }
+}));
 
 // SEO Redirect middleware (must be before route definitions)
 import { seoRedirectMiddleware, trailingSlashMiddleware, lowercaseUrlMiddleware } from './middleware/redirects';
@@ -186,16 +200,16 @@ app.get('/dashboard', authenticateWeb, async (req, res) => {
     const sessions = await WhatsappSession.find({ userId }).sort({ createdAt: -1 });
     const activeSessions = sessions.filter(s => s.isConnected).length;
     
-    // Get message statistics (last 30 days)
+    // Get message statistics (last 30 days) - only outbound messages
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const messageStats = await MessageLog.aggregate([
-      { $match: { userId, createdAt: { $gte: thirtyDaysAgo } } },
+      { $match: { userId, createdAt: { $gte: thirtyDaysAgo }, direction: 'outbound' } }, // Only count outbound messages
       {
         $group: {
           _id: null,
-          totalMessages: { $sum: 1 },
-          sentMessages: { $sum: { $cond: [{ $eq: ['$direction', 'outbound'] }, 1, 0] } },
-          receivedMessages: { $sum: { $cond: [{ $eq: ['$direction', 'inbound'] }, 1, 0] } },
+          totalMessages: { $sum: 1 }, // Total outbound messages
+          sentMessages: { $sum: 1 }, // Same as total (all are outbound)
+          receivedMessages: { $sum: 0 }, // Not counting received messages
           deliveredMessages: { $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] } }
         }
       }

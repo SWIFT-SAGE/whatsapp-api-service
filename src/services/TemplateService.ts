@@ -1,12 +1,11 @@
 import MessageTemplate, { IMessageTemplate } from '../models/MessageTemplate';
 import whatsappService from './whatsappService';
 import { logger } from '../utils/logger';
-import { MessageMedia, Buttons, List } from 'whatsapp-web.js';
+import { List } from 'whatsapp-web.js';
 import axios from 'axios';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { getAllBuiltInTemplates, getBuiltInTemplateById, BuiltInTemplateDefinition } from './BuiltInTemplates';
 
 interface TemplateVariable {
   [key: string]: string | number;
@@ -163,108 +162,6 @@ class TemplateService {
   /**
    * Send template message (handles built-in templates)
    */
-  async sendTemplate(options: SendTemplateOptions): Promise<any> {
-    try {
-      const { sessionId, to, templateId, templateName, variables = {} } = options;
-      
-      // Handle single or multiple recipients
-      const recipients = Array.isArray(to) ? to : [to];
-      
-      // Get built-in template
-      const identifier = templateId || templateName!;
-      const builtInTemplate = getBuiltInTemplateById(identifier);
-      
-      if (!builtInTemplate) {
-        throw new Error(`Template not found: ${identifier}`);
-      }
-      
-      const results = [];
-      
-      for (const recipient of recipients) {
-        try {
-          // Format phone number - preserve + sign if present, otherwise add it
-          let chatId: string;
-          if (recipient.includes('@')) {
-            chatId = recipient;
-          } else {
-            // Remove spaces, dashes, parentheses but keep + and digits
-            let cleaned = recipient.replace(/[\s\-\(\)]/g, '');
-            // If it doesn't start with +, add it (assuming country code is included)
-            if (!cleaned.startsWith('+')) {
-              cleaned = '+' + cleaned;
-            }
-            // Remove + for WhatsApp format (country code without +)
-            chatId = `${cleaned.substring(1)}@c.us`;
-          }
-          
-          logger.info(`Sending ${builtInTemplate.type} template "${builtInTemplate.id}" to ${chatId}`);
-          
-          let result: any;
-          
-          // Handle different template types
-          switch (builtInTemplate.type) {
-            case 'text':
-              const messageText = this.replaceVariables(builtInTemplate.content.text || '', variables);
-              logger.info(`Text template message: ${messageText.substring(0, 100)}...`);
-              result = await whatsappService.sendMessage(sessionId, chatId, messageText);
-              break;
-              
-            case 'buttons':
-              logger.info(`Sending button template with ${builtInTemplate.content.buttons?.length || 0} buttons`);
-              result = await this.sendBuiltInButtonTemplate(sessionId, chatId, builtInTemplate, variables);
-              break;
-              
-            case 'list':
-              logger.info(`Sending list template with ${builtInTemplate.content.listSections?.length || 0} sections`);
-              result = await this.sendBuiltInListTemplate(sessionId, chatId, builtInTemplate, variables);
-              break;
-              
-            default:
-              throw new Error(`Unsupported template type: ${builtInTemplate.type}`);
-          }
-          
-          if (!result.success) {
-            logger.error(`Failed to send template to ${chatId}: ${result.error}`);
-          } else {
-            logger.info(`Template sent successfully to ${chatId}, messageId: ${result.messageId}`);
-          }
-          
-          results.push({
-            to: recipient,
-            success: result.success,
-            messageId: result.messageId,
-            error: result.error
-          });
-          
-          // Add delay between bulk sends
-          if (recipients.length > 1 && options.delay) {
-            await new Promise(resolve => setTimeout(resolve, options.delay));
-          }
-        } catch (error: any) {
-          logger.error(`Error sending template to ${recipient}:`, error);
-          results.push({
-            to: recipient,
-            success: false,
-            error: error.message || 'Unknown error'
-          });
-        }
-      }
-      
-      const sentCount = results.filter(r => r.success).length;
-      const failedCount = results.filter(r => !r.success).length;
-      
-      // Return success only if at least one message was sent successfully
-      return {
-        success: sentCount > 0,
-        sent: sentCount,
-        failed: failedCount,
-        results
-      };
-    } catch (error: any) {
-      logger.error('Error sending template:', error);
-      throw error;
-    }
-  }
 
   /**
    * Send template with custom content (from database template)
@@ -297,12 +194,16 @@ class TemplateService {
               result = await whatsappService.sendMessage(sessionId, chatId, messageText);
               break;
               
-            case 'media':
-              result = await this.sendMediaTemplate(sessionId, chatId, template, variables);
+            case 'product':
+              result = await this.sendProductTemplate(sessionId, chatId, template, variables);
               break;
               
-            case 'buttons':
-              result = await this.sendButtonTemplate(sessionId, chatId, template, variables);
+            case 'order':
+              result = await this.sendOrderTemplate(sessionId, chatId, template, variables);
+              break;
+              
+            case 'poll':
+              result = await this.sendPollTemplate(sessionId, chatId, template, variables);
               break;
               
             case 'list':
@@ -348,71 +249,6 @@ class TemplateService {
     }
   }
 
-  /**
-   * Send media template
-   */
-  private async sendMediaTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
-    try {
-      const caption = template.content.caption 
-        ? this.replaceVariables(template.content.caption, variables)
-        : undefined;
-      
-      if (template.content.mediaUrl) {
-        // Send from URL
-        return await whatsappService.sendMediaFromUrl(sessionId, chatId, template.content.mediaUrl, caption);
-      } else {
-        throw new Error('Media URL is required for media templates');
-      }
-    } catch (error: any) {
-      logger.error('Error sending media template:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Send button template (using whatsapp-web.js Buttons class)
-   */
-  private async sendButtonTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
-    try {
-      // Replace variables in text
-      const bodyText = template.content.text 
-        ? this.replaceVariables(template.content.text, variables)
-        : '';
-      
-      const buttonTitle = template.content.buttonTitle 
-        ? this.replaceVariables(template.content.buttonTitle, variables)
-        : undefined;
-      
-      const buttonFooter = template.content.buttonFooter 
-        ? this.replaceVariables(template.content.buttonFooter, variables)
-        : undefined;
-      
-      // Prepare buttons (max 3 buttons)
-      const buttonList = template.content.buttons && template.content.buttons.length > 0
-        ? template.content.buttons.slice(0, 3).map(btn => ({
-            id: btn.id,
-            body: this.replaceVariables(btn.body, variables)
-          }))
-        : [];
-      
-      if (buttonList.length === 0) {
-        throw new Error('At least one button is required for button templates');
-      }
-      
-      // Create Buttons object
-      const buttons = new Buttons(
-        bodyText,
-        buttonList,
-        buttonTitle || '',
-        buttonFooter || ''
-      );
-      
-      return await whatsappService.sendButtonMessage(sessionId, chatId, buttons);
-    } catch (error: any) {
-      logger.error('Error sending button template:', error);
-      throw error;
-    }
-  }
 
   /**
    * Send list template (using whatsapp-web.js List class)
@@ -468,85 +304,89 @@ class TemplateService {
     }
   }
 
+
   /**
-   * Send built-in button template
+   * Send product template (whatsapp-web.js Product class)
    */
-  private async sendBuiltInButtonTemplate(sessionId: string, chatId: string, template: BuiltInTemplateDefinition, variables: TemplateVariable): Promise<any> {
+  private async sendProductTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
     try {
-      const bodyText = template.content.text 
-        ? this.replaceVariables(template.content.text, variables)
-        : '';
+      const product = {
+        productImage: template.content.productImage ? this.replaceVariables(template.content.productImage, variables) : '',
+        businessOwnerJid: template.content.businessOwnerJid || chatId,
+        productId: template.content.productId ? this.replaceVariables(template.content.productId, variables) : `PROD-${Date.now()}`,
+        title: template.content.title ? this.replaceVariables(template.content.title, variables) : '',
+        description: template.content.productDescription ? this.replaceVariables(template.content.productDescription, variables) : '',
+        currencyCode: template.content.currencyCode || 'INR',
+        priceAmount1000: template.content.priceAmount1000 || 0,
+        url: template.content.productUrl ? this.replaceVariables(template.content.productUrl, variables) : '',
+        retailerId: template.content.retailerId ? this.replaceVariables(template.content.retailerId, variables) : ''
+      };
+
+      logger.info('Sending product message:', { productId: product.productId, title: product.title });
       
-      const buttonTitle = template.content.buttonTitle 
-        ? this.replaceVariables(template.content.buttonTitle, variables)
-        : '';
-      
-      const buttonFooter = template.content.buttonFooter 
-        ? this.replaceVariables(template.content.buttonFooter, variables)
-        : '';
-      
-      const buttonList = template.content.buttons.map((btn: any) => ({
-        id: btn.id,
-        body: this.replaceVariables(btn.body, variables)
-      }));
-      
-      const buttons = new Buttons(
-        bodyText,
-        buttonList,
-        buttonTitle,
-        buttonFooter
-      );
-      
-      return await whatsappService.sendButtonMessage(sessionId, chatId, buttons);
+      return await whatsappService.sendMessage(sessionId, chatId, product as any);
     } catch (error: any) {
-      logger.error('Error sending built-in button template:', error);
+      logger.error('Error sending product template:', error);
       throw error;
     }
   }
 
   /**
-   * Send built-in list template
+   * Send order template (whatsapp-web.js Order class)
    */
-  private async sendBuiltInListTemplate(sessionId: string, chatId: string, template: BuiltInTemplateDefinition, variables: TemplateVariable): Promise<any> {
+  private async sendOrderTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
     try {
-      const listBody = template.content.listBody 
-        ? this.replaceVariables(template.content.listBody, variables)
-        : '';
+      const order = {
+        orderId: template.content.orderId ? this.replaceVariables(template.content.orderId, variables) : `ORD-${Date.now()}`,
+        thumbnail: template.content.thumbnail || '',
+        itemCount: template.content.itemCount || template.content.orderItems?.length || 0,
+        status: template.content.orderStatus || 'pending',
+        surface: template.content.surface || 'catalog',
+        message: template.content.orderMessage ? this.replaceVariables(template.content.orderMessage, variables) : '',
+        orderTitle: template.content.orderTitle ? this.replaceVariables(template.content.orderTitle, variables) : '',
+        sellerJid: template.content.sellerJid || chatId,
+        token: template.content.token || `token_${Date.now()}`,
+        totalAmount1000: template.content.totalAmount1000 || 0,
+        totalCurrencyCode: template.content.totalCurrencyCode || 'INR',
+        items: template.content.orderItems?.map(item => ({
+          productId: this.replaceVariables(item.productId, variables),
+          name: this.replaceVariables(item.name, variables),
+          imageUrl: item.imageUrl,
+          quantity: item.quantity,
+          currency: item.currency,
+          priceAmount1000: item.priceAmount1000
+        })) || []
+      };
+
+      logger.info('Sending order message:', { orderId: order.orderId, itemCount: order.itemCount });
       
-      const listButtonText = template.content.listButtonText || 'View Options';
-      const listTitle = template.content.listTitle || '';
-      const listFooter = template.content.listFooter || '';
-      
-      const sections = template.content.listSections.map((section: any) => ({
-        title: section.title,
-        rows: section.rows.map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          description: row.description
-        }))
-      }));
-      
-      const list = new List(
-        listBody,
-        listButtonText,
-        sections,
-        listTitle,
-        listFooter
-      );
-      
-      return await whatsappService.sendListMessage(sessionId, chatId, list);
+      return await whatsappService.sendMessage(sessionId, chatId, order as any);
     } catch (error: any) {
-      logger.error('Error sending built-in list template:', error);
+      logger.error('Error sending order template:', error);
       throw error;
     }
   }
 
   /**
-   * Get all built-in template definitions
+   * Send poll template (whatsapp-web.js Poll class)
    */
-  getBuiltInTemplates(): BuiltInTemplateDefinition[] {
-    return getAllBuiltInTemplates();
+  private async sendPollTemplate(sessionId: string, chatId: string, template: IMessageTemplate, variables: TemplateVariable): Promise<any> {
+    try {
+      const poll = {
+        name: template.content.pollName ? this.replaceVariables(template.content.pollName, variables) : '',
+        options: template.content.pollOptions?.map(opt => this.replaceVariables(opt, variables)) || [],
+        selectableOptionsCount: template.content.selectableOptionsCount || 1
+      };
+
+      logger.info('Sending poll message:', { question: poll.name, optionCount: poll.options.length });
+      
+      return await whatsappService.sendMessage(sessionId, chatId, poll as any);
+    } catch (error: any) {
+      logger.error('Error sending poll template:', error);
+      throw error;
+    }
   }
+
 }
 
 export default new TemplateService();
