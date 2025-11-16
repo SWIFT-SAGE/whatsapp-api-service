@@ -864,7 +864,12 @@
                     await loadAnalyticsData();
                     break;
                 case 'billing':
-                    await loadBillingData();
+                    console.log('Billing section loaded - initializing billing');
+                    if (typeof window.initializeBilling === 'function') {
+                        await window.initializeBilling();
+                    } else {
+                        await loadBillingData();
+                    }
                     break;
                 case 'profile':
                     console.log('Loading profile data...');
@@ -873,10 +878,21 @@
             }
         }
         
+        // Track current loaded section to prevent unnecessary reloads
+        let currentLoadedSection = null;
+        
         // Load section page dynamically
         async function loadSectionPage(section) {
             console.log('loadSectionPage called with section:', section);
+            console.log('Currently loaded section:', currentLoadedSection);
+            console.log('Called from:', new Error().stack);
             console.log('Auth token available:', !!sessionStorage.getItem('authToken'));
+            
+            // Prevent reloading the same section
+            if (currentLoadedSection === section) {
+                console.log(`Section '${section}' is already loaded, skipping reload`);
+                return;
+            }
             
             try {
                 // Show loading state
@@ -928,6 +944,10 @@
                     });
                 }
 
+                // Mark this section as loaded
+                currentLoadedSection = section;
+                console.log(`Section '${section}' loaded successfully`);
+                
                 // Load section-specific data after page is loaded
                 await loadSectionData(section);
                 
@@ -5281,55 +5301,108 @@ function initializeChatbotEventListeners() {
     // Create Bot
     const createBotBtn = document.getElementById('create-bot-btn');
     if (createBotBtn) {
-        createBotBtn.onclick = () => openBotModal();
+        createBotBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openBotModal();
+        };
     }
     
-    // Edit Bot
+    // Edit Bot - Remove any existing listeners first
     const editBotBtn = document.getElementById('edit-bot-btn');
     if (editBotBtn) {
-        editBotBtn.onclick = () => openBotModal(window.botManager.currentBot());
+        // Clone the button to remove all event listeners
+        const newEditBtn = editBotBtn.cloneNode(true);
+        editBotBtn.parentNode.replaceChild(newEditBtn, editBotBtn);
+        
+        // Add our listener to the new button
+        newEditBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            console.log('Edit Bot button clicked');
+            const bot = window.botManager.currentBot();
+            console.log('Current bot:', bot);
+            
+            if (bot) {
+                openBotModal(bot);
+            } else {
+                showToast('No bot to edit. Please create a bot first.', 'warning');
+            }
+            
+            return false;
+        }, true); // Use capture phase
     }
     
     // Toggle Bot
     const toggleBotBtn = document.getElementById('toggle-bot-btn');
     if (toggleBotBtn) {
-        toggleBotBtn.onclick = () => toggleBot();
+        toggleBotBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleBot();
+        };
     }
     
     // Refresh
     const refreshBtn = document.getElementById('refresh-bot-btn');
     if (refreshBtn) {
-        refreshBtn.onclick = () => loadBotConfiguration();
+        refreshBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            loadBotConfiguration();
+        };
     }
     
     // Add Flow
     const addFlowBtn = document.getElementById('add-flow-btn');
     if (addFlowBtn) {
-        addFlowBtn.onclick = () => openFlowModal();
+        addFlowBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openFlowModal();
+        };
     }
     
     // Save Bot
     const saveBotBtn = document.getElementById('save-bot-btn');
     if (saveBotBtn) {
-        saveBotBtn.onclick = () => saveBot();
+        saveBotBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            saveBot();
+        };
     }
     
     // Save Flow
     const saveFlowBtn = document.getElementById('save-flow-btn');
     if (saveFlowBtn) {
-        saveFlowBtn.onclick = () => saveFlow();
+        saveFlowBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            saveFlow();
+        };
     }
     
     // Test Bot
     const testBotBtn = document.getElementById('test-bot-btn');
     if (testBotBtn) {
-        testBotBtn.onclick = () => testBot();
+        testBotBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            testBot();
+        };
     }
     
     // Add Response
     const addResponseBtn = document.getElementById('add-response-btn');
     if (addResponseBtn) {
-        addResponseBtn.onclick = () => addResponse();
+        addResponseBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            addResponse();
+        };
     }
     
     // Working hours toggle

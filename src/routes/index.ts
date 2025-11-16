@@ -4,6 +4,7 @@ import whatsappRoutes from './whatsapp';
 import analyticsRoutes from './analytics';
 import dashboardRoutes from './dashboard';
 import paymentRoutes from './payments';
+import billingRoutes from './billing';
 import templateRoutes from './templates';
 import botRoutes from './bot';
 import { authenticateToken, authenticateApiKey } from '../middleware/auth';
@@ -31,6 +32,7 @@ router.get('/', (req, res) => {
       analytics: '/api/analytics',
       bot: '/api/bot',
       payments: '/api/payments',
+      billing: '/api/billing',
       health: '/api/health'
     },
     documentation: '/api-docs'
@@ -45,6 +47,7 @@ router.use('/whatsapp', flexibleAuth, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
 router.use('/bot', authenticateToken, botRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/billing', billingRoutes);
 router.use('/templates', templateRoutes);
 router.use('/dashboard', dashboardRoutes);
 

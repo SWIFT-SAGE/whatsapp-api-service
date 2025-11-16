@@ -69,7 +69,10 @@ class BotService {
 
       return false;
     } catch (error) {
-      logger.error('Error processing bot message:', error);
+      logger.error('Error processing bot message:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        chatId: context.chatId
+      });
       return false;
     }
   }
@@ -164,7 +167,10 @@ class BotService {
         }
       }
     } catch (error) {
-      logger.error('Error executing bot flow:', error);
+      logger.error('Error executing bot flow:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        flowId: flow.id
+      });
       throw error;
     }
   }
@@ -189,7 +195,10 @@ class BotService {
         await WhatsAppService.sendMessage(context.sessionId, context.chatId, message);
       }
     } catch (error) {
-      logger.error('Error handling fallback:', error);
+      logger.error('Error handling fallback:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        botId: bot._id
+      });
     }
   }
 
@@ -216,7 +225,10 @@ class BotService {
           return null;
       }
     } catch (error) {
-      logger.error('Error getting AI response:', error);
+      logger.error('Error getting AI response:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        provider: process.env.AI_PROVIDER || 'gemini'
+      });
       return null;
     }
   }
@@ -226,8 +238,14 @@ class BotService {
    */
   private async getGeminiResponse(query: string, apiKey: string, context: BotContext): Promise<string | null> {
     try {
-      const model = process.env.AI_MODEL || 'gemini-pro';
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      // Validate API key
+      if (!apiKey || apiKey.trim() === '') {
+        logger.warn('Gemini API key is missing or empty');
+        return null;
+      }
+
+      const model = process.env.AI_MODEL || 'gemini-1.5-flash';
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
 
       // Get conversation context
       const conversationHistory = this.getConversationContext(context.chatId);
@@ -237,6 +255,8 @@ class BotService {
         'You are a helpful WhatsApp assistant. Provide concise, friendly responses. Keep answers under 500 characters.';
       
       const fullPrompt = `${systemPrompt}\n\nUser: ${query}`;
+
+      logger.debug('Calling Gemini API', { model, chatId: context.chatId });
 
       const response = await axios.post(endpoint, {
         contents: [{
@@ -254,7 +274,7 @@ class BotService {
         headers: {
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        timeout: 15000
       });
 
       if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
@@ -268,7 +288,21 @@ class BotService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting Gemini response:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const statusCode = (error as any)?.response?.status;
+      const statusText = (error as any)?.response?.statusText;
+      const responseData = (error as any)?.response?.data;
+      
+      logger.error('Error getting Gemini response:', {
+        message: errorMessage,
+        status: statusCode,
+        statusText: statusText,
+        responseData: responseData ? JSON.stringify(responseData).substring(0, 200) : undefined,
+        isAxiosError: (error as any)?.isAxiosError || false,
+        hint: statusCode === 404 ? 'Check AI_MODEL in .env (use gemini-1.5-flash or gemini-1.5-pro)' : 
+              statusCode === 400 ? 'Check GEMINI_API_KEY in .env' :
+              statusCode === 429 ? 'Rate limit exceeded' : undefined
+      });
       return null;
     }
   }
@@ -308,7 +342,14 @@ class BotService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting OpenAI response:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const statusCode = (error as any)?.response?.status;
+      
+      logger.error('Error getting OpenAI response:', {
+        message: errorMessage,
+        status: statusCode,
+        isAxiosError: (error as any)?.isAxiosError || false
+      });
       return null;
     }
   }
@@ -400,7 +441,10 @@ class BotService {
         }
       });
     } catch (error) {
-      logger.error('Error updating bot analytics:', error);
+      logger.error('Error updating bot analytics:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        botId: botId.toString()
+      });
     }
   }
 
@@ -433,7 +477,10 @@ class BotService {
       await newBot.save();
       return newBot;
     } catch (error) {
-      logger.error('Error saving bot:', error);
+      logger.error('Error saving bot:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        userId: botData.userId?.toString()
+      });
       throw error;
     }
   }
@@ -445,7 +492,10 @@ class BotService {
     try {
       return await Bot.findOne({ userId, sessionId });
     } catch (error) {
-      logger.error('Error getting bot:', error);
+      logger.error('Error getting bot:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        sessionId: sessionId.toString()
+      });
       return null;
     }
   }
@@ -457,7 +507,10 @@ class BotService {
     try {
       return await Bot.find({ userId }).populate('sessionId', 'sessionId phoneNumber');
     } catch (error) {
-      logger.error('Error getting user bots:', error);
+      logger.error('Error getting user bots:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        userId: userId.toString()
+      });
       return [];
     }
   }
@@ -470,7 +523,10 @@ class BotService {
       const result = await Bot.findOneAndDelete({ _id: botId, userId });
       return !!result;
     } catch (error) {
-      logger.error('Error deleting bot:', error);
+      logger.error('Error deleting bot:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        botId: botId.toString()
+      });
       return false;
     }
   }
@@ -487,7 +543,10 @@ class BotService {
       );
       return !!result;
     } catch (error) {
-      logger.error('Error toggling bot status:', error);
+      logger.error('Error toggling bot status:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        botId: botId.toString()
+      });
       return false;
     }
   }

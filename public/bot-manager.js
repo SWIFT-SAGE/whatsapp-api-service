@@ -23,10 +23,19 @@ async function openBotModal(bot = null) {
     
     if (bot) {
         // Edit mode
+        console.log('Opening bot in edit mode:', bot);
         title.textContent = 'Edit Bot';
-        document.getElementById('bot-id').value = bot._id;
-        document.getElementById('bot-session-id').value = bot.sessionId;
-        document.getElementById('bot-name-input').value = bot.name;
+        
+        // Handle both _id and id
+        const botId = bot._id || bot.id;
+        document.getElementById('bot-id').value = botId || '';
+        
+        // Handle sessionId (could be object or string)
+        const sessionId = typeof bot.sessionId === 'object' ? 
+            (bot.sessionId._id || bot.sessionId.id) : bot.sessionId;
+        document.getElementById('bot-session-id').value = sessionId || '';
+        
+        document.getElementById('bot-name-input').value = bot.name || '';
         document.getElementById('bot-description-input').value = bot.description || '';
         document.getElementById('bot-enable-groups').checked = bot.settings?.enableInGroups || false;
         document.getElementById('bot-enable-unknown').checked = bot.settings?.enableForUnknown !== false;
@@ -72,18 +81,19 @@ async function loadSessionsForBotModal() {
             if (Array.isArray(response)) {
                 // Direct array response
                 sessions = response;
-            } else if (response.success) {
-                // Success wrapper
+            } else if (response.sessions && Array.isArray(response.sessions)) {
+                // Direct sessions property (WhatsApp API format)
+                sessions = response.sessions;
+            } else if (response.success && response.sessions && Array.isArray(response.sessions)) {
+                // Success wrapper with sessions property
+                sessions = response.sessions;
+            } else if (response.success && response.data) {
+                // Success wrapper with data
                 if (Array.isArray(response.data)) {
                     sessions = response.data;
-                } else if (response.data && Array.isArray(response.data.sessions)) {
+                } else if (response.data.sessions && Array.isArray(response.data.sessions)) {
                     sessions = response.data.sessions;
-                } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-                    sessions = response.data.data;
                 }
-            } else if (response.sessions && Array.isArray(response.sessions)) {
-                // Direct sessions property
-                sessions = response.sessions;
             } else if (response.data && Array.isArray(response.data)) {
                 // Data property with array
                 sessions = response.data;
@@ -519,10 +529,14 @@ async function testBot() {
     }
     
     try {
+        // Extract the actual sessionId string from the populated object
+        const sessionId = typeof currentBot.sessionId === 'object' ? 
+            currentBot.sessionId.sessionId : currentBot.sessionId;
+        
         const response = await makeApiCall('/api/bot/test', {
             method: 'POST',
             body: JSON.stringify({
-                sessionId: currentBot.sessionId,
+                sessionId: sessionId,
                 message: message,
                 chatId: 'test@c.us'
             })

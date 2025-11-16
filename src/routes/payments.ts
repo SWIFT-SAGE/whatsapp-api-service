@@ -71,6 +71,13 @@ const cancelSubscriptionValidation = [
 router.get('/plans', razorpayController.getPaymentPlans);
 
 /**
+ * @route   POST /api/payments/verify
+ * @desc    Verify Razorpay payment signature
+ * @access  Private
+ */
+router.post('/verify', authenticateToken, razorpayController.verifyPayment);
+
+/**
  * @route   GET /api/payments/paypal/success
  * @desc    Handle successful PayPal payment return
  * @access  Public (PayPal callback)
