@@ -52,6 +52,10 @@ class RateLimitService {
    * Check if user can send message based on subscription
    */
   async canSendMessage(userId: string, plan?: 'free' | 'basic' | 'pro'): Promise<{ allowed: boolean; remainingPoints?: number; resetTime?: Date }> {
+    // Plan-based limits:
+    // Free: 5 messages total
+    // Basic: 100,000 messages/month
+    // Pro: Unlimited API messages
     try {
       // If no plan provided, default to free
       const userPlan = plan || 'free';

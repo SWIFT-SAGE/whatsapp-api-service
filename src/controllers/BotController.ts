@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import BotService from '../services/BotService';
 import { IUser } from '../models/User';
+import WhatsappSession from '../models/WhatsappSession';
 import { logger } from '../utils/logger';
 
 export class BotController {
@@ -21,6 +22,28 @@ export class BotController {
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve bots'
+      });
+    }
+  }
+
+  /**
+   * Clean up orphaned bots
+   */
+  async cleanupOrphanedBots(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = (req.user as IUser)._id.toString();
+      const deletedCount = await BotService.cleanupOrphanedBots(userId);
+
+      res.json({
+        success: true,
+        message: `Cleaned up ${deletedCount} orphaned bot(s)`,
+        deletedCount
+      });
+    } catch (error) {
+      logger.error('Error cleaning up orphaned bots:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to cleanup orphaned bots'
       });
     }
   }
@@ -188,9 +211,24 @@ export class BotController {
         return;
       }
 
+      // Find the WhatsappSession by sessionId string to get its ObjectId
+      const session = await WhatsappSession.findOne({
+        userId: (req.user as IUser)._id,
+        sessionId: sessionId
+      });
+
+      if (!session) {
+        res.status(404).json({
+          success: false,
+          error: 'Session not found'
+        });
+        return;
+      }
+
+      // Use the session's ObjectId for bot processing
       const processed = await BotService.processMessage({
         userId,
-        sessionId,
+        sessionId: session._id.toString(),
         chatId: chatId || 'test@c.us',
         messageBody: message,
         isGroup: false,

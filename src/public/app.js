@@ -13,44 +13,38 @@ const appData = {
       price: "$0",
       period: "forever",
       features: [
-        "3 messages per month",
-        "Basic API access",
-        "Email support",
-        "WhatsApp session management"
+        "5 Messages Total",
+        "1 Chatbot",
+        "Basic Support",
+        "API Access"
       ],
-      limitations: [
-        "No chatbot",
-        "Limited analytics"
-      ],
+      limitations: [],
       popular: false
     },
     {
       name: "Basic",
-      price: "$15",
+      price: "$25",
       period: "per month",
       features: [
-        "10,000 messages per month",
-        "Full API access",
-        "Priority support",
-        "Advanced analytics",
-        "Webhook support"
+        "100,000 Messages/month",
+        "1 Chatbot",
+        "Email Support",
+        "Webhooks",
+        "Analytics"
       ],
-      limitations: [
-        "No chatbot"
-      ],
+      limitations: [],
       popular: true
     },
     {
-      name: "Premium",
-      price: "$35",
+      name: "Pro",
+      price: "$40",
       period: "per month",
       features: [
-        "Unlimited messages",
-        "WhatsApp Chatbot",
-        "Advanced analytics",
-        "24/7 priority support",
-        "Custom integrations",
-        "Team collaboration"
+        "Unlimited API Messages",
+        "10,000 Bot Messages/month",
+        "2 Chatbots",
+        "Priority Support",
+        "Advanced Analytics"
       ],
       limitations: [],
       popular: false

@@ -251,25 +251,19 @@ app.get('/dashboard', authenticateWeb, async (req, res) => {
         {
           name: 'Free',
           price: 0,
-          features: ['1 WhatsApp Session', '100 Messages/day', 'Basic Support', 'API Access'],
+          features: ['5 Messages Total', '1 Chatbot', 'Basic Support', 'API Access'],
           popular: false
         },
         {
           name: 'Basic',
-          price: 29,
-          features: ['5 WhatsApp Sessions', '10,000 Messages/day', 'Priority Support', 'Advanced API', 'Webhooks'],
+          price: 25,
+          features: ['100,000 Messages/month', '1 Chatbot', 'Email Support', 'Webhooks', 'Analytics'],
           popular: true
         },
         {
           name: 'Pro',
-          price: 99,
-          features: ['25 WhatsApp Sessions', '100,000 Messages/day', '24/7 Support', 'Full API Access', 'Custom Webhooks', 'Analytics'],
-          popular: false
-        },
-        {
-          name: 'Enterprise',
-          price: 299,
-          features: ['Unlimited Sessions', 'Unlimited Messages', 'Dedicated Support', 'Custom Integration', 'SLA Guarantee'],
+          price: 40,
+          features: ['Unlimited API Messages', '10,000 Bot Messages/month', '2 Chatbots', 'Priority Support', 'Advanced Analytics'],
           popular: false
         }
       ],

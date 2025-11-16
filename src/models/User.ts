@@ -147,7 +147,7 @@ const userSchema = new Schema<IUser>({
     },
     messageLimit: {
       type: Number,
-      default: 5 // Free plan limit - 5 messages
+      default: 5 // Free plan limit - 5 messages total
     },
     botMessageCount: {
       type: Number,
@@ -156,7 +156,7 @@ const userSchema = new Schema<IUser>({
     },
     botMessageLimit: {
       type: Number,
-      default: 0 // Free plan has no bot access
+      default: 0 // Free plan has no bot messages
     },
     chatbotCount: {
       type: Number,
@@ -165,7 +165,7 @@ const userSchema = new Schema<IUser>({
     },
     chatbotLimit: {
       type: Number,
-      default: 0 // Free plan has no chatbot access
+      default: 1 // Free plan has 1 chatbot
     },
     isActive: {
       type: Boolean,
@@ -334,17 +334,17 @@ userSchema.pre('save', function(next) {
     switch (this.subscription.plan) {
       case 'free':
         this.subscription.messageLimit = 5; // 5 messages total
-        this.subscription.botMessageLimit = 0; // No bot access
-        this.subscription.chatbotLimit = 0; // No chatbot access
-        break;
-      case 'basic':
-        this.subscription.messageLimit = 100000; // 100,000 messages from API
         this.subscription.botMessageLimit = 0; // No bot messages
         this.subscription.chatbotLimit = 1; // 1 chatbot
         break;
+      case 'basic':
+        this.subscription.messageLimit = 100000; // 100,000 messages/month
+        this.subscription.botMessageLimit = 0; // No separate bot messages (included in 100k)
+        this.subscription.chatbotLimit = 1; // 1 chatbot
+        break;
       case 'pro':
-        this.subscription.messageLimit = -1; // Unlimited messages from API
-        this.subscription.botMessageLimit = 10000; // 10,000 messages from bot
+        this.subscription.messageLimit = -1; // Unlimited API messages
+        this.subscription.botMessageLimit = 10000; // 10,000 bot messages/month
         this.subscription.chatbotLimit = 2; // 2 chatbots
         break;
     }

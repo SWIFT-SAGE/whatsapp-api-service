@@ -5081,8 +5081,11 @@ window.loadChatbotData = async function() {
         // Load existing bot
         await loadBotConfiguration();
         
-        // Initialize event listeners
-        initializeChatbotEventListeners();
+        // Wait for DOM to be ready, then initialize event listeners
+        setTimeout(() => {
+            console.log('Initializing chatbot event listeners...');
+            initializeChatbotEventListeners();
+        }, 200);
         
         // Check AI status
         checkAIStatus();
@@ -5298,18 +5301,23 @@ function checkAIStatus() {
 
 // Initialize event listeners
 function initializeChatbotEventListeners() {
+    console.log('=== Initializing Chatbot Event Listeners ===');
+    
     // Create Bot
     const createBotBtn = document.getElementById('create-bot-btn');
+    console.log('Create Bot Button:', createBotBtn ? 'Found' : 'NOT FOUND');
     if (createBotBtn) {
         createBotBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Create Bot button clicked');
             openBotModal();
         };
     }
     
     // Edit Bot - Remove any existing listeners first
     const editBotBtn = document.getElementById('edit-bot-btn');
+    console.log('Edit Bot Button:', editBotBtn ? 'Found' : 'NOT FOUND');
     if (editBotBtn) {
         // Clone the button to remove all event listeners
         const newEditBtn = editBotBtn.cloneNode(true);
@@ -5337,73 +5345,89 @@ function initializeChatbotEventListeners() {
     
     // Toggle Bot
     const toggleBotBtn = document.getElementById('toggle-bot-btn');
+    console.log('Toggle Bot Button:', toggleBotBtn ? 'Found' : 'NOT FOUND');
     if (toggleBotBtn) {
         toggleBotBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Toggle Bot button clicked');
             toggleBot();
         };
     }
     
     // Refresh
     const refreshBtn = document.getElementById('refresh-bot-btn');
+    console.log('Refresh Bot Button:', refreshBtn ? 'Found' : 'NOT FOUND');
     if (refreshBtn) {
         refreshBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Refresh Bot button clicked');
             loadBotConfiguration();
         };
     }
     
     // Add Flow
     const addFlowBtn = document.getElementById('add-flow-btn');
+    console.log('Add Flow Button:', addFlowBtn ? 'Found' : 'NOT FOUND');
     if (addFlowBtn) {
         addFlowBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Add Flow button clicked');
             openFlowModal();
         };
     }
     
     // Save Bot
     const saveBotBtn = document.getElementById('save-bot-btn');
+    console.log('Save Bot Button:', saveBotBtn ? 'Found' : 'NOT FOUND');
     if (saveBotBtn) {
         saveBotBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Save Bot button clicked');
             saveBot();
         };
     }
     
     // Save Flow
     const saveFlowBtn = document.getElementById('save-flow-btn');
+    console.log('Save Flow Button:', saveFlowBtn ? 'Found' : 'NOT FOUND');
     if (saveFlowBtn) {
         saveFlowBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Save Flow button clicked');
             saveFlow();
         };
     }
     
     // Test Bot
     const testBotBtn = document.getElementById('test-bot-btn');
+    console.log('Test Bot Button:', testBotBtn ? 'Found' : 'NOT FOUND');
     if (testBotBtn) {
         testBotBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Test Bot button clicked');
             testBot();
         };
     }
     
     // Add Response
     const addResponseBtn = document.getElementById('add-response-btn');
+    console.log('Add Response Button:', addResponseBtn ? 'Found' : 'NOT FOUND');
     if (addResponseBtn) {
         addResponseBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('Add Response button clicked');
             addResponse();
         };
     }
+    
+    console.log('=== Chatbot Event Listeners Initialized ===');
     
     // Working hours toggle
     const workingHoursToggle = document.getElementById('bot-working-hours-enabled');

@@ -1,5 +1,6 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Bot, { IBot, IBotFlow } from '../models/Bot';
+import WhatsappSession from '../models/WhatsappSession';
 import WhatsAppService from './whatsappService';
 import { logger } from '../utils/logger';
 import axios from 'axios';
@@ -505,13 +506,61 @@ class BotService {
    */
   async getUserBots(userId: string): Promise<IBot[]> {
     try {
-      return await Bot.find({ userId }).populate('sessionId', 'sessionId phoneNumber');
+      const bots = await Bot.find({ userId }).populate('sessionId', 'sessionId phoneNumber');
+      
+      // Filter out bots with null/deleted sessions and log them
+      const validBots = bots.filter(bot => {
+        if (!bot.sessionId) {
+          logger.warn('Bot has null sessionId (orphaned bot):', {
+            botId: bot._id.toString(),
+            botName: bot.name,
+            userId: userId.toString()
+          });
+          return false;
+        }
+        return true;
+      });
+      
+      return validBots;
     } catch (error) {
       logger.error('Error getting user bots:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         userId: userId.toString()
       });
       return [];
+    }
+  }
+
+  /**
+   * Clean up orphaned bots (bots with deleted/null sessions)
+   */
+  async cleanupOrphanedBots(userId: string): Promise<number> {
+    try {
+      const bots = await Bot.find({ userId });
+      let deletedCount = 0;
+      
+      for (const bot of bots) {
+        // Check if sessionId exists in WhatsappSession collection
+        const session = await WhatsappSession.findById(bot.sessionId);
+        
+        if (!session) {
+          await Bot.findByIdAndDelete(bot._id);
+          deletedCount++;
+          logger.info('Deleted orphaned bot:', {
+            botId: bot._id.toString(),
+            botName: bot.name,
+            userId: userId.toString()
+          });
+        }
+      }
+      
+      return deletedCount;
+    } catch (error) {
+      logger.error('Error cleaning up orphaned bots:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        userId: userId.toString()
+      });
+      throw error;
     }
   }
 

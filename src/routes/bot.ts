@@ -25,5 +25,8 @@ router.patch('/:botId/toggle', BotController.toggleBotStatus);
 // Test bot
 router.post('/test', BotController.testBot);
 
+// Clean up orphaned bots
+router.post('/cleanup', BotController.cleanupOrphanedBots);
+
 export default router;
 

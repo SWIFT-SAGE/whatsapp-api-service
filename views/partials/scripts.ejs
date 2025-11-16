@@ -1,128 +1,127 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Initialize authentication token for client-side API calls -->
-    <script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Initialize authentication token for client-side API calls -->
+<script>
         <% if (typeof authToken !== 'undefined' && authToken) { %>
-            // Set the auth token in sessionStorage for API calls
-            sessionStorage.setItem('authToken', '<%= authToken %>');
-            sessionStorage.setItem('isLoggedIn', 'true');
-            
+        // Set the auth token in sessionStorage for API calls
+        sessionStorage.setItem('authToken', '<%= authToken %>');
+        sessionStorage.setItem('isLoggedIn', 'true');
+
             // Also set current user data if available
             <% if (typeof user !== 'undefined' && user) { %>
-                sessionStorage.setItem('currentUser', JSON.stringify({
-                    name: '<%= user.name %>',
-                    email: '<%= user.email %>',
-                    apiKey: '<%= user.apiKey %>',
-                    subscription: {
-                        plan: '<%= user.subscription.plan %>',
-                        messageCount: <%= user.subscription.messageCount %>,
-                        messageLimit: <%= user.subscription.messageLimit %>
+            sessionStorage.setItem('currentUser', JSON.stringify({
+                name: '<%= user.name %>',
+                email: '<%= user.email %>',
+                apiKey: '<%= user.apiKey %>',
+                subscription: {
+                    plan: '<%= user.subscription.plan %>',
+                    messageCount: <%= user.subscription.messageCount %>,
+                    messageLimit: <%= user.subscription.messageLimit %>
                     }
-                }));
+            }));
             <% } %>
         <% } else { %>
-            // Clear any existing auth data if no token
-            sessionStorage.clear();
-            localStorage.clear();
-            
-            // Clear specific auth items
-            sessionStorage.removeItem('authToken');
-            sessionStorage.removeItem('isLoggedIn');
-            sessionStorage.removeItem('currentUser');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('isLoggedIn');
-            localStorage.removeItem('currentUser');
+        // Clear any existing auth data if no token
+        sessionStorage.clear();
+        localStorage.clear();
+
+        // Clear specific auth items
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('currentUser');
         <% } %>
-        
+
         // Global logout function
         window.completeLogout = function() {
             // Clear all browser storage
             sessionStorage.clear();
             localStorage.clear();
-            
+
             // Clear all possible auth cookies
             const cookiesToClear = ['authToken', 'token', 'jwt', 'connect.sid'];
-            cookiesToClear.forEach(function(cookieName) {
+            cookiesToClear.forEach(function (cookieName) {
                 document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
                 document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname + ';';
                 // Also try with leading dot for subdomain support
                 document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.' + window.location.hostname + ';';
             });
-            
+
             // Force redirect to login
             window.location.replace('/login?logout=true');
         };
-        
-        /**
-         * Universal Toast Notification System
-         * Usage: showToast('Message here', 'success|error|warning|info', duration)
-         */
-        window.showToast = function(message, type = 'success', duration = 4000) {
-            // Icon mapping for different toast types
-            const icons = {
-                'success': 'fas fa-check-circle',
-                'error': 'fas fa-exclamation-circle',
-                'warning': 'fas fa-exclamation-triangle',
-                'info': 'fas fa-info-circle'
-            };
-            
-            // Get the toast template
-            const template = document.getElementById('toast-template');
-            if (!template) {
-                console.error('Toast template not found');
-                return;
-            }
-            
-            // Clone the template
-            const toast = template.cloneNode(true);
-            toast.id = 'toast-' + Date.now();
-            toast.style.display = '';
-            
-            // Add type-specific class
-            toast.classList.add('toast-' + type);
-            
-            // Set icon
-            const icon = toast.querySelector('.toast-icon');
-            if (icon) {
-                icon.className = 'toast-icon me-2 ' + (icons[type] || icons['info']);
-            }
-            
-            // Set message
-            const messageElement = toast.querySelector('.toast-message');
-            if (messageElement) {
-                messageElement.textContent = message;
-            }
-            
-            // Add to container
-            const container = document.querySelector('.toast-container');
-            if (container) {
-                container.appendChild(toast);
-                
-                // Initialize Bootstrap toast
-                const bsToast = new bootstrap.Toast(toast, {
-                    autohide: true,
-                    delay: duration
-                });
-                
-                // Show the toast
-                bsToast.show();
-                
-                // Remove from DOM after hidden
-                toast.addEventListener('hidden.bs.toast', function() {
-                    toast.remove();
-                });
-            }
-        };
-        
-        // Alias for convenience
-        window.toast = window.showToast;
-    </script>
-    
-    <!-- Razorpay SDK for payment processing -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-    
-    <script src="/app.js"></script>
-    <script src="/bot-manager.js"></script>
-    <script src="/billing-manager.js"></script>
 
+    /**
+     * Universal Toast Notification System
+     * Usage: showToast('Message here', 'success|error|warning|info', duration)
+     */
+    window.showToast = function (message, type = 'success', duration = 4000) {
+        // Icon mapping for different toast types
+        const icons = {
+            'success': 'fas fa-check-circle',
+            'error': 'fas fa-exclamation-circle',
+            'warning': 'fas fa-exclamation-triangle',
+            'info': 'fas fa-info-circle'
+        };
+
+        // Get the toast template
+        const template = document.getElementById('toast-template');
+        if (!template) {
+            console.error('Toast template not found');
+            return;
+        }
+
+        // Clone the template
+        const toast = template.cloneNode(true);
+        toast.id = 'toast-' + Date.now();
+        toast.style.display = '';
+
+        // Add type-specific class
+        toast.classList.add('toast-' + type);
+
+        // Set icon
+        const icon = toast.querySelector('.toast-icon');
+        if (icon) {
+            icon.className = 'toast-icon me-2 ' + (icons[type] || icons['info']);
+        }
+
+        // Set message
+        const messageElement = toast.querySelector('.toast-message');
+        if (messageElement) {
+            messageElement.textContent = message;
+        }
+
+        // Add to container
+        const container = document.querySelector('.toast-container');
+        if (container) {
+            container.appendChild(toast);
+
+            // Initialize Bootstrap toast
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: duration
+            });
+
+            // Show the toast
+            bsToast.show();
+
+            // Remove from DOM after hidden
+            toast.addEventListener('hidden.bs.toast', function () {
+                toast.remove();
+            });
+        }
+    };
+
+    // Alias for convenience
+    window.toast = window.showToast;
+</script>
+
+<!-- Razorpay SDK for payment processing -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script src="/app.js?v=5"></script>
+<script src="/bot-manager.js?v=8"></script>
+<script src="/billing-manager.js?v=5"></script>
