@@ -18,11 +18,12 @@ interface PaymentPlan {
   currency: string;
   interval: 'month' | 'year';
   messageLimit: number;
+  features: string[];
 }
 
 interface CreatePaymentOptions {
   userId: mongoose.Types.ObjectId;
-  plan: 'basic' | 'pro';
+  plan: 'basic' | 'pro' | 'premium';
   billingCycle: 'monthly' | 'yearly';
   type: 'one_time' | 'subscription' | 'upgrade' | 'renewal';
   promoCode?: string;
@@ -48,79 +49,152 @@ interface WebhookEvent {
 }
 
 export class RazorpayService {
-  private razorpay!: Razorpay;
+  private razorpay: Razorpay | null = null;
   private config: RazorpayConfig;
-  
-  // Predefined payment plans
+  private isInitialized: boolean = false;
+
+  // Predefined payment plans with Premium added
   private readonly PAYMENT_PLANS: Record<string, PaymentPlan> = {
     'basic_monthly': {
       id: 'basic_monthly',
       name: 'Basic Plan - Monthly',
-      price: 2500, // Amount in cents ($25.00)
-      currency: 'USD',
+      price: 210000, // ₹2,100.00 ($25 × ₹84)
+      currency: 'INR',
       interval: 'month',
-      messageLimit: 100000 // 100,000 messages from API + 1 chatbot
+      messageLimit: 100000,
+      features: ['100,000 API messages', '1 chatbot', 'Basic support']
     },
     'basic_yearly': {
       id: 'basic_yearly',
       name: 'Basic Plan - Yearly',
-      price: 27000, // Amount in cents ($270.00 - 10% discount)
-      currency: 'USD',
+      price: 2268000, // ₹22,680.00 ($270 × ₹84 - 10% discount)
+      currency: 'INR',
       interval: 'year',
-      messageLimit: 100000 // 100,000 messages from API + 1 chatbot
+      messageLimit: 100000,
+      features: ['100,000 API messages', '1 chatbot', 'Basic support', '10% savings']
     },
     'pro_monthly': {
       id: 'pro_monthly',
       name: 'Pro Plan - Monthly',
-      price: 4000, // Amount in cents ($40.00)
-      currency: 'USD',
+      price: 336000, // ₹3,360.00 ($40 × ₹84)
+      currency: 'INR',
       interval: 'month',
-      messageLimit: -1 // Unlimited messages from API + 10,000 bot messages + 2 chatbots
+      messageLimit: -1,
+      features: ['Unlimited API messages', '10,000 bot messages', '2 chatbots', 'Priority support']
     },
     'pro_yearly': {
       id: 'pro_yearly',
       name: 'Pro Plan - Yearly',
-      price: 43200, // Amount in cents ($432.00 - 10% discount)
-      currency: 'USD',
+      price: 3628800, // ₹36,288.00 ($432 × ₹84 - 10% discount)
+      currency: 'INR',
       interval: 'year',
-      messageLimit: -1 // Unlimited messages from API + 10,000 bot messages + 2 chatbots
+      messageLimit: -1,
+      features: ['Unlimited API messages', '10,000 bot messages', '2 chatbots', 'Priority support', '10% savings']
+    },
+    'premium_monthly': {
+      id: 'premium_monthly',
+      name: 'Premium Plan - Monthly',
+      price: 500000, // ₹5,000.00
+      currency: 'INR',
+      interval: 'month',
+      messageLimit: -1,
+      features: ['Unlimited everything', 'Unlimited chatbots', 'Dedicated support', 'Custom integrations']
+    },
+    'premium_yearly': {
+      id: 'premium_yearly',
+      name: 'Premium Plan - Yearly',
+      price: 5400000, // ₹54,000.00 (10% discount)
+      currency: 'INR',
+      interval: 'year',
+      messageLimit: -1,
+      features: ['Unlimited everything', 'Unlimited chatbots', 'Dedicated support', 'Custom integrations', '10% savings']
     }
   };
 
   constructor() {
     this.config = {
-      keyId: process.env.RAZORPAY_KEY_ID || '',
-      keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+      keyId: process.env.RAZORPAY_KEY_ID?.trim() || '',
+      keySecret: process.env.RAZORPAY_KEY_SECRET?.trim() || '',
       environment: (process.env.RAZORPAY_ENVIRONMENT as 'test' | 'live') || 'test'
     };
 
-    if (!this.config.keyId || !this.config.keySecret) {
-      logger.warn('Razorpay credentials not configured. Payment functionality will be disabled.');
-      return;
-    }
-
-    this.razorpay = new Razorpay({
-      key_id: this.config.keyId,
-      key_secret: this.config.keySecret
-    });
-
-    logger.info('Razorpay service initialized', { 
-      environment: this.config.environment,
-      keyId: this.config.keyId.substring(0, 8) + '...'
-    });
+    this.initialize();
   }
 
   /**
-   * Check if Razorpay is properly configured
+   * Initialize Razorpay instance with validation
+   */
+  private initialize(): void {
+    // Validate credentials format
+    if (!this.config.keyId || !this.config.keySecret) {
+      logger.warn('Razorpay credentials not configured. Payment functionality will be disabled.', {
+        keyIdPresent: !!this.config.keyId,
+        keySecretPresent: !!this.config.keySecret
+      });
+      return;
+    }
+
+    // Validate key format
+    const isTestMode = this.config.keyId.startsWith('rzp_test_');
+    const isLiveMode = this.config.keyId.startsWith('rzp_live_');
+
+    if (!isTestMode && !isLiveMode) {
+      logger.error('Invalid Razorpay Key ID format. Must start with rzp_test_ or rzp_live_', {
+        keyIdPrefix: this.config.keyId.substring(0, 8)
+      });
+      return;
+    }
+
+    // Check environment mismatch
+    if (this.config.environment === 'test' && !isTestMode) {
+      logger.error('Environment set to TEST but using LIVE key', {
+        environment: this.config.environment,
+        keyIdPrefix: this.config.keyId.substring(0, 12)
+      });
+      return;
+    }
+
+    if (this.config.environment === 'live' && !isLiveMode) {
+      logger.error('Environment set to LIVE but using TEST key', {
+        environment: this.config.environment,
+        keyIdPrefix: this.config.keyId.substring(0, 12)
+      });
+      return;
+    }
+
+    try {
+      this.razorpay = new Razorpay({
+        key_id: this.config.keyId,
+        key_secret: this.config.keySecret
+      });
+
+      this.isInitialized = true;
+
+      logger.info('✅ Razorpay service initialized successfully', {
+        environment: this.config.environment,
+        keyIdPrefix: this.config.keyId.substring(0, 12),
+        keyIdLength: this.config.keyId.length,
+        keySecretLength: this.config.keySecret.length
+      });
+    } catch (error: any) {
+      logger.error('Failed to initialize Razorpay service', {
+        error: error.message,
+        stack: error.stack
+      });
+    }
+  }
+
+  /**
+   * Check if Razorpay is properly configured and initialized
    */
   isConfigured(): boolean {
-    return !!(this.config.keyId && this.config.keySecret && this.razorpay);
+    return this.isInitialized && this.razorpay !== null;
   }
 
   /**
    * Get payment plan details
    */
-  getPaymentPlan(plan: 'basic' | 'pro', billingCycle: 'monthly' | 'yearly'): PaymentPlan | null {
+  getPaymentPlan(plan: 'basic' | 'pro' | 'premium', billingCycle: 'monthly' | 'yearly'): PaymentPlan | null {
     const planKey = `${plan}_${billingCycle}`;
     return this.PAYMENT_PLANS[planKey] || null;
   }
@@ -137,40 +211,51 @@ export class RazorpayService {
    */
   private calculateDiscount(amount: number, promoCode?: string): number {
     if (!promoCode) return 0;
-    
+
     const promoCodes: Record<string, number> = {
       'SAVE10': 10,
       'SAVE20': 20,
       'WELCOME25': 25,
-      'YEARLY50': 50 // For yearly subscriptions
+      'YEARLY50': 50,
+      'PREMIUM15': 15
     };
 
     const discountPercent = promoCodes[promoCode.toUpperCase()] || 0;
-    return Math.round((amount * discountPercent / 100));
+    return Math.round((amount * discountPercent) / 100);
   }
 
   /**
    * Create a Razorpay order for payment
    */
-  async createOrder(options: CreatePaymentOptions): Promise<{ orderId: string; payment: IPayment }> {
+  async createOrder(options: CreatePaymentOptions): Promise<{ orderId: string; payment: IPayment; amount: number; currency: string }> {
     if (!this.isConfigured()) {
-      throw new Error('Razorpay service is not configured');
+      throw new Error('Razorpay service is not properly configured. Please check your API credentials.');
     }
 
     try {
+      // Log configuration (debugging)
+      logger.info('Creating Razorpay order', {
+        plan: options.plan,
+        billingCycle: options.billingCycle,
+        environment: this.config.environment,
+        keyIdPrefix: this.config.keyId.substring(0, 12)
+      });
+
+      // Get payment plan
       const paymentPlan = this.getPaymentPlan(options.plan, options.billingCycle);
       if (!paymentPlan) {
         throw new Error(`Invalid payment plan: ${options.plan}_${options.billingCycle}`);
       }
 
+      // Calculate final amount
       const discount = this.calculateDiscount(paymentPlan.price, options.promoCode);
       const finalAmount = Math.max(0, paymentPlan.price - discount);
 
-      // Create payment record first
+      // Create payment record
       const payment = new Payment({
         userId: options.userId,
-        razorpayOrderId: '', // Will be set after Razorpay order creation
-        amount: finalAmount / 100, // Convert paise to rupees for storage
+        razorpayOrderId: '',
+        amount: finalAmount / 100, // Convert paise to rupees
         currency: paymentPlan.currency,
         status: 'pending',
         type: options.type,
@@ -179,7 +264,8 @@ export class RazorpayService {
         description: `${paymentPlan.name} - ${options.type}`,
         metadata: {
           promoCode: options.promoCode,
-          discount: discount / 100 // Convert paise to rupees
+          discount: discount / 100,
+          originalAmount: paymentPlan.price / 100
         }
       });
 
@@ -187,7 +273,7 @@ export class RazorpayService {
       const orderOptions = {
         amount: finalAmount, // Amount in paise
         currency: paymentPlan.currency,
-        receipt: `receipt_${Date.now()}_${payment._id.toString().substring(0, 8)}`,
+        receipt: `rcpt_${Date.now()}_${payment._id.toString().substring(0, 8)}`,
         notes: {
           userId: options.userId.toString(),
           paymentId: payment._id.toString(),
@@ -197,13 +283,19 @@ export class RazorpayService {
         }
       };
 
-      const razorpayOrder = await this.razorpay.orders.create(orderOptions);
+      logger.info('Creating Razorpay order with options', {
+        amount: finalAmount,
+        currency: paymentPlan.currency,
+        receipt: orderOptions.receipt
+      });
+
+      const razorpayOrder = await this.razorpay!.orders.create(orderOptions);
 
       // Update payment with Razorpay order ID
       payment.razorpayOrderId = razorpayOrder.id;
       await payment.save();
 
-      logger.info('Razorpay order created successfully', {
+      logger.info('✅ Razorpay order created successfully', {
         orderId: razorpayOrder.id,
         amount: finalAmount,
         plan: options.plan,
@@ -212,16 +304,40 @@ export class RazorpayService {
 
       return {
         orderId: razorpayOrder.id,
-        payment
+        payment,
+        amount: finalAmount,
+        currency: paymentPlan.currency
       };
 
     } catch (error: any) {
-      logger.error('Failed to create Razorpay order', {
-        error: error.message,
-        options,
+      // Enhanced error logging
+      logger.error('❌ Failed to create Razorpay order', {
+        errorMessage: error.message,
+        errorDescription: error.description,
+        errorCode: error.error?.code,
+        errorStatusCode: error.statusCode,
+        errorField: error.field,
+        errorReason: error.reason,
+        errorSource: error.source,
+        errorStep: error.step,
+        plan: options.plan,
+        billingCycle: options.billingCycle,
+        environment: this.config.environment,
+        keyIdPrefix: this.config.keyId.substring(0, 12),
+        fullError: JSON.stringify(error, null, 2),
         stack: error.stack
       });
-      throw new Error(`Razorpay order creation failed: ${error.message}`);
+
+      // Provide user-friendly error messages
+      if (error.statusCode === 401 || error.error?.code === 'BAD_REQUEST_ERROR') {
+        throw new Error('Razorpay authentication failed. Please verify your API keys are correct and match your environment (test/live).');
+      }
+
+      if (error.statusCode === 400) {
+        throw new Error(`Invalid request to Razorpay: ${error.description || error.message}`);
+      }
+
+      throw new Error(`Razorpay order creation failed: ${error.message || error.description || 'Unknown error'}`);
     }
   }
 
@@ -240,7 +356,15 @@ export class RazorpayService {
         .update(body.toString())
         .digest('hex');
 
-      return expectedSignature === signature;
+      const isValid = expectedSignature === signature;
+
+      logger.info('Payment signature verification', {
+        orderId,
+        paymentId,
+        isValid
+      });
+
+      return isValid;
     } catch (error: any) {
       logger.error('Failed to verify payment signature', {
         orderId,
@@ -252,9 +376,32 @@ export class RazorpayService {
   }
 
   /**
+   * Verify webhook signature
+   */
+  verifyWebhookSignature(body: string, signature: string, secret: string): boolean {
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(body)
+        .digest('hex');
+
+      return expectedSignature === signature;
+    } catch (error: any) {
+      logger.error('Failed to verify webhook signature', {
+        error: error.message
+      });
+      return false;
+    }
+  }
+
+  /**
    * Capture payment after verification
    */
-  async capturePayment(orderId: string, paymentId: string, signature: string): Promise<{ success: boolean; payment: IPayment | null; razorpayResponse?: any }> {
+  async capturePayment(
+    orderId: string,
+    paymentId: string,
+    signature: string
+  ): Promise<{ success: boolean; payment: IPayment | null; razorpayResponse?: any }> {
     try {
       const payment = await Payment.findOne({ razorpayOrderId: orderId });
       if (!payment) {
@@ -264,6 +411,7 @@ export class RazorpayService {
       // Verify signature
       if (!this.verifyPaymentSignature(orderId, paymentId, signature)) {
         await payment.markAsFailed('Invalid payment signature');
+        logger.error('Payment signature verification failed', { orderId, paymentId });
         return {
           success: false,
           payment
@@ -271,16 +419,22 @@ export class RazorpayService {
       }
 
       // Fetch payment details from Razorpay
-      const razorpayPayment = await this.razorpay.payments.fetch(paymentId);
+      const razorpayPayment = await this.razorpay!.payments.fetch(paymentId);
 
-      if (razorpayPayment.status === 'captured') {
+      logger.info('Fetched payment from Razorpay', {
+        paymentId,
+        status: razorpayPayment.status,
+        amount: razorpayPayment.amount
+      });
+
+      if (razorpayPayment.status === 'captured' || razorpayPayment.status === 'authorized') {
         // Mark payment as completed
         await payment.markAsCompleted(razorpayPayment);
 
         // Update user subscription
         await this.updateUserSubscription(payment);
 
-        logger.info('Razorpay payment captured successfully', {
+        logger.info('✅ Payment captured successfully', {
           orderId,
           paymentId,
           amount: payment.amount,
@@ -293,8 +447,14 @@ export class RazorpayService {
           razorpayResponse: razorpayPayment
         };
       } else {
-        await payment.markAsFailed(`Payment capture failed with status: ${razorpayPayment.status}`);
-        
+        await payment.markAsFailed(`Payment not captured. Status: ${razorpayPayment.status}`);
+
+        logger.error('Payment capture failed', {
+          orderId,
+          paymentId,
+          status: razorpayPayment.status
+        });
+
         return {
           success: false,
           payment
@@ -302,14 +462,14 @@ export class RazorpayService {
       }
 
     } catch (error: any) {
-      logger.error('Failed to capture Razorpay payment', {
+      logger.error('Failed to capture payment', {
         orderId,
         paymentId,
         error: error.message,
         stack: error.stack
       });
 
-      // Try to find and mark payment as failed
+      // Try to mark payment as failed
       const payment = await Payment.findOne({ razorpayOrderId: orderId });
       if (payment) {
         await payment.markAsFailed(error.message);
@@ -329,13 +489,19 @@ export class RazorpayService {
     try {
       const user = await User.findById(payment.userId);
       if (!user) {
-        logger.error('User not found for payment', { paymentId: payment._id, userId: payment.userId });
+        logger.error('User not found for payment', {
+          paymentId: payment._id,
+          userId: payment.userId
+        });
         return;
       }
 
       const paymentPlan = this.getPaymentPlan(payment.plan, payment.billingCycle);
       if (!paymentPlan) {
-        logger.error('Payment plan not found', { plan: payment.plan, billingCycle: payment.billingCycle });
+        logger.error('Payment plan not found', {
+          plan: payment.plan,
+          billingCycle: payment.billingCycle
+        });
         return;
       }
 
@@ -358,9 +524,10 @@ export class RazorpayService {
 
       await user.save();
 
-      logger.info('User subscription updated successfully', {
+      logger.info('✅ User subscription updated successfully', {
         userId: user._id,
         plan: payment.plan,
+        billingCycle: payment.billingCycle,
         nextBillingDate
       });
 
@@ -376,8 +543,20 @@ export class RazorpayService {
   /**
    * Handle Razorpay webhook events
    */
-  async handleWebhook(event: WebhookEvent): Promise<void> {
+  async handleWebhook(event: WebhookEvent, signature: string, webhookSecret: string): Promise<void> {
     try {
+      // Verify webhook signature
+      const isValidSignature = this.verifyWebhookSignature(
+        JSON.stringify(event),
+        signature,
+        webhookSecret
+      );
+
+      if (!isValidSignature) {
+        logger.error('Invalid webhook signature received');
+        throw new Error('Invalid webhook signature');
+      }
+
       logger.info('Processing Razorpay webhook', {
         event: event.event,
         entity: event.entity
@@ -404,7 +583,7 @@ export class RazorpayService {
       }
 
     } catch (error: any) {
-      logger.error('Failed to process Razorpay webhook', {
+      logger.error('Failed to process webhook', {
         event: event.event,
         error: error.message,
         stack: error.stack
@@ -416,12 +595,13 @@ export class RazorpayService {
   private async handlePaymentCaptured(event: WebhookEvent): Promise<void> {
     const paymentData = event.payload.payment.entity;
     const orderId = paymentData.order_id;
-    
+
     if (orderId) {
       const payment = await Payment.findOne({ razorpayOrderId: orderId });
       if (payment && payment.status === 'pending') {
         await payment.markAsCompleted(paymentData);
         await this.updateUserSubscription(payment);
+        logger.info('Webhook: Payment captured', { orderId });
       }
     }
   }
@@ -429,11 +609,12 @@ export class RazorpayService {
   private async handlePaymentFailed(event: WebhookEvent): Promise<void> {
     const paymentData = event.payload.payment.entity;
     const orderId = paymentData.order_id;
-    
+
     if (orderId) {
       const payment = await Payment.findOne({ razorpayOrderId: orderId });
       if (payment && payment.status === 'pending') {
         await payment.markAsFailed(`Payment failed: ${paymentData.error_description || 'Unknown error'}`);
+        logger.info('Webhook: Payment failed', { orderId });
       }
     }
   }
@@ -445,6 +626,7 @@ export class RazorpayService {
       if (payment) {
         await payment.markAsCompleted(subscriptionData);
         await this.updateUserSubscription(payment);
+        logger.info('Webhook: Subscription activated', { subscriptionId: subscriptionData.id });
       }
     }
   }
@@ -456,11 +638,7 @@ export class RazorpayService {
       if (user) {
         user.subscription.cancelAtPeriodEnd = true;
         await user.save();
-        
-        logger.info('Subscription marked for cancellation', {
-          userId: user._id,
-          subscriptionId: subscriptionData.id
-        });
+        logger.info('Webhook: Subscription cancelled', { subscriptionId: subscriptionData.id });
       }
     }
   }
@@ -468,11 +646,7 @@ export class RazorpayService {
   private async handleSubscriptionCharged(event: WebhookEvent): Promise<void> {
     const subscriptionData = event.payload.subscription?.entity;
     if (subscriptionData) {
-      // Handle recurring subscription charges
-      logger.info('Subscription charged successfully', {
-        subscriptionId: subscriptionData.id,
-        amount: subscriptionData.current_start
-      });
+      logger.info('Webhook: Subscription charged', { subscriptionId: subscriptionData.id });
     }
   }
 
@@ -482,7 +656,7 @@ export class RazorpayService {
   async getPaymentStats(startDate?: Date, endDate?: Date): Promise<any> {
     try {
       const matchStage: any = { status: 'completed' };
-      
+
       if (startDate || endDate) {
         matchStage.createdAt = {};
         if (startDate) matchStage.createdAt.$gte = startDate;
@@ -526,6 +700,59 @@ export class RazorpayService {
       logger.error('Failed to get user payments', { userId, error: error.message });
       throw error;
     }
+  }
+
+  /**
+   * Test Razorpay connection
+   */
+  async testConnection(): Promise<{ success: boolean; message: string; details?: any }> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        message: 'Razorpay is not configured properly'
+      };
+    }
+
+    try {
+      // Try to fetch a non-existent order to test authentication
+      await this.razorpay!.orders.fetch('order_test_123');
+    } catch (error: any) {
+      // 400 or 404 means authentication works (order not found)
+      if (error.statusCode === 400 || error.statusCode === 404) {
+        return {
+          success: true,
+          message: 'Razorpay authentication successful',
+          details: {
+            environment: this.config.environment,
+            keyIdPrefix: this.config.keyId.substring(0, 12)
+          }
+        };
+      }
+
+      // 401 means authentication failed
+      if (error.statusCode === 401) {
+        return {
+          success: false,
+          message: 'Razorpay authentication failed. Check your API keys.',
+          details: {
+            error: error.message,
+            environment: this.config.environment,
+            keyIdPrefix: this.config.keyId.substring(0, 12)
+          }
+        };
+      }
+
+      return {
+        success: false,
+        message: `Connection test failed: ${error.message}`,
+        details: { error: error.message }
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Connection test completed'
+    };
   }
 }
 

@@ -13,7 +13,7 @@ export class RazorpayController {
   async getPaymentPlans(req: Request, res: Response): Promise<void> {
     try {
       const plans = razorpayService.getAllPaymentPlans();
-      
+
       res.status(200).json({
         success: true,
         data: {
@@ -81,7 +81,7 @@ export class RazorpayController {
       const planHierarchy = { 'free': 0, 'basic': 1, 'pro': 2 };
       const currentPlanLevel = planHierarchy[user.subscription.plan as keyof typeof planHierarchy] || 0;
       const newPlanLevel = planHierarchy[plan as keyof typeof planHierarchy] || 0;
-      
+
       if (currentPlanLevel > newPlanLevel) {
         res.status(400).json({
           success: false,
@@ -127,7 +127,7 @@ export class RazorpayController {
         error: error.message,
         stack: error.stack
       });
-      
+
       res.status(500).json({
         success: false,
         message: 'Failed to create payment order',
@@ -214,11 +214,19 @@ export class RazorpayController {
   async handleWebhook(req: Request, res: Response): Promise<void> {
     try {
       const webhookEvent = req.body;
+      const signature = req.headers['x-razorpay-signature'] as string;
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
 
-      // Verify webhook signature (implement based on Razorpay documentation)
-      // This is a simplified version - in production, verify the webhook signature
-      
-      await razorpayService.handleWebhook(webhookEvent);
+      // Verify webhook signature if secret is configured
+      if (!signature) {
+        logger.warn('Webhook received without signature');
+      }
+
+      if (!webhookSecret) {
+        logger.warn('Webhook secret not configured. Skipping signature verification.');
+      }
+
+      await razorpayService.handleWebhook(webhookEvent, signature, webhookSecret);
 
       logger.info('Razorpay webhook processed successfully', {
         event: webhookEvent.event,
@@ -458,7 +466,7 @@ export class RazorpayController {
   async getPaymentStats(req: Request, res: Response): Promise<void> {
     try {
       const { startDate, endDate } = req.query;
-      
+
       const start = startDate ? new Date(startDate as string) : undefined;
       const end = endDate ? new Date(endDate as string) : undefined;
 
