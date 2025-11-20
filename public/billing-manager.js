@@ -26,7 +26,7 @@ const PLAN_CONFIGS = {
     },
     basic: {
         name: 'Basic Plan',
-        price: { monthly: 29.99, yearly: 299.99 },
+        price: { monthly: 25, yearly: 270 },
         features: [
             '100,000 API messages/month',
             'Priority support',
@@ -42,7 +42,7 @@ const PLAN_CONFIGS = {
     },
     premium: {
         name: 'Premium Plan',
-        price: { monthly: 99.99, yearly: 999.99 },
+        price: { monthly: 40, yearly: 432 },
         features: [
             'Unlimited API messages',
             '10,000 bot messages/month',
@@ -147,7 +147,7 @@ async function loadBillingData() {
 async function loadPaymentHistory() {
     try {
         const response = await makeApiCall('/api/payments/history?limit=10');
-        
+
         if (response.success && response.data) {
             paymentHistory = response.data.payments || [];
         } else {
@@ -168,7 +168,7 @@ async function loadPaymentHistory() {
 async function loadUsageStats() {
     try {
         const response = await makeApiCall('/api/billing/usage');
-        
+
         if (response.success && response.data) {
             usageStats = response.data;
         } else {
@@ -491,7 +491,7 @@ async function selectPlan(plan, cycle) {
             name: 'WhatsApp API Service',
             description: `${response.data.plan.name} - ${cycle}`,
             order_id: response.data.orderId,
-            handler: async function(razorpayResponse) {
+            handler: async function (razorpayResponse) {
                 await verifyPayment(razorpayResponse);
             },
             prefill: {
@@ -502,7 +502,7 @@ async function selectPlan(plan, cycle) {
                 color: '#0d6efd'
             },
             modal: {
-                ondismiss: function() {
+                ondismiss: function () {
                     showToast('Payment cancelled', 'warning');
                 }
             }
@@ -535,10 +535,10 @@ async function verifyPayment(razorpayResponse) {
 
         if (response.success) {
             showToast('Payment successful! Your subscription has been activated.', 'success');
-            
+
             // Reload billing data
             await loadBillingData();
-            
+
             // Reload user profile
             if (typeof loadUserProfile === 'function') {
                 await loadUserProfile();
@@ -570,8 +570,8 @@ async function cancelSubscription() {
         });
 
         if (response.success) {
-            showToast('Subscription cancelled. You will retain access until ' + 
-                     new Date(response.data.nextBillingDate).toLocaleDateString(), 'success');
+            showToast('Subscription cancelled. You will retain access until ' +
+                new Date(response.data.nextBillingDate).toLocaleDateString(), 'success');
             await loadBillingData();
         } else {
             showToast(response.message || 'Failed to cancel subscription', 'error');

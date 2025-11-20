@@ -49,10 +49,10 @@ export class BillingController {
       const botMessageLimit = user.subscription.botMessageLimit;
       const chatbotLimit = user.subscription.chatbotLimit;
 
-      const messageUsagePercent = messageLimit === -1 ? 0 : 
+      const messageUsagePercent = messageLimit === -1 ? 0 :
         Math.min((messageCount / messageLimit) * 100, 100);
-      
-      const botMessageUsagePercent = botMessageLimit === 0 ? 0 : 
+
+      const botMessageUsagePercent = botMessageLimit === 0 ? 0 :
         Math.min((botMessageCount / botMessageLimit) * 100, 100);
 
       res.json({
@@ -175,9 +175,9 @@ export class BillingController {
         .stroke();
 
       // Add payment details
-      const description = payment.description || 
+      const description = payment.description ||
         `${payment.plan.charAt(0).toUpperCase() + payment.plan.slice(1)} Plan - ${payment.billingCycle}`;
-      
+
       doc
         .fontSize(10)
         .text(description, 50, 320, { width: 250 })
@@ -332,12 +332,12 @@ export class BillingController {
       // Calculate next invoice amount based on plan
       const planPrices = {
         basic: {
-          monthly: 29.99,
-          yearly: 299.99
+          monthly: 25,
+          yearly: 270
         },
         pro: {
-          monthly: 99.99,
-          yearly: 999.99
+          monthly: 40,
+          yearly: 432
         }
       };
 
