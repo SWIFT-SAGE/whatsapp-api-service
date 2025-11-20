@@ -1,0 +1,73 @@
+\u003c!-- INSERT THIS AFTER THE WEBHOOKS SECTION IN api-docs.ejs --\u003e
+
+\u003c!-- Templates --\u003e
+\u003csection id="templates" class="mb-5"\u003e
+\u003ch3\u003e\u003ci class="fas fa-file-alt text-primary me-2"\u003e\u003c/i\u003eMessage Templates\u003c/h3\u003e
+\u003cdiv class="card"\u003e
+\u003cdiv class="card-body"\u003e
+\u003cp\u003eCreate and manage reusable message templates for consistent communication.\u003c/p\u003e
+
+\u003ch5 class="mt-4"\u003eCreate Template\u003c/h5\u003e
+\u003cp\u003e\u003ccode class="text-success"\u003ePOST /api/templates\u003c/code\u003e\u003c/p\u003e
+\u003cpre class="bg-dark text-light p-3 rounded"\u003e\u003ccode\u003e{
+"name": "welcome_message",
+"category": "marketing",
+"type": "text",
+"content": {
+"text": "Hello {{name}}! Welcome to our service."
+},
+"variables": ["name"],
+"isActive": true
+}\u003c/code\u003e\u003c/pre\u003e
+
+\u003ch5 class="mt-4"\u003eSend Template via Session\u003c/h5\u003e
+\u003cp\u003e\u003ccode class="text-success"\u003ePOST /api/templates/send\u003c/code\u003e\u003c/p\u003e
+\u003cpre class="bg-dark text-light p-3 rounded"\u003e\u003ccode\u003e{
+"sessionId": "your_session_id",
+"to": "+1234567890",
+"templateName": "welcome_message",
+"variables": {
+"name": "John"
+}
+}\u003c/code\u003e\u003c/pre\u003e
+
+\u003ch5 class="mt-4"\u003eBulk Send to Multiple Recipients\u003c/h5\u003e
+\u003cpre class="bg-dark text-light p-3 rounded"\u003e\u003ccode\u003e{
+"sessionId": "your_session_id",
+"to": ["+1234567890", "+0987654321"],
+"templateId": "template_id_here",
+"variables": {"name": "Customer"},
+"delay": 2000
+}\u003c/code\u003e\u003c/pre\u003e
+
+\u003ch5 class="mt-4"\u003eOther Endpoints\u003c/h5\u003e
+\u003cul\u003e
+\u003cli\u003e\u003ccode class="text-info"\u003eGET /api/templates\u003c/code\u003e - List all templates\u003c/li\u003e
+\u003cli\u003e\u003ccode class="text-info"\u003eGET /api/templates/:id\u003c/code\u003e - Get template by
+ID\u003c/li\u003e
+\u003cli\u003e\u003ccode class="text-warning"\u003ePUT /api/templates/:id\u003c/code\u003e - Update
+template\u003c/li\u003e
+\u003cli\u003e\u003ccode class="text-danger"\u003eDELETE /api/templates/:id\u003c/code\u003e - Delete
+template\u003c/li\u003e
+\u003cli\u003e\u003ccode class="text-success"\u003ePOST /api/templates/preview\u003c/code\u003e - Preview with
+variables\u003c/li\u003e
+\u003c/ul\u003e
+
+\u003ch5 class="mt-4"\u003eTemplate Types\u003c/h5\u003e
+\u003cul\u003e
+\u003cli\u003e\u003ccode\u003etext\u003c/code\u003e - Simple text messages with variables\u003c/li\u003e
+\u003cli\u003e\u003ccode\u003elist\u003c/code\u003e - Interactive list messages\u003c/li\u003e
+\u003cli\u003e\u003ccode\u003eproduct\u003c/code\u003e - Product catalog messages\u003c/li\u003e
+\u003cli\u003e\u003ccode\u003eorder\u003c/code\u003e - Order confirmation messages\u003c/li\u003e
+\u003cli\u003e\u003ccode\u003epoll\u003c/code\u003e - Poll/survey messages\u003c/li\u003e
+\u003c/ul\u003e
+
+\u003cdiv class="alert alert-info mt-4"\u003e
+\u003ci class="fas fa-book me-2"\u003e\u003c/i\u003e
+\u003cstrong\u003eDetailed Documentation:\u003c/strong\u003e
+For complete examples and all template types, see
+\u003ca href="/docs/TEMPLATE_API.md" target="_blank"\u003eTemplate API Documentation\u003c/a\u003e
+\u003c/div\u003e
+\u003c/div\u003e
+\u003c/div\u003e
+\u003c/section\u003e

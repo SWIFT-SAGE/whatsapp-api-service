@@ -45,17 +45,17 @@ class WhatsAppService {
     try {
       // Wait a bit to ensure database connection is fully ready
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Check if mongoose connection is ready with timeout
       const mongoose = require('mongoose');
       const maxWaitTime = 10000; // Wait max 10 seconds for database
       const startTime = Date.now();
-      
+
       while (mongoose.connection.readyState !== 1 && (Date.now() - startTime) < maxWaitTime) {
         logger.info('Waiting for database connection to be ready...');
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
-      
+
       if (mongoose.connection.readyState !== 1) {
         logger.warn('Database connection not ready after waiting, skipping WhatsApp session initialization');
         this.initialized = true;
@@ -63,32 +63,40 @@ class WhatsAppService {
       }
 
       logger.info('Database connection ready, initializing WhatsApp sessions...');
-      
-      // Find sessions with a timeout
+
+      // Find ALL sessions (not just connected ones) - they will persist until manually deleted
       const sessions = await Promise.race([
-        WhatsappSession.find({ isConnected: true }),
-        new Promise((_, reject) => 
+        WhatsappSession.find({ status: { $ne: 'expired' } }).sort({ lastActivity: -1 }),
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Database query timeout')), 5000)
         )
       ]) as any[];
-      
-      logger.info(`Found ${sessions.length} active sessions to initialize`);
-      
+
+      logger.info(`Found ${sessions.length} sessions to restore (connected and disconnected)`);
+
       // Initialize sessions sequentially with delays to avoid overwhelming the system
+      let restoredCount = 0;
+      let skippedCount = 0;
+
       for (const session of sessions) {
         try {
-          logger.info(`Initializing session: ${session.sessionId}`);
+          logger.info(`Restoring session: ${session.sessionId} (status: ${session.status}, connected: ${session.isConnected})`);
+
+          // Create client for all sessions - RemoteAuth will handle reconnection
           await this.createClient(session.sessionId, session.userId.toString());
+          restoredCount++;
+
           // Add delay between initializations
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (sessionError) {
-          logger.error(`Failed to initialize session ${session.sessionId}:`, sessionError);
+          logger.error(`Failed to restore session ${session.sessionId}:`, sessionError);
+          skippedCount++;
           // Continue with next session
         }
       }
-      
+
       this.initialized = true;
-      logger.info(`WhatsApp service initialized with ${sessions.length} sessions`);
+      logger.info(`WhatsApp service initialized: ${restoredCount} sessions restored, ${skippedCount} skipped`);
     } catch (error) {
       logger.error('Error initializing existing sessions:', error);
       // Don't throw error to prevent server startup failure
@@ -114,7 +122,7 @@ class WhatsAppService {
       // Check if client already exists
       if (this.clients[sessionId]) {
         const client = this.clients[sessionId];
-        
+
         if (forceRestart) {
           logger.info(`Force restarting client for session: ${sessionId}`);
           // Destroy existing client
@@ -192,23 +200,23 @@ class WhatsAppService {
 
       // Initialize client with timeout
       logger.info(`Initializing WhatsApp client for session: ${sessionId}`);
-      
+
       try {
         // Set a timeout for client initialization (increased to 120 seconds for slow connections)
         const initPromise = client.initialize();
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('Client initialization timeout')), 200000); // 120 seconds (2 minutes)
         });
-        
+
         await Promise.race([initPromise, timeoutPromise]);
         logger.info(`WhatsApp client initialized successfully for session: ${sessionId}`);
-        
+
         // Set a fallback timer to check if QR code was generated
         setTimeout(async () => {
           const qrSession = QRCodeManager.getSession(sessionId);
           if (qrSession && qrSession.status === 'initializing') {
             logger.warn(`QR code not generated after 15 seconds for session ${sessionId}, checking client status`);
-            
+
             // Check if client is still valid
             const client = this.clients[sessionId];
             if (client && !client.info) {
@@ -216,11 +224,11 @@ class WhatsAppService {
             }
           }
         }, 15000); // Check after 15 seconds
-        
+
         return { success: true, message: 'Client initialization started' };
       } catch (initError) {
         logger.error(`Client initialization failed for session ${sessionId}:`, initError);
-        
+
         // Clean up failed client
         if (this.clients[sessionId]) {
           try {
@@ -234,12 +242,12 @@ class WhatsAppService {
           }
           delete this.clients[sessionId];
         }
-        
+
         // Update session status in database
         try {
           await WhatsappSession.findOneAndUpdate(
             { sessionId },
-            { 
+            {
               status: 'disconnected',
               isConnected: false,
               'errorLog.lastError': initError instanceof Error ? initError.message : String(initError),
@@ -249,7 +257,7 @@ class WhatsAppService {
         } catch (dbError) {
           logger.error(`Failed to update session status for ${sessionId}:`, dbError);
         }
-        
+
         return { success: false, message: `Client initialization failed: ${initError instanceof Error ? initError.message : String(initError)}` };
       }
     } catch (error) {
@@ -266,17 +274,17 @@ class WhatsAppService {
     client.on('qr', async (qr) => {
       try {
         logger.info(`QR code generated for session: ${sessionId}`);
-        
+
         // Check if QR session exists in manager, if not initialize it
         let qrSession = QRCodeManager.getSession(sessionId);
         if (!qrSession) {
           logger.info(`QR session not found, initializing for: ${sessionId}`);
           qrSession = await QRCodeManager.initializeSession(sessionId, userId);
         }
-        
+
         // Update QR code through manager
         await QRCodeManager.updateQRCode(sessionId, qr);
-        
+
         logger.info(`QR code updated in manager for session: ${sessionId}`);
 
       } catch (error) {
@@ -325,11 +333,11 @@ class WhatsAppService {
     client.on('disconnected', async (reason) => {
       try {
         logger.warn(`WhatsApp client disconnected for session ${sessionId}: ${reason}`);
-        
+
         await WhatsappSession.findOneAndUpdate(
           { sessionId },
-          { 
-            isConnected: false, 
+          {
+            isConnected: false,
             qrCode: undefined,
             status: 'disconnected',
             lastActivity: new Date(),
@@ -390,8 +398,8 @@ class WhatsAppService {
       logger.error(`Authentication failed for session ${sessionId}:`, msg);
       await WhatsappSession.findOneAndUpdate(
         { sessionId },
-        { 
-          status: 'error', 
+        {
+          status: 'error',
           'errorLog.lastError': `Authentication failed: ${msg}`,
           'errorLog.lastErrorAt': new Date()
         }
@@ -414,8 +422,8 @@ class WhatsAppService {
       logger.error(`Client error for session ${sessionId}:`, error);
       await WhatsappSession.findOneAndUpdate(
         { sessionId },
-        { 
-          status: 'error', 
+        {
+          status: 'error',
           'errorLog.lastError': error instanceof Error ? error.message : String(error),
           'errorLog.lastErrorAt': new Date()
         }
@@ -441,7 +449,7 @@ class WhatsAppService {
       // Try bot processing first
       const BotService = require('./BotService').default;
       const contact = await message.getContact();
-      
+
       const botProcessed = await BotService.processMessage({
         userId,
         sessionId: session._id.toString(),
@@ -489,32 +497,32 @@ class WhatsAppService {
 
       // Clean and format phone number
       let formattedTo = to.trim();
-      
+
       // Remove any non-digit characters except + and @
       if (!formattedTo.includes('@')) {
         // Remove spaces, dashes, parentheses, etc.
         formattedTo = formattedTo.replace(/[^\d+]/g, '');
-        
+
         // Ensure it starts with + for international format
         if (!formattedTo.startsWith('+')) {
           return { success: false, error: 'Phone number must include country code (e.g., +1234567890)' };
         }
-        
+
         // Add WhatsApp suffix
         formattedTo = `${formattedTo.substring(1)}@c.us`;
       }
 
       logger.info(`Sending message to ${formattedTo} via session ${sessionId}`);
-      
+
       const sentMessage = await client.sendMessage(formattedTo, message, options);
-      
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
+
+      return {
+        success: true,
+        messageId: sentMessage.id._serialized
       };
     } catch (error: any) {
       logger.error(`Error sending message via session ${sessionId}:`, error);
-      
+
       // Provide more specific error messages
       if (error.message?.includes('not registered')) {
         return { success: false, error: 'Phone number is not registered on WhatsApp' };
@@ -527,7 +535,7 @@ class WhatsAppService {
       } else if (error.message?.includes('Target closed')) {
         return { success: false, error: 'WhatsApp session disconnected. Please reconnect the session.' };
       }
-      
+
       return { success: false, error: error.message || 'Failed to send message' };
     }
   }
@@ -551,7 +559,7 @@ class WhatsAppService {
 
       // Format phone number
       const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
-      
+
       logger.info(`Sending media from file: ${filePath} to ${chatId}`);
 
       // Get Puppeteer page from client
@@ -563,7 +571,7 @@ class WhatsAppService {
       // Use direct Puppeteer method to upload and send file
       const result = await page.evaluate(async (chatIdParam: string, captionParam: string) => {
         const win: any = window;
-        
+
         try {
           // Find or create chat
           const chat = await win.Store.Chat.find(chatIdParam);
@@ -587,46 +595,46 @@ class WhatsAppService {
       const fileBuffer = fs.readFileSync(filePath);
       const { MessageMedia } = await import('whatsapp-web.js');
       const path = await import('path');
-      
+
       // Get file extension and mimetype
       const mimeTypes = await import('mime-types');
       const mimetype = mimeTypes.default.lookup(filePath) || 'application/octet-stream';
       const filename = path.basename(filePath);
-      
+
       // Create media from buffer (more reliable than fromFilePath)
       const media = new MessageMedia(
         mimetype,
         fileBuffer.toString('base64'),
         filename
       );
-      
+
       logger.info(`Media created from buffer: ${filename}, type: ${mimetype}, size: ${fileBuffer.length} bytes`);
-      
+
       // Try sending with chat.sendMessage first (more reliable)
       try {
         const chat = await client.getChatById(chatId);
         const sentMessage = await chat.sendMessage(media, { caption: caption || '' });
         logger.info(`Media sent successfully via chat.sendMessage, messageId: ${sentMessage.id._serialized}`);
 
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
-      };
+        return {
+          success: true,
+          messageId: sentMessage.id._serialized
+        };
       } catch (chatError: any) {
         // Fallback to client.sendMessage
         logger.warn(`chat.sendMessage failed: ${chatError.message}, trying client.sendMessage`);
-        
+
         const sentMessage = await client.sendMessage(chatId, media, { caption: caption || '' });
         logger.info(`Media sent successfully via client.sendMessage, messageId: ${sentMessage.id._serialized}`);
 
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
-      };
+        return {
+          success: true,
+          messageId: sentMessage.id._serialized
+        };
       }
     } catch (error: any) {
       logger.error(`Error sending media via session ${sessionId}:`, error);
-      
+
       // Provide specific error messages
       if (error.message?.includes('not registered')) {
         return { success: false, error: 'Phone number is not registered on WhatsApp' };
@@ -639,7 +647,7 @@ class WhatsAppService {
       } else if (error.message?.includes('Evaluation failed')) {
         return { success: false, error: 'WhatsApp Web communication error. Please try: 1) Reconnecting your session, 2) Using a different image format, 3) Compressing the file' };
       }
-      
+
       return { success: false, error: error.message || 'Failed to send media' };
     }
   }
@@ -662,26 +670,26 @@ class WhatsAppService {
 
       // Format phone number
       const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
-      
+
       logger.info(`Sending media from URL: ${url} to ${chatId}`);
 
       // Import MessageMedia from whatsapp-web.js
       const { MessageMedia } = await import('whatsapp-web.js');
-      
+
       const media = await MessageMedia.fromUrl(url, { unsafeMime: true });
-      
+
       // Send media using client.sendMessage
       const sentMessage = await client.sendMessage(chatId, media, { caption: caption || '' });
-      
+
       logger.info(`Media sent successfully from URL, messageId: ${sentMessage.id._serialized}`);
-      
-      return { 
-        success: true, 
-        messageId: sentMessage.id._serialized 
+
+      return {
+        success: true,
+        messageId: sentMessage.id._serialized
       };
     } catch (error: any) {
       logger.error(`Error sending media from URL via session ${sessionId}:`, error);
-      
+
       // Provide specific error messages
       if (error.message?.includes('not registered')) {
         return { success: false, error: 'Phone number is not registered on WhatsApp' };
@@ -694,7 +702,7 @@ class WhatsAppService {
       } else if (error.message?.includes('Evaluation failed')) {
         return { success: false, error: 'Failed to send media. Try: 1) Reconnecting session, 2) Sending text first, 3) Using smaller file' };
       }
-      
+
       return { success: false, error: error.message || 'Failed to send media from URL' };
     }
   }
@@ -717,54 +725,54 @@ class WhatsAppService {
 
       // Format phone number
       const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
-      
+
       logger.info(`Sending button message to ${chatId}`);
 
       try {
         // Try sending button message
         const sentMessage = await client.sendMessage(chatId, buttons);
-        
+
         logger.info(`Button message sent successfully, messageId: ${sentMessage.id._serialized}`);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
+
+        return {
+          success: true,
+          messageId: sentMessage.id._serialized
         };
       } catch (buttonError: any) {
         // If buttons fail, send as formatted text with button options
         logger.warn(`Button message failed, sending as formatted text: ${buttonError.message}`);
-        
+
         // Extract button data and format as text
         const buttonData = buttons as any;
         let textMessage = buttonData.body || '';
-        
+
         if (buttonData.title) {
           textMessage = `*${buttonData.title}*\n\n${textMessage}`;
         }
-        
+
         if (buttonData.buttons && Array.isArray(buttonData.buttons)) {
           textMessage += '\n\n_Please reply with:_\n';
           buttonData.buttons.forEach((btn: any, index: number) => {
             textMessage += `\n${index + 1}. ${btn.body || btn.text || 'Option'}`;
           });
         }
-        
+
         if (buttonData.footer) {
           textMessage += `\n\n_${buttonData.footer}_`;
         }
-        
+
         const sentMessage = await client.sendMessage(chatId, textMessage);
-        
+
         logger.info(`Button message sent as text fallback, messageId: ${sentMessage.id._serialized}`);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
+
+        return {
+          success: true,
+          messageId: sentMessage.id._serialized
         };
       }
     } catch (error: any) {
       logger.error(`Error sending button message via session ${sessionId}:`, error);
-      
+
       if (error.message?.includes('not registered')) {
         return { success: false, error: 'Phone number is not registered on WhatsApp' };
       } else if (error.message?.includes('Rate limit')) {
@@ -772,7 +780,7 @@ class WhatsAppService {
       } else if (error.message?.includes('Session closed')) {
         return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
       }
-      
+
       return { success: false, error: error.message || 'Failed to send button message' };
     }
   }
@@ -795,33 +803,33 @@ class WhatsAppService {
 
       // Format phone number
       const chatId = to.includes('@') ? to : `${to.replace(/[^\d]/g, '')}@c.us`;
-      
+
       logger.info(`Sending list message to ${chatId}`);
 
       try {
         // Try sending list message
         const sentMessage = await client.sendMessage(chatId, list);
-        
+
         logger.info(`List message sent successfully, messageId: ${sentMessage.id._serialized}`);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
+
+        return {
+          success: true,
+          messageId: sentMessage.id._serialized
         };
       } catch (listError: any) {
         // If list fails, send as formatted text
         logger.warn(`List message failed, sending as formatted text: ${listError.message}`);
-        
+
         // Extract list data and format as text
         const listData = list as any;
         let textMessage = '';
-        
+
         if (listData.title) {
           textMessage = `*${listData.title}*\n\n`;
         }
-        
+
         textMessage += listData.body || '';
-        
+
         if (listData.sections && Array.isArray(listData.sections)) {
           textMessage += '\n\n';
           listData.sections.forEach((section: any, sIndex: number) => {
@@ -837,23 +845,23 @@ class WhatsAppService {
             }
           });
         }
-        
+
         if (listData.footer) {
           textMessage += `\n_${listData.footer}_`;
         }
-        
+
         const sentMessage = await client.sendMessage(chatId, textMessage);
-        
+
         logger.info(`List message sent as text fallback, messageId: ${sentMessage.id._serialized}`);
-        
-        return { 
-          success: true, 
-          messageId: sentMessage.id._serialized 
+
+        return {
+          success: true,
+          messageId: sentMessage.id._serialized
         };
       }
     } catch (error: any) {
       logger.error(`Error sending list message via session ${sessionId}:`, error);
-      
+
       if (error.message?.includes('not registered')) {
         return { success: false, error: 'Phone number is not registered on WhatsApp' };
       } else if (error.message?.includes('Rate limit')) {
@@ -861,7 +869,7 @@ class WhatsAppService {
       } else if (error.message?.includes('Session closed')) {
         return { success: false, error: 'WhatsApp session has been closed. Please reconnect.' };
       }
-      
+
       return { success: false, error: error.message || 'Failed to send list message' };
     }
   }
@@ -906,8 +914,8 @@ class WhatsAppService {
       // Update database
       await WhatsappSession.findOneAndUpdate(
         { sessionId },
-        { 
-          isConnected: false, 
+        {
+          isConnected: false,
           qrCode: undefined,
           status: 'disconnected',
           lastActivity: new Date()
@@ -929,12 +937,12 @@ class WhatsAppService {
    */
   private normalizeMessageType(type: string): string {
     const validTypes = ['text', 'image', 'audio', 'video', 'document', 'location', 'contact', 'sticker', 'gif', 'chat', 'interactive', 'ptt', 'buttons', 'list', 'e2e_notification', 'notification', 'unknown'];
-    
+
     // If type is already valid, return it
     if (validTypes.includes(type)) {
       return type;
     }
-    
+
     // Map common WhatsApp types
     const typeMap: { [key: string]: string } = {
       'e2e_notification': 'e2e_notification',
@@ -943,7 +951,7 @@ class WhatsAppService {
       'revoked': 'notification',
       'system': 'notification'
     };
-    
+
     return typeMap[type] || 'unknown';
   }
 
@@ -1001,7 +1009,7 @@ class WhatsAppService {
     if (qrSession && qrSession.status === 'ready' && qrSession.qrText) {
       return qrSession.qrText;
     }
-    
+
     // Fallback to database check
     try {
       const session = await WhatsappSession.findOne({ sessionId });
@@ -1039,7 +1047,7 @@ class WhatsAppService {
       // Check if client is actually connected
       const state = await client.getState();
       const info = client.info;
-      
+
       if (state === 'CONNECTED' && info && info.wid) {
         // Update session to correct connected status
         await WhatsappSession.findOneAndUpdate(
@@ -1055,7 +1063,7 @@ class WhatsAppService {
             }
           }
         );
-        
+
         logger.info(`Fixed session status for ${sessionId}: now marked as connected`);
         return true;
       } else {
@@ -1068,7 +1076,7 @@ class WhatsAppService {
             lastActivity: new Date()
           }
         );
-        
+
         logger.info(`Fixed session status for ${sessionId}: marked as disconnected`);
         return false;
       }
@@ -1084,20 +1092,20 @@ class WhatsAppService {
   async initializeSession(sessionId: string, userId: string): Promise<{ success: boolean; message: string }> {
     try {
       logger.info(`Starting session initialization for: ${sessionId}, user: ${userId}`);
-      
+
       // Initialize QR session in manager
       await QRCodeManager.initializeSession(sessionId, userId);
       logger.info(`QR session initialized in manager for: ${sessionId}`);
-      
+
       // Check if this is a retry/restart scenario
       const existingClient = this.clients[sessionId];
       const forceRestart = existingClient && (!existingClient.info || !existingClient.info.wid);
-      
+
       logger.info(`Client status for ${sessionId}: exists=${!!existingClient}, forceRestart=${forceRestart}`);
-      
+
       const result = await this.createClient(sessionId, userId, forceRestart);
       logger.info(`Create client result for ${sessionId}:`, result);
-      
+
       if (!result.success) {
         throw new Error(result.message);
       }
@@ -1113,10 +1121,10 @@ class WhatsAppService {
       return { success: true, message: 'Session initialization started' };
     } catch (error) {
       logger.error(`Error initializing session ${sessionId}:`, error);
-      
+
       // Remove session from manager on error
       QRCodeManager.removeSession(sessionId);
-      
+
       throw error;
     }
   }
