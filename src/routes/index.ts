@@ -7,14 +7,15 @@ import paymentRoutes from './payments';
 import billingRoutes from './billing';
 import templateRoutes from './templates';
 import botRoutes from './bot';
+import chatbotRoutes from './chatbot';
 import { authenticateToken, authenticateApiKey } from '../middleware/auth';
 
 const router = express.Router();
 
 // Health check endpoint
 router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || '1.0.0'
   });
@@ -31,8 +32,10 @@ router.get('/', (req, res) => {
       whatsapp: '/api/whatsapp',
       analytics: '/api/analytics',
       bot: '/api/bot',
+      chatbot: '/api/chatbot',
       payments: '/api/payments',
       billing: '/api/billing',
+      templates: '/api/templates',
       health: '/api/health'
     },
     documentation: '/api-docs'
@@ -46,6 +49,7 @@ import { flexibleAuth } from '../middleware/flexAuth';
 router.use('/whatsapp', flexibleAuth, whatsappRoutes);
 router.use('/analytics', authenticateToken, analyticsRoutes);
 router.use('/bot', authenticateToken, botRoutes);
+router.use('/chatbot', chatbotRoutes); // Chatbot routes have auth built-in
 router.use('/payments', paymentRoutes);
 router.use('/billing', billingRoutes);
 router.use('/templates', templateRoutes);

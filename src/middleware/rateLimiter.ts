@@ -59,21 +59,33 @@ export const authRateLimit = rateLimit({
 
 /**
  * Message sending rate limiter
+ * Limits are based on subscription plans as defined in pricing:
+ * - Free: 5 messages total (lifetime)
+ * - Basic: 100,000 messages per month
+ * - Pro: Unlimited API messages
  */
 export const messageRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000, // 1 minute window for rate limiting
   max: (req: Request) => {
     // Different limits based on subscription plan
-    if (!req.user) return 10;
-    
-    switch ((req.user as any).subscription.plan) {
+    if (!req.user) return 5; // Unauthenticated users get free tier limits
+
+    const user = req.user as any;
+    switch (user.subscription.plan) {
       case 'pro':
-        return 10000; // Very high limit for pro (unlimited API messages)
+        // Pro plan: Unlimited API messages (very high per-minute limit)
+        return 100000; // Effectively unlimited (100k per minute)
       case 'basic':
-        return 1000; // High limit for basic (100k messages/month)
+        // Basic plan: 100,000 messages per month
+        // Assuming 30 days, that's ~3,333 per day or ~2.3 per minute
+        // We'll be generous and allow bursts up to 1000 per minute
+        return 1000;
       case 'free':
       default:
-        return 5; // Very conservative limit for free (5 messages total)
+        // Free plan: 5 messages total (lifetime)
+        // This is enforced at the database level via messageCount/messageLimit
+        // Rate limiter just prevents rapid-fire attempts
+        return 5;
     }
   },
   message: {
@@ -84,9 +96,11 @@ export const messageRateLimit = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: Request) => `messages:${(req.user as any)?._id || req.ip}`,
   handler: (req: Request, res: Response) => {
-    logger.warn(`Message rate limit exceeded for user ${(req.user as any)?._id}`);
+    const user = req.user as any;
+    logger.warn(`Message rate limit exceeded for user ${user?._id} (plan: ${user?.subscription?.plan})`);
     res.status(429).json({
       error: 'Message rate limit exceeded for your subscription plan.',
+      plan: user?.subscription?.plan || 'free',
       retryAfter: '1 minute'
     });
   }
@@ -124,7 +138,7 @@ export const apiKeyRateLimit = rateLimit({
   max: (req: Request) => {
     // Different limits based on subscription plan
     if (!req.user) return 50;
-    
+
     switch ((req.user as any).subscription.plan) {
       case 'pro':
         return 20000; // Very high API limit (unlimited messages)
@@ -210,7 +224,7 @@ export const checkUserRateLimit = async (req: Request, res: Response, next: Next
 
     // This would typically check against a usage tracking system
     // For now, we'll rely on the express-rate-limit middleware above
-    
+
     next();
   } catch (error) {
     logger.error('Error checking user rate limit:', error);

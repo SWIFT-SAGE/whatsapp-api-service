@@ -77,24 +77,30 @@ export class AuthController {
       // Check if SMTP is configured before attempting to send email
       const isSmtpConfigured = process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_HOST;
       
+      let emailSent = false;
       if (isSmtpConfigured) {
-        // Send email asynchronously without blocking registration
-        sendEmail({
-          to: email,
-          subject: 'Welcome to API Messaging - Verify Your Email',
-          html: `
-            <h2>Welcome to API Messaging!</h2>
-            <p>Hello ${name},</p>
-            <p>Thank you for signing up. Please verify your email address by clicking the link below:</p>
-            <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
-            <p>If you didn't create this account, please ignore this email.</p>
-            <p>Best regards,<br>API Messaging Team</p>
-          `
-        }).catch((emailError) => {
-          logger.error('Error sending verification email:', emailError);
-        });
+        try {
+          // Send email synchronously to know if it succeeded
+          await sendEmail({
+            to: email,
+            subject: 'Welcome to API Messaging - Verify Your Email',
+            html: `
+              <h2>Welcome to API Messaging!</h2>
+              <p>Hello ${name},</p>
+              <p>Thank you for signing up. Please verify your email address by clicking the link below:</p>
+              <a href="${verificationUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Verify Email</a>
+              <p>If you didn't create this account, please ignore this email.</p>
+              <p>Best regards,<br>API Messaging Team</p>
+            `
+          });
+          emailSent = true;
+          logger.info(`Verification email sent successfully to ${email}`);
+        } catch (emailError) {
+          logger.error('Failed to send verification email:', emailError);
+          // Don't block registration if email fails
+        }
       } else {
-        logger.warn('SMTP not configured, skipping verification email');
+        logger.warn('SMTP not configured. Email verification disabled. Set SMTP_USER, SMTP_PASS, and SMTP_HOST in .env to enable.');
       }
 
       // Generate JWT token for automatic login
@@ -114,9 +120,13 @@ export class AuthController {
 
       res.status(201).json({
         success: true,
-        message: isSmtpConfigured 
+        message: emailSent 
           ? 'User registered successfully. Please check your email for verification.'
-          : 'User registered successfully. Email verification is not configured.',
+          : isSmtpConfigured
+            ? 'User registered successfully. Verification email may have failed to send.'
+            : 'User registered successfully. Email verification is disabled (SMTP not configured).',
+        emailSent,
+        emailConfigured: isSmtpConfigured,
         token,
         user: {
           id: user._id,
