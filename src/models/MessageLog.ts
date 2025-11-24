@@ -6,6 +6,7 @@ export interface IMessageLog extends Document {
   sessionId: mongoose.Types.ObjectId;
   messageId?: string;
   direction: 'inbound' | 'outbound';
+  source?: 'api' | 'whatsapp'; // Track if message was sent via API or WhatsApp app
   type: 'text' | 'image' | 'audio' | 'video' | 'document' | 'location' | 'contact' | 'sticker' | 'gif' | 'chat' | 'interactive' | 'ptt' | 'buttons' | 'list' | 'e2e_notification' | 'notification' | 'unknown';
   from: string;
   to: string;
@@ -68,6 +69,11 @@ const messageLogSchema = new Schema<IMessageLog>({
     type: String,
     enum: ['inbound', 'outbound'],
     required: true
+  },
+  source: {
+    type: String,
+    enum: ['api', 'whatsapp'],
+    index: true // Index for efficient querying
   },
   type: {
     type: String,
@@ -184,9 +190,9 @@ messageLogSchema.index({ userId: 1, direction: 1, createdAt: -1 });
 messageLogSchema.index({ 'metadata.isGroup': 1, createdAt: -1 });
 
 // Instance methods
-messageLogSchema.methods.updateStatus = async function(status: string, timestamp?: Date): Promise<void> {
+messageLogSchema.methods.updateStatus = async function (status: string, timestamp?: Date): Promise<void> {
   const updateData: any = { status };
-  
+
   if (timestamp) {
     if (status === 'delivered') {
       updateData.deliveredAt = timestamp;
@@ -194,20 +200,20 @@ messageLogSchema.methods.updateStatus = async function(status: string, timestamp
       updateData.readAt = timestamp;
     }
   }
-  
+
   await this.updateOne(updateData);
 };
 
-messageLogSchema.methods.incrementRetry = async function(): Promise<void> {
+messageLogSchema.methods.incrementRetry = async function (): Promise<void> {
   await this.updateOne({
     $inc: { retryCount: 1 },
     $set: { lastRetryAt: new Date() }
   });
 };
 
-messageLogSchema.methods.markWebhookDelivered = async function(): Promise<void> {
+messageLogSchema.methods.markWebhookDelivered = async function (): Promise<void> {
   await this.updateOne({
-    $set: { 
+    $set: {
       webhookDelivered: true,
       lastWebhookAttempt: new Date()
     },

@@ -33,7 +33,8 @@
                                 </div>
                                 <div>
                                     <h5 class="mb-1" id="bot-name">No Bot Configured</h5>
-                                    <p class="text-muted mb-0" id="bot-description">Create a bot to start automating conversations</p>
+                                    <p class="text-muted mb-0" id="bot-description">Create a bot to start automating
+                                        conversations</p>
                                     <div class="mt-2">
                                         <span class="badge bg-secondary" id="bot-status-badge">Inactive</span>
                                         <span class="badge bg-info ms-2" id="bot-flows-count">0 Flows</span>
@@ -44,7 +45,8 @@
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
                             <div class="d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-success" id="toggle-bot-btn" disabled>
+                                <button type="button" class="btn btn-sm btn-outline-success" id="toggle-bot-btn"
+                                    disabled>
                                     <i class="fas fa-power-off me-2"></i>Activate Bot
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-primary" id="edit-bot-btn" disabled>
@@ -77,7 +79,8 @@
                         <i class="fas fa-robot fa-4x text-muted mb-3"></i>
                         <h5 class="text-muted">No Bot Configured</h5>
                         <p class="text-muted">Create a bot to start adding conversation flows</p>
-                        <button type="button" class="btn btn-primary" onclick="document.getElementById('create-bot-btn').click()">
+                        <button type="button" class="btn btn-primary"
+                            onclick="document.getElementById('create-bot-btn').click()">
                             <i class="fas fa-plus me-2"></i>Create Your First Bot
                         </button>
                     </div>
@@ -131,8 +134,8 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label class="form-label">Test Message</label>
-                        <input type="text" class="form-control" id="test-message-input" 
-                               placeholder="Type a message to test..." disabled>
+                        <input type="text" class="form-control" id="test-message-input"
+                            placeholder="Type a message to test..." disabled>
                         <small class="text-muted">Try keywords like "hi", "help", etc.</small>
                     </div>
                     <button type="button" class="btn btn-primary w-100" id="test-bot-btn" disabled>
@@ -190,7 +193,7 @@
             <div class="modal-body">
                 <form id="bot-form">
                     <input type="hidden" id="bot-id">
-                    
+
                     <!-- Session Selection -->
                     <div class="mb-3">
                         <label class="form-label">WhatsApp Session <span class="text-danger">*</span></label>
@@ -203,21 +206,94 @@
                     <!-- Bot Name -->
                     <div class="mb-3">
                         <label class="form-label">Bot Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="bot-name-input" 
-                               placeholder="e.g., Customer Support Bot" required>
+                        <input type="text" class="form-control" id="bot-name-input"
+                            placeholder="e.g., Customer Support Bot" required>
                     </div>
 
                     <!-- Bot Description -->
                     <div class="mb-3">
                         <label class="form-label">Description</label>
                         <textarea class="form-control" id="bot-description-input" rows="2"
-                                  placeholder="Brief description of what this bot does"></textarea>
+                            placeholder="Brief description of what this bot does"></textarea>
+                    </div>
+
+                    <!-- Bot Purpose -->
+                    <div class="mb-3">
+                        <label class="form-label">Bot Purpose (for AI)</label>
+                        <input type="text" class="form-control" id="bot-purpose-input"
+                            placeholder="e.g., Customer Support, Sales Assistant">
+                        <small class="text-muted">Defines the bot's role for AI responses</small>
+                    </div>
+
+                    <!-- AI Configuration -->
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="fas fa-brain me-2 text-primary"></i>AI Configuration
+                            </h6>
+                            <div class="form-check form-switch m-0">
+                                <input class="form-check-input" type="checkbox" id="bot-ai-enabled"
+                                    onchange="document.getElementById('ai-config-section').style.display = this.checked ? 'block' : 'none'">
+                                <label class="form-check-label" for="bot-ai-enabled">Enable AI</label>
+                            </div>
+                        </div>
+                        <div class="card-body" id="ai-config-section" style="display: none;">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Bot Mode</label>
+                                    <select class="form-select" id="bot-ai-mode">
+                                        <option value="hybrid">Hybrid (Flows + AI)</option>
+                                        <option value="ai_only">AI Only</option>
+                                        <option value="flows_only">Flows Only</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">AI Provider</label>
+                                    <select class="form-select" id="bot-ai-provider">
+                                        <option value="gemini">Google Gemini</option>
+                                        <option value="openai">OpenAI (GPT)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">System Prompt</label>
+                                <textarea class="form-control" id="bot-ai-prompt" rows="3"
+                                    placeholder="Instructions for the AI (e.g., 'You are a helpful support agent...')"></textarea>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Model (Optional)</label>
+                                    <input type="text" class="form-control" id="bot-ai-model"
+                                        placeholder="e.g., gemini-1.5-flash">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">API Key (Optional)</label>
+                                    <input type="password" class="form-control" id="bot-ai-api-key"
+                                        placeholder="Leave empty to use system key">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Temperature (0-1)</label>
+                                    <input type="number" class="form-control" id="bot-ai-temperature" min="0" max="1"
+                                        step="0.1" value="0.7">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Max Tokens</label>
+                                    <input type="number" class="form-control" id="bot-ai-tokens" min="50" max="2000"
+                                        step="50" value="500">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Settings -->
                     <div class="card mb-3">
                         <div class="card-header">
-                            <h6 class="mb-0">Bot Settings</h6>
+                            <h6 class="mb-0">General Settings</h6>
                         </div>
                         <div class="card-body">
                             <div class="form-check form-switch mb-3">
@@ -237,8 +313,8 @@
                             <div class="mb-3">
                                 <label class="form-label">Fallback Message</label>
                                 <textarea class="form-control" id="bot-fallback-message" rows="2"
-                                          placeholder="Message when bot doesn't understand"></textarea>
-                                <small class="text-muted">Shown when no flow matches and AI is disabled</small>
+                                    placeholder="Message when bot doesn't understand"></textarea>
+                                <small class="text-muted">Shown when no flow matches and AI is disabled/fails</small>
                             </div>
 
                             <!-- Working Hours -->
@@ -264,31 +340,38 @@
                                     <label class="form-label">Working Days</label>
                                     <div class="d-flex flex-wrap gap-2">
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="1" id="day-mon" checked>
+                                            <input class="form-check-input working-day" type="checkbox" value="1"
+                                                id="day-mon" checked>
                                             <label class="form-check-label" for="day-mon">Mon</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="2" id="day-tue" checked>
+                                            <input class="form-check-input working-day" type="checkbox" value="2"
+                                                id="day-tue" checked>
                                             <label class="form-check-label" for="day-tue">Tue</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="3" id="day-wed" checked>
+                                            <input class="form-check-input working-day" type="checkbox" value="3"
+                                                id="day-wed" checked>
                                             <label class="form-check-label" for="day-wed">Wed</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="4" id="day-thu" checked>
+                                            <input class="form-check-input working-day" type="checkbox" value="4"
+                                                id="day-thu" checked>
                                             <label class="form-check-label" for="day-thu">Thu</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="5" id="day-fri" checked>
+                                            <input class="form-check-input working-day" type="checkbox" value="5"
+                                                id="day-fri" checked>
                                             <label class="form-check-label" for="day-fri">Fri</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="6" id="day-sat">
+                                            <input class="form-check-input working-day" type="checkbox" value="6"
+                                                id="day-sat">
                                             <label class="form-check-label" for="day-sat">Sat</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input working-day" type="checkbox" value="0" id="day-sun">
+                                            <input class="form-check-input working-day" type="checkbox" value="0"
+                                                id="day-sun">
                                             <label class="form-check-label" for="day-sun">Sun</label>
                                         </div>
                                     </div>
@@ -321,12 +404,12 @@
             <div class="modal-body">
                 <form id="flow-form">
                     <input type="hidden" id="flow-id">
-                    
+
                     <!-- Flow Name -->
                     <div class="mb-3">
                         <label class="form-label">Flow Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="flow-name" 
-                               placeholder="e.g., Welcome Message" required>
+                        <input type="text" class="form-control" id="flow-name" placeholder="e.g., Welcome Message"
+                            required>
                     </div>
 
                     <!-- Trigger Configuration -->
@@ -345,8 +428,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Trigger Value <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="flow-trigger-value" 
-                                           placeholder="e.g., hi, hello, help" required>
+                                    <input type="text" class="form-control" id="flow-trigger-value"
+                                        placeholder="e.g., hi, hello, help" required>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Case</label>
@@ -394,36 +477,36 @@
 </div>
 
 <style>
-.flow-card {
-    transition: all 0.3s ease;
-    border-left: 4px solid #0d6efd;
-}
+    .flow-card {
+        transition: all 0.3s ease;
+        border-left: 4px solid #0d6efd;
+    }
 
-.flow-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
+    .flow-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
 
-.response-item {
-    border-left: 3px solid #198754;
-    background: #f8f9fa;
-}
+    .response-item {
+        border-left: 3px solid #198754;
+        background: #f8f9fa;
+    }
 
-.test-response {
-    background: #e7f3ff;
-    border-left: 4px solid #0d6efd;
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 10px;
-}
+    .test-response {
+        background: #e7f3ff;
+        border-left: 4px solid #0d6efd;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 10px;
+    }
 
-.test-response.success {
-    background: #d1e7dd;
-    border-left-color: #198754;
-}
+    .test-response.success {
+        background: #d1e7dd;
+        border-left-color: #198754;
+    }
 
-.test-response.error {
-    background: #f8d7da;
-    border-left-color: #dc3545;
-}
+    .test-response.error {
+        background: #f8d7da;
+        border-left-color: #dc3545;
+    }
 </style>

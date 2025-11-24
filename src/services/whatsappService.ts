@@ -83,13 +83,36 @@ class WhatsAppService {
           logger.info(`Restoring session: ${session.sessionId} (status: ${session.status}, connected: ${session.isConnected})`);
 
           // Create client for all sessions - RemoteAuth will handle reconnection
-          await this.createClient(session.sessionId, session.userId.toString());
+          const result = await this.createClient(session.sessionId, session.userId.toString());
+          
+          // If client creation failed due to ProtocolError, skip it gracefully
+          if (!result.success) {
+            const isProtocolError = result.message.includes('Execution context was destroyed') || 
+                                   result.message.includes('ProtocolError');
+            if (isProtocolError) {
+              logger.warn(`Session ${session.sessionId} has stale context, skipping restoration. User can re-authenticate later.`);
+              skippedCount++;
+              continue;
+            }
+            // For other errors, still count as skipped but log
+            logger.warn(`Session ${session.sessionId} restoration failed: ${result.message}`);
+            skippedCount++;
+            continue;
+          }
+
           restoredCount++;
 
           // Add delay between initializations
           await new Promise(resolve => setTimeout(resolve, 2000));
-        } catch (sessionError) {
-          logger.error(`Failed to restore session ${session.sessionId}:`, sessionError);
+        } catch (sessionError: any) {
+          const errorMessage = sessionError instanceof Error ? sessionError.message : String(sessionError);
+          const isProtocolError = sessionError?.name === 'ProtocolError' || errorMessage.includes('Execution context was destroyed');
+          
+          if (isProtocolError) {
+            logger.warn(`Session ${session.sessionId} has stale browser context, skipping restoration:`, errorMessage);
+          } else {
+            logger.error(`Failed to restore session ${session.sessionId}:`, sessionError);
+          }
           skippedCount++;
           // Continue with next session
         }
@@ -226,8 +249,16 @@ class WhatsAppService {
         }, 15000); // Check after 15 seconds
 
         return { success: true, message: 'Client initialization started' };
-      } catch (initError) {
-        logger.error(`Client initialization failed for session ${sessionId}:`, initError);
+      } catch (initError: any) {
+        const errorMessage = initError instanceof Error ? initError.message : String(initError);
+        const isProtocolError = initError?.name === 'ProtocolError' || errorMessage.includes('Execution context was destroyed');
+        const isContextDestroyed = errorMessage.includes('Execution context was destroyed');
+
+        if (isContextDestroyed) {
+          logger.warn(`Session ${sessionId} has stale browser context, will need re-authentication:`, errorMessage);
+        } else {
+          logger.error(`Client initialization failed for session ${sessionId}:`, initError);
+        }
 
         // Clean up failed client
         if (this.clients[sessionId]) {
@@ -245,20 +276,36 @@ class WhatsAppService {
 
         // Update session status in database
         try {
+          const updateData: any = {
+            status: isContextDestroyed ? 'disconnected' : 'error',
+            isConnected: false,
+            'errorLog.lastError': errorMessage,
+            'errorLog.lastErrorAt': new Date()
+          };
+
+          // If context was destroyed, mark session as needing re-authentication
+          if (isContextDestroyed) {
+            updateData.needsReauth = true;
+            updateData.status = 'disconnected';
+          }
+
           await WhatsappSession.findOneAndUpdate(
             { sessionId },
-            {
-              status: 'disconnected',
-              isConnected: false,
-              'errorLog.lastError': initError instanceof Error ? initError.message : String(initError),
-              'errorLog.lastErrorAt': new Date()
-            }
+            updateData
           );
         } catch (dbError) {
           logger.error(`Failed to update session status for ${sessionId}:`, dbError);
         }
 
-        return { success: false, message: `Client initialization failed: ${initError instanceof Error ? initError.message : String(initError)}` };
+        // For ProtocolError with destroyed context, return a more helpful message
+        if (isContextDestroyed) {
+          return { 
+            success: false, 
+            message: 'Session browser context was destroyed. Please re-authenticate by creating a new session or restarting this one.' 
+          };
+        }
+
+        return { success: false, message: `Client initialization failed: ${errorMessage}` };
       }
     } catch (error) {
       logger.error(`Error creating WhatsApp client for session ${sessionId}:`, error);
@@ -382,11 +429,13 @@ class WhatsAppService {
       }
     });
 
-    // Message sent
+    // Message sent (from WhatsApp Web/Mobile - NOT via API)
     client.on('message_create', async (message) => {
       if (message.fromMe) {
         try {
-          await this.logMessage(message, sessionId, userId, 'outbound');
+          // Mark as 'whatsapp' source - these are NOT counted for billing
+          // Only messages sent via API (source: 'api') are counted
+          await this.logMessage(message, sessionId, userId, 'outbound', 'whatsapp');
         } catch (error) {
           logger.error(`Error logging outbound message for session ${sessionId}:`, error);
         }
@@ -431,48 +480,80 @@ class WhatsAppService {
     });
   }
 
-  /**
-   * Handle incoming messages
-   */
   private async handleIncomingMessage(message: Message, sessionId: string, userId: string): Promise<void> {
-    try {
-      // Skip if message is from self
-      if (message.fromMe) return;
-
-      // Log the message
-      await this.logMessage(message, sessionId, userId, 'inbound');
-
-      // Get session settings
-      const session = await WhatsappSession.findOne({ sessionId });
-      if (!session) return;
-
-      // Try bot processing first
-      const BotService = require('./BotService').default;
-      const contact = await message.getContact();
-
-      const botProcessed = await BotService.processMessage({
-        userId,
-        sessionId: session._id.toString(),
-        chatId: message.from,
-        messageBody: message.body || '',
-        isGroup: message.from.includes('@g.us'),
-        contactName: contact.pushname || contact.name || 'User'
-      });
-
-      // If bot handled the message, skip auto-reply
-      if (botProcessed) {
-        logger.info(`Bot handled message from ${message.from}`);
-        return;
-      }
-
-      // Auto-reply if enabled and bot didn't handle
-      if (session.settings.autoReply && session.settings.autoReplyMessage) {
-        await this.sendMessage(sessionId, message.from, session.settings.autoReplyMessage);
-      }
-    } catch (error) {
-      logger.error('Error handling incoming message:', error);
+  try {
+    // Skip if message is from self
+    if (message.fromMe) {
+      logger.debug('Skipping message from self');
+      return;
     }
+
+    logger.info('📩 Incoming message:', {
+      from: message.from,
+      body: message.body,
+      sessionId: sessionId,
+      isGroup: message.from.includes('@g.us')
+    });
+
+    // Log the message
+    await this.logMessage(message, sessionId, userId, 'inbound');
+
+    // Get session settings
+    const session = await WhatsappSession.findOne({ sessionId });
+    if (!session) {
+      logger.warn(`❌ Session not found for incoming message: ${sessionId}`);
+      return;
+    }
+
+    logger.info('✅ Session found:', {
+      sessionId: sessionId,
+      sessionDbId: session._id.toString(),
+      userId: session.userId,
+      autoReply: session.settings?.autoReply || false
+    });
+
+    // Try bot processing first
+    const BotService = require('./BotService').default;
+    const contact = await message.getContact();
+
+    const botContext = {
+      userId,
+      sessionId: session._id.toString(),
+      chatId: message.from,
+      messageBody: message.body || '',
+      isGroup: message.from.includes('@g.us'),
+      contactName: contact.pushname || contact.name || 'User'
+    };
+
+    logger.info('🤖 Attempting bot processing:', botContext);
+
+    const botProcessed = await BotService.processMessage(botContext);
+
+    // If bot handled the message, skip auto-reply
+    if (botProcessed) {
+      logger.info(`✅ Bot handled message from ${message.from}`);
+      return;
+    }
+
+    logger.info('⚠️  Bot did not process message, checking auto-reply');
+
+    // Auto-reply if enabled and bot didn't handle
+    if (session.settings?.autoReply && session.settings?.autoReplyMessage) {
+      logger.info('📤 Sending auto-reply message');
+      await this.sendMessage(sessionId, message.from, session.settings.autoReplyMessage);
+    } else {
+      logger.debug('ℹ️  Auto-reply not enabled or no message configured');
+    }
+  } catch (error) {
+    logger.error('❌ Error handling incoming message:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      sessionId: sessionId,
+      userId: userId
+    });
   }
+}
+
 
   /**
    * Send a text message
@@ -956,9 +1037,15 @@ class WhatsAppService {
   }
 
   /**
-   * Log message to database
+   * Log a message to the database
    */
-  private async logMessage(message: Message, sessionId: string, userId: string, direction: 'inbound' | 'outbound'): Promise<void> {
+  private async logMessage(
+    message: Message,
+    sessionId: string,
+    userId: string,
+    direction: 'inbound' | 'outbound',
+    source?: 'api' | 'whatsapp' // Source of the message
+  ): Promise<void> {
     try {
       const session = await WhatsappSession.findOne({ sessionId });
       if (!session) return;
@@ -970,6 +1057,7 @@ class WhatsAppService {
         sessionId: session._id,
         messageId: message.id._serialized,
         direction,
+        source, // Add source field
         type: normalizedType,
         from: message.from,
         to: message.to || '',

@@ -36,9 +36,20 @@ export interface IBot extends Document {
   sessionId: mongoose.Types.ObjectId;
   name: string;
   description?: string;
+  purpose?: string; // Bot's purpose/role (e.g., "Customer Support", "Sales Assistant")
   isActive: boolean;
   flows: IBotFlow[];
   defaultFlow?: IBotFlow;
+  aiConfig?: {
+    enabled: boolean;
+    mode: 'flows_only' | 'ai_only' | 'hybrid'; // flows_only: traditional flows, ai_only: pure AI, hybrid: flows + AI fallback
+    provider: 'gemini' | 'openai' | 'custom';
+    apiKey?: string; // User's own API key (optional, falls back to system key)
+    model?: string; // e.g., 'gemini-1.5-flash', 'gpt-3.5-turbo'
+    systemPrompt?: string; // Custom instructions for the AI (bot's personality/purpose)
+    temperature?: number; // 0-1, controls randomness
+    maxTokens?: number; // Max response length
+  };
   settings: {
     enableInGroups: boolean;
     enableForUnknown: boolean;
@@ -141,12 +152,54 @@ const botSchema = new Schema<IBot>({
     type: String,
     maxlength: [500, 'Description cannot exceed 500 characters']
   },
+  purpose: {
+    type: String,
+    maxlength: [200, 'Purpose cannot exceed 200 characters'],
+    trim: true
+  },
   isActive: {
     type: Boolean,
     default: true
   },
   flows: [botFlowSchema],
   defaultFlow: botFlowSchema,
+  aiConfig: {
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+    mode: {
+      type: String,
+      enum: ['flows_only', 'ai_only', 'hybrid'],
+      default: 'flows_only'
+    },
+    provider: {
+      type: String,
+      enum: ['gemini', 'openai', 'custom'],
+      default: 'gemini'
+    },
+    apiKey: String, // Optional user API key
+    model: {
+      type: String,
+      default: 'gemini-1.5-flash'
+    },
+    systemPrompt: {
+      type: String,
+      maxlength: [1000, 'System prompt cannot exceed 1000 characters']
+    },
+    temperature: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0.7
+    },
+    maxTokens: {
+      type: Number,
+      min: 50,
+      max: 2000,
+      default: 500
+    }
+  },
   settings: {
     enableInGroups: {
       type: Boolean,

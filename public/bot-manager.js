@@ -7,22 +7,22 @@ const BotManager = {
     currentBot: null,
     currentFlows: [],
     responseCounter: 0,
-    
+
     // Getters
     getCurrentBot() {
         return this.currentBot;
     },
-    
+
     getCurrentFlows() {
         return this.currentFlows;
     },
-    
+
     // Setters
     setCurrentBot(bot) {
         this.currentBot = bot;
         this.currentFlows = bot ? (bot.flows || []) : [];
     },
-    
+
     setCurrentFlows(flows) {
         this.currentFlows = flows || [];
     }
@@ -38,11 +38,11 @@ const BotManager = {
 async function fetchBots() {
     try {
         const response = await makeApiCall('/api/bot');
-        
+
         if (response.success && response.data) {
             return Array.isArray(response.data) ? response.data : [response.data];
         }
-        
+
         return [];
     } catch (error) {
         console.error('Error fetching bots:', error);
@@ -56,16 +56,16 @@ async function fetchBots() {
 async function saveBotToBackend(botData) {
     try {
         console.log('saveBotToBackend called with:', JSON.stringify(botData, null, 2));
-        
+
         const response = await makeApiCall('/api/bot', {
             method: 'POST',
             body: JSON.stringify(botData)
         });
-        
+
         if (!response.success) {
             throw new Error(response.error || 'Failed to save bot');
         }
-        
+
         return response.data;
     } catch (error) {
         console.error('Error saving bot:', error);
@@ -82,11 +82,11 @@ async function deleteBotFromBackend(botId) {
         const response = await makeApiCall(`/api/bot/${botId}`, {
             method: 'DELETE'
         });
-        
+
         if (!response.success) {
             throw new Error(response.error || 'Failed to delete bot');
         }
-        
+
         return true;
     } catch (error) {
         console.error('Error deleting bot:', error);
@@ -103,11 +103,11 @@ async function toggleBotStatusBackend(botId, isActive) {
             method: 'PATCH',
             body: JSON.stringify({ isActive })
         });
-        
+
         if (!response.success) {
             throw new Error(response.error || 'Failed to toggle bot status');
         }
-        
+
         return true;
     } catch (error) {
         console.error('Error toggling bot status:', error);
@@ -128,11 +128,11 @@ async function testBotBackend(sessionId, message) {
                 chatId: 'test@c.us'
             })
         });
-        
+
         if (!response.success) {
             throw new Error(response.error || 'Failed to test bot');
         }
-        
+
         return response;
     } catch (error) {
         console.error('Error testing bot:', error);
@@ -148,11 +148,11 @@ async function cleanupOrphanedBots() {
         const response = await makeApiCall('/api/bot/cleanup', {
             method: 'POST'
         });
-        
+
         if (!response.success) {
             throw new Error(response.error || 'Failed to cleanup orphaned bots');
         }
-        
+
         return response;
     } catch (error) {
         console.error('Error cleaning up orphaned bots:', error);
@@ -166,22 +166,22 @@ async function cleanupOrphanedBots() {
 async function fetchWhatsAppSessions() {
     try {
         const response = await makeApiCall('/api/whatsapp/sessions');
-        
+
         let sessions = [];
-        
+
         if (response) {
             if (Array.isArray(response)) {
                 sessions = response;
             } else if (response.sessions && Array.isArray(response.sessions)) {
                 sessions = response.sessions;
             } else if (response.success && response.data) {
-                sessions = Array.isArray(response.data) ? response.data : 
-                          (response.data.sessions || []);
+                sessions = Array.isArray(response.data) ? response.data :
+                    (response.data.sessions || []);
             } else if (response.data && Array.isArray(response.data)) {
                 sessions = response.data;
             }
         }
-        
+
         return sessions;
     } catch (error) {
         console.error('Error fetching sessions:', error);
@@ -199,18 +199,18 @@ async function fetchWhatsAppSessions() {
 function extractSessionId(sessionIdField) {
     console.log('extractSessionId called with:', sessionIdField);
     console.log('Type:', typeof sessionIdField);
-    
+
     if (!sessionIdField) {
         console.log('sessionIdField is null/undefined');
         return null;
     }
-    
+
     if (typeof sessionIdField === 'object' && sessionIdField !== null) {
         const extracted = sessionIdField._id || sessionIdField.id;
         console.log('Extracted from object:', extracted);
         return extracted;
     }
-    
+
     console.log('Returning as-is:', sessionIdField);
     return sessionIdField;
 }
@@ -220,11 +220,11 @@ function extractSessionId(sessionIdField) {
  */
 function extractSessionIdentifier(sessionIdField) {
     if (!sessionIdField) return null;
-    
+
     if (typeof sessionIdField === 'object' && sessionIdField !== null) {
         return sessionIdField.sessionId;
     }
-    
+
     return sessionIdField;
 }
 
@@ -238,7 +238,7 @@ function extractSessionIdentifier(sessionIdField) {
 async function loadBotConfiguration() {
     try {
         const bots = await fetchBots();
-        
+
         if (bots && bots.length > 0) {
             BotManager.setCurrentBot(bots[0]);
             updateBotUI();
@@ -260,20 +260,20 @@ async function loadBotConfiguration() {
 function updateBotUI() {
     const bot = BotManager.getCurrentBot();
     const flows = BotManager.getCurrentFlows();
-    
+
     // Update bot info card
     const botNameEl = document.getElementById('bot-name');
     const botDescEl = document.getElementById('bot-description');
     const botStatusEl = document.getElementById('bot-status-badge');
     const botFlowsCountEl = document.getElementById('bot-flows-count');
-    
+
     // Get button elements
     const editBotBtn = document.getElementById('edit-bot-btn');
     const toggleBotBtn = document.getElementById('toggle-bot-btn');
     const addFlowBtn = document.getElementById('add-flow-btn');
     const testBotBtn = document.getElementById('test-bot-btn');
     const testMessageInput = document.getElementById('test-message-input');
-    
+
     if (bot) {
         if (botNameEl) botNameEl.textContent = bot.name || 'Unnamed Bot';
         if (botDescEl) botDescEl.textContent = bot.description || 'No description';
@@ -282,18 +282,29 @@ function updateBotUI() {
             botStatusEl.className = `badge ${bot.isActive ? 'bg-success' : 'bg-secondary'}`;
         }
         if (botFlowsCountEl) botFlowsCountEl.textContent = `${flows.length} Flow${flows.length !== 1 ? 's' : ''}`;
-        
+
+        const botAiStatusEl = document.getElementById('bot-ai-status');
+        if (botAiStatusEl) {
+            if (bot.aiConfig?.enabled) {
+                botAiStatusEl.textContent = 'AI Active';
+                botAiStatusEl.className = 'badge bg-success ms-2';
+            } else {
+                botAiStatusEl.textContent = 'AI Disabled';
+                botAiStatusEl.className = 'badge bg-secondary ms-2';
+            }
+        }
+
         // Update analytics if available
         const totalConvEl = document.getElementById('bot-total-conversations');
         const totalMsgEl = document.getElementById('bot-total-messages');
-        
+
         if (totalConvEl && bot.analytics) {
             totalConvEl.textContent = bot.analytics.totalConversations || 0;
         }
         if (totalMsgEl && bot.analytics) {
             totalMsgEl.textContent = bot.analytics.totalMessages || 0;
         }
-        
+
         // Enable buttons when bot exists
         if (editBotBtn) {
             editBotBtn.disabled = false;
@@ -301,11 +312,11 @@ function updateBotUI() {
         }
         if (toggleBotBtn) {
             toggleBotBtn.disabled = false;
-            toggleBotBtn.innerHTML = bot.isActive ? 
-                '<i class="fas fa-power-off me-2"></i>Deactivate Bot' : 
+            toggleBotBtn.innerHTML = bot.isActive ?
+                '<i class="fas fa-power-off me-2"></i>Deactivate Bot' :
                 '<i class="fas fa-power-off me-2"></i>Activate Bot';
-            toggleBotBtn.className = bot.isActive ? 
-                'btn btn-sm btn-outline-danger' : 
+            toggleBotBtn.className = bot.isActive ?
+                'btn btn-sm btn-outline-danger' :
                 'btn btn-sm btn-outline-success';
             console.log('✓ Toggle Bot button enabled');
         }
@@ -321,11 +332,11 @@ function updateBotUI() {
             testMessageInput.disabled = false;
             console.log('✓ Test Message input enabled');
         }
-        
+
         // Show bot controls
         const botControlsEl = document.getElementById('bot-controls');
         if (botControlsEl) botControlsEl.style.display = 'block';
-        
+
         // Show "no bot" message
         const noBotEl = document.getElementById('no-bot-message');
         if (noBotEl) noBotEl.style.display = 'none';
@@ -352,16 +363,16 @@ function updateBotUI() {
             testMessageInput.value = '';
             console.log('✗ Test Message input disabled (no bot)');
         }
-        
+
         // Hide bot controls
         const botControlsEl = document.getElementById('bot-controls');
         if (botControlsEl) botControlsEl.style.display = 'none';
-        
+
         // Show "no bot" message
         const noBotEl = document.getElementById('no-bot-message');
         if (noBotEl) noBotEl.style.display = 'block';
     }
-    
+
     // Render flows
     renderFlows();
 }
@@ -372,9 +383,9 @@ function updateBotUI() {
 function renderFlows() {
     const flows = BotManager.getCurrentFlows();
     const container = document.getElementById('bot-flows-container');
-    
+
     if (!container) return;
-    
+
     if (!flows || flows.length === 0) {
         container.innerHTML = `
             <div class="text-center py-5">
@@ -388,7 +399,7 @@ function renderFlows() {
         `;
         return;
     }
-    
+
     container.innerHTML = flows.map(flow => `
         <div class="card flow-card mb-3">
             <div class="card-body">
@@ -468,10 +479,10 @@ function escapeHtml(text) {
 async function openBotModal(bot = null) {
     const modal = new bootstrap.Modal(document.getElementById('botModal'));
     const title = document.getElementById('bot-modal-title');
-    
+
     // Load sessions
     await loadSessionsForModal();
-    
+
     if (bot) {
         // Edit mode
         title.textContent = 'Edit Bot';
@@ -479,21 +490,36 @@ async function openBotModal(bot = null) {
         document.getElementById('bot-session-id').value = extractSessionId(bot.sessionId) || '';
         document.getElementById('bot-name-input').value = bot.name || '';
         document.getElementById('bot-description-input').value = bot.description || '';
+        document.getElementById('bot-purpose-input').value = bot.purpose || '';
+
+        // AI Configuration
+        const aiConfig = bot.aiConfig || {};
+        document.getElementById('bot-ai-enabled').checked = aiConfig.enabled || false;
+        document.getElementById('bot-ai-mode').value = aiConfig.mode || 'hybrid';
+        document.getElementById('bot-ai-provider').value = aiConfig.provider || 'gemini';
+        document.getElementById('bot-ai-prompt').value = aiConfig.systemPrompt || '';
+        document.getElementById('bot-ai-model').value = aiConfig.model || '';
+        document.getElementById('bot-ai-api-key').value = aiConfig.apiKey || '';
+        document.getElementById('bot-ai-temperature').value = aiConfig.temperature !== undefined ? aiConfig.temperature : 0.7;
+        document.getElementById('bot-ai-tokens').value = aiConfig.maxTokens || 500;
+
+        document.getElementById('ai-config-section').style.display = aiConfig.enabled ? 'block' : 'none';
+
         document.getElementById('bot-enable-groups').checked = bot.settings?.enableInGroups || false;
         document.getElementById('bot-enable-unknown').checked = bot.settings?.enableForUnknown !== false;
         document.getElementById('bot-fallback-message').value = bot.settings?.fallbackMessage || '';
-        
+
         // Working hours
         if (bot.settings?.workingHours) {
             document.getElementById('bot-working-hours-enabled').checked = bot.settings.workingHours.enabled || false;
             document.getElementById('bot-working-start').value = bot.settings.workingHours.start || '09:00';
             document.getElementById('bot-working-end').value = bot.settings.workingHours.end || '18:00';
-            
+
             document.querySelectorAll('.working-day').forEach(cb => {
                 cb.checked = bot.settings.workingHours.days?.includes(parseInt(cb.value)) || false;
             });
-            
-            document.getElementById('working-hours-config').style.display = 
+
+            document.getElementById('working-hours-config').style.display =
                 bot.settings.workingHours.enabled ? 'block' : 'none';
         }
     } else {
@@ -501,9 +527,10 @@ async function openBotModal(bot = null) {
         title.textContent = 'Create Bot';
         document.getElementById('bot-form').reset();
         document.getElementById('bot-id').value = '';
+        document.getElementById('ai-config-section').style.display = 'none';
         document.getElementById('working-hours-config').style.display = 'none';
     }
-    
+
     modal.show();
 }
 
@@ -514,16 +541,16 @@ async function loadSessionsForModal() {
     try {
         const sessions = await fetchWhatsAppSessions();
         const sessionSelect = document.getElementById('bot-session-id');
-        
+
         if (!sessionSelect) {
             console.error('Session select element not found');
             return;
         }
-        
-        const connectedSessions = sessions.filter(s => 
+
+        const connectedSessions = sessions.filter(s =>
             s.status === 'connected' || s.status === 'ready'
         );
-        
+
         if (connectedSessions.length === 0) {
             sessionSelect.innerHTML = '<option value="">No connected sessions</option>';
             showToast('No connected sessions found. Please connect a session first.', 'warning');
@@ -546,31 +573,31 @@ async function loadSessionsForModal() {
  */
 function openFlowModal(flow = null) {
     const bot = BotManager.getCurrentBot();
-    
+
     // Check if bot exists and has a session assigned
     if (!bot) {
         showToast('No bot configured. Please create a bot first.', 'error');
         return;
     }
-    
+
     if (!extractSessionId(bot.sessionId)) {
         const shouldEdit = confirm(
             'This bot has no WhatsApp session assigned.\n\n' +
             'You need to edit the bot and select a session before you can add/edit flows.\n\n' +
             'Would you like to edit the bot now?'
         );
-        
+
         if (shouldEdit) {
             openBotModal(bot);
         }
         return;
     }
-    
+
     const modal = new bootstrap.Modal(document.getElementById('flowModal'));
     const title = document.getElementById('flow-modal-title');
-    
+
     BotManager.responseCounter = 0;
-    
+
     if (flow) {
         // Edit mode
         title.textContent = 'Edit Flow';
@@ -580,7 +607,7 @@ function openFlowModal(flow = null) {
         document.getElementById('flow-trigger-value').value = flow.trigger?.value || '';
         document.getElementById('flow-case-sensitive').checked = flow.trigger?.caseSensitive || false;
         document.getElementById('flow-active').checked = flow.isActive !== false;
-        
+
         // Load responses
         const responsesContainer = document.getElementById('responses-container');
         responsesContainer.innerHTML = '';
@@ -595,7 +622,7 @@ function openFlowModal(flow = null) {
         document.getElementById('responses-container').innerHTML = '';
         addResponse(); // Add one empty response
     }
-    
+
     modal.show();
 }
 
@@ -611,26 +638,38 @@ async function saveBot() {
         const sessionId = document.getElementById('bot-session-id').value;
         const name = document.getElementById('bot-name-input').value;
         const description = document.getElementById('bot-description-input').value;
-        
+        const purpose = document.getElementById('bot-purpose-input').value;
+
         if (!sessionId || !name) {
             showToast('Please fill in all required fields', 'warning');
             return;
         }
-        
+
         const workingDays = Array.from(document.querySelectorAll('.working-day:checked'))
             .map(cb => parseInt(cb.value));
-        
+
         const bot = BotManager.getCurrentBot();
-        
+
         const botData = {
             sessionId,
             name,
             description,
+            purpose,
+            aiConfig: {
+                enabled: document.getElementById('bot-ai-enabled').checked,
+                mode: document.getElementById('bot-ai-mode').value,
+                provider: document.getElementById('bot-ai-provider').value,
+                systemPrompt: document.getElementById('bot-ai-prompt').value,
+                model: document.getElementById('bot-ai-model').value,
+                apiKey: document.getElementById('bot-ai-api-key').value,
+                temperature: parseFloat(document.getElementById('bot-ai-temperature').value),
+                maxTokens: parseInt(document.getElementById('bot-ai-tokens').value)
+            },
             flows: BotManager.getCurrentFlows(),
             settings: {
                 enableInGroups: document.getElementById('bot-enable-groups').checked,
                 enableForUnknown: document.getElementById('bot-enable-unknown').checked,
-                fallbackMessage: document.getElementById('bot-fallback-message').value || 
+                fallbackMessage: document.getElementById('bot-fallback-message').value ||
                     "Sorry, I didn't understand that. Type 'help' for options.",
                 workingHours: {
                     enabled: document.getElementById('bot-working-hours-enabled').checked,
@@ -642,9 +681,9 @@ async function saveBot() {
             },
             isActive: bot?.isActive !== false
         };
-        
+
         await saveBotToBackend(botData);
-        
+
         showToast('Bot saved successfully!', 'success');
         bootstrap.Modal.getInstance(document.getElementById('botModal')).hide();
         await loadBotConfiguration();
@@ -659,16 +698,16 @@ async function saveBot() {
  */
 async function toggleBot() {
     const bot = BotManager.getCurrentBot();
-    
+
     if (!bot) {
         showToast('No bot configured', 'warning');
         return;
     }
-    
+
     try {
         const newStatus = !bot.isActive;
         await toggleBotStatusBackend(bot._id, newStatus);
-        
+
         showToast(`Bot ${newStatus ? 'activated' : 'deactivated'} successfully!`, 'success');
         await loadBotConfiguration();
     } catch (error) {
@@ -682,19 +721,19 @@ async function toggleBot() {
  */
 async function deleteBot() {
     const bot = BotManager.getCurrentBot();
-    
+
     if (!bot) {
         showToast('No bot configured', 'warning');
         return;
     }
-    
+
     if (!confirm('Are you sure you want to delete this bot? This action cannot be undone.')) {
         return;
     }
-    
+
     try {
         await deleteBotFromBackend(bot._id);
-        
+
         showToast('Bot deleted successfully!', 'success');
         await loadBotConfiguration();
     } catch (error) {
@@ -712,12 +751,12 @@ async function deleteBot() {
  */
 async function saveFlow() {
     const bot = BotManager.getCurrentBot();
-    
+
     if (!bot) {
         showToast('No bot configured. Please create a bot first.', 'error');
         return;
     }
-    
+
     try {
         const flowId = document.getElementById('flow-id').value;
         const flowName = document.getElementById('flow-name').value;
@@ -725,12 +764,12 @@ async function saveFlow() {
         const triggerValue = document.getElementById('flow-trigger-value').value;
         const caseSensitive = document.getElementById('flow-case-sensitive').checked;
         const isActive = document.getElementById('flow-active').checked;
-        
+
         if (!flowName || !triggerValue) {
             showToast('Please fill in all required fields', 'warning');
             return;
         }
-        
+
         // Collect responses
         const responses = [];
         document.querySelectorAll('#responses-container .card').forEach(card => {
@@ -738,7 +777,7 @@ async function saveFlow() {
             const content = card.querySelector('.response-content').value;
             const delay = parseInt(card.querySelector('.response-delay').value) || 0;
             const mediaUrl = card.querySelector('.response-media-url')?.value || '';
-            
+
             responses.push({
                 type,
                 content,
@@ -746,7 +785,7 @@ async function saveFlow() {
                 ...(mediaUrl && { mediaUrl })
             });
         });
-        
+
         const flow = {
             id: flowId || `flow_${Date.now()}`,
             name: flowName,
@@ -758,10 +797,10 @@ async function saveFlow() {
             responses,
             isActive
         };
-        
+
         // Update or add flow
         let flows = [...BotManager.getCurrentFlows()];
-        
+
         if (flowId) {
             const index = flows.findIndex(f => f.id === flowId);
             if (index !== -1) {
@@ -770,36 +809,36 @@ async function saveFlow() {
         } else {
             flows.push(flow);
         }
-        
+
         // Save bot with updated flows
         const sessionId = extractSessionId(bot.sessionId);
-        
+
         console.log('Saving flow - Bot:', bot);
         console.log('Extracted sessionId:', sessionId);
-        
+
         if (!sessionId) {
             const shouldEdit = confirm(
                 'This bot has no WhatsApp session assigned.\n\n' +
                 'You need to edit the bot and select a session before you can add/edit flows.\n\n' +
                 'Would you like to edit the bot now?'
             );
-            
+
             if (shouldEdit) {
                 // Close the flow modal first
                 const flowModal = bootstrap.Modal.getInstance(document.getElementById('flowModal'));
                 if (flowModal) flowModal.hide();
-                
+
                 // Open bot modal
                 setTimeout(() => openBotModal(bot), 300);
             }
             return;
         }
-        
+
         if (!bot.name) {
             showToast('Bot name is missing. Please edit the bot and set a name.', 'error');
             return;
         }
-        
+
         const botData = {
             sessionId,
             name: bot.name,
@@ -812,11 +851,11 @@ async function saveFlow() {
             },
             isActive: bot.isActive !== false
         };
-        
+
         console.log('Sending botData:', botData);
-        
+
         await saveBotToBackend(botData);
-        
+
         showToast(`Flow ${flowId ? 'updated' : 'added'} successfully!`, 'success');
         bootstrap.Modal.getInstance(document.getElementById('flowModal')).hide();
         await loadBotConfiguration();
@@ -831,7 +870,7 @@ async function saveFlow() {
  */
 function editFlow(flowId) {
     const bot = BotManager.getCurrentBot();
-    
+
     // Check if bot has a session assigned
     if (bot && !extractSessionId(bot.sessionId)) {
         const shouldEdit = confirm(
@@ -839,16 +878,16 @@ function editFlow(flowId) {
             'You need to edit the bot and select a session before you can edit flows.\n\n' +
             'Would you like to edit the bot now?'
         );
-        
+
         if (shouldEdit) {
             openBotModal(bot);
         }
         return;
     }
-    
+
     const flows = BotManager.getCurrentFlows();
     const flow = flows.find(f => f.id === flowId);
-    
+
     if (flow) {
         openFlowModal(flow);
     } else {
@@ -861,41 +900,41 @@ function editFlow(flowId) {
  */
 async function deleteFlow(flowId) {
     const bot = BotManager.getCurrentBot();
-    
+
     if (!bot) {
         showToast('No bot configured', 'error');
         return;
     }
-    
+
     if (!confirm('Are you sure you want to delete this flow?')) {
         return;
     }
-    
+
     try {
         const flows = BotManager.getCurrentFlows().filter(f => f.id !== flowId);
         const sessionId = extractSessionId(bot.sessionId);
-        
+
         console.log('Deleting flow - Bot:', bot);
         console.log('Extracted sessionId:', sessionId);
-        
+
         if (!sessionId) {
             const shouldEdit = confirm(
                 'This bot has no WhatsApp session assigned.\n\n' +
                 'You need to edit the bot and select a session before you can modify flows.\n\n' +
                 'Would you like to edit the bot now?'
             );
-            
+
             if (shouldEdit) {
                 openBotModal(bot);
             }
             return;
         }
-        
+
         if (!bot.name) {
             showToast('Bot name is missing. Please edit the bot and set a name.', 'error');
             return;
         }
-        
+
         const botData = {
             sessionId,
             name: bot.name,
@@ -908,11 +947,11 @@ async function deleteFlow(flowId) {
             },
             isActive: bot.isActive !== false
         };
-        
+
         console.log('Sending botData:', botData);
-        
+
         await saveBotToBackend(botData);
-        
+
         showToast('Flow deleted successfully!', 'success');
         await loadBotConfiguration();
     } catch (error) {
@@ -932,7 +971,7 @@ function addResponse(responseData = null) {
     BotManager.responseCounter++;
     const container = document.getElementById('responses-container');
     const responseId = `response-${BotManager.responseCounter}`;
-    
+
     const responseHtml = `
         <div class="card mb-3" id="${responseId}">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -985,7 +1024,7 @@ function addResponse(responseData = null) {
             </div>
         </div>
     `;
-    
+
     container.insertAdjacentHTML('beforeend', responseHtml);
 }
 
@@ -1005,11 +1044,11 @@ function removeResponse(responseId) {
 function updateResponseFields(responseId, type) {
     const card = document.getElementById(responseId);
     if (!card) return;
-    
+
     const contentArea = card.querySelector('.response-content-area');
     const needsMedia = ['image', 'video', 'audio', 'document'].includes(type);
     let mediaField = card.querySelector('.media-url-field');
-    
+
     if (needsMedia && !mediaField) {
         const mediaHtml = `
             <div class="mb-3 media-url-field">
@@ -1036,19 +1075,19 @@ function updateResponseFields(responseId, type) {
  */
 async function testBot() {
     const message = document.getElementById('test-message-input').value;
-    
+
     if (!message) {
         showToast('Please enter a test message', 'warning');
         return;
     }
-    
+
     const bot = BotManager.getCurrentBot();
-    
+
     if (!bot) {
         showToast('No bot configured. Please create a bot first.', 'error');
         return;
     }
-    
+
     // Check if bot has a session assigned
     if (!extractSessionId(bot.sessionId)) {
         const shouldEdit = confirm(
@@ -1056,24 +1095,24 @@ async function testBot() {
             'You need to edit the bot and select a session before you can test it.\n\n' +
             'Would you like to edit the bot now?'
         );
-        
+
         if (shouldEdit) {
             openBotModal(bot);
         }
         return;
     }
-    
+
     const container = document.getElementById('test-response-container');
-    
+
     try {
         // Extract session identifier
         const sessionId = extractSessionIdentifier(bot.sessionId);
-        
+
         if (!sessionId) {
             showToast('Bot session identifier not found. Please edit the bot and select a session.', 'error');
             return;
         }
-        
+
         // Show loading
         container.innerHTML = `
             <div class="text-center py-3">
@@ -1083,9 +1122,9 @@ async function testBot() {
                 <p class="mt-2 text-muted">Testing bot...</p>
             </div>
         `;
-        
+
         const response = await testBotBackend(sessionId, message);
-        
+
         if (response.success) {
             container.innerHTML = `
                 <div class="alert alert-success">
@@ -1093,9 +1132,9 @@ async function testBot() {
                         <i class="fas fa-check-circle fa-2x me-3"></i>
                         <div>
                             <strong>Test Successful!</strong>
-                            <p class="mb-0 mt-2">${response.processed ? 
-                                'Bot processed the message successfully! ✓' : 
-                                'No matching flow found. Fallback message would be used.'}</p>
+                            <p class="mb-0 mt-2">${response.processed ?
+                    'Bot processed the message successfully! ✓' :
+                    'No matching flow found. Fallback message would be used.'}</p>
                         </div>
                     </div>
                 </div>

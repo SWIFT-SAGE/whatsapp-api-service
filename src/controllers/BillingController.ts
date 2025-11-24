@@ -30,8 +30,13 @@ export class BillingController {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
+      // Only count messages sent via API/Dashboard (source: 'api')
+      // Exclude messages sent from WhatsApp Web/Mobile app (source: 'whatsapp')
+      // This ensures accurate billing based on actual API usage
       const messageCount = await MessageLog.countDocuments({
         userId,
+        direction: 'outbound', // Only outbound messages
+        source: 'api',         // Only API-sent messages (not WhatsApp app)
         createdAt: { $gte: startOfMonth }
       });
 

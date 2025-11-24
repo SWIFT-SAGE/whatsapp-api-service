@@ -31,48 +31,132 @@ class BotService {
    */
   async processMessage(context: BotContext): Promise<boolean> {
     try {
+      logger.info('Processing message:', {
+        userId: context.userId,
+        sessionId: context.sessionId,
+        messageBody: context.messageBody,
+        chatId: context.chatId
+      });
+
       // Find active bot for this session
-      const bot = await Bot.findOne({
+      // The sessionId in context can be either _id or sessionId field
+      let bot = await Bot.findOne({
         userId: context.userId,
         sessionId: context.sessionId,
         isActive: true
       });
+
+      logger.debug('Bot found by direct sessionId lookup:', !!bot);
+
+      // If not found by sessionId (_id), try finding by legacy sessionId string
+      if (!bot) {
+        // Try to find session by sessionId field first
+        const session = await WhatsappSession.findOne({
+          userId: context.userId,
+          sessionId: context.sessionId
+        });
+
+        logger.debug('Session found by sessionId field:', !!session);
+
+        if (session) {
+          bot = await Bot.findOne({
+            userId: context.userId,
+            sessionId: session._id,
+            isActive: true
+          });
+          logger.debug('Bot found by session._id lookup:', !!bot);
+        }
+      }
 
       if (!bot) {
         logger.debug('No active bot found for session');
         return false;
       }
 
+      logger.info('Bot found and active:', {
+        botId: bot._id,
+        botName: bot.name,
+        flows: bot.flows?.length || 0,
+        aiEnabled: bot.aiConfig?.enabled || false
+      });
+
       // Check if bot should respond in groups
       if (context.isGroup && !bot.settings.enableInGroups) {
+        logger.debug('Bot disabled for groups, skipping');
         return false;
       }
 
       // Check working hours
       if (!this.isWithinWorkingHours(bot)) {
+        logger.debug('Outside working hours, skipping');
         return false;
       }
 
-      // Find matching flow
+      // Determine bot mode
+      const aiMode = bot.aiConfig?.mode || 'flows_only';
+      logger.debug('Bot mode:', aiMode);
+
+      // AI-ONLY MODE: Skip flows, use AI directly
+      if (aiMode === 'ai_only' && bot.aiConfig?.enabled) {
+        logger.info('Using AI-only mode');
+        const aiResponse = await this.getAIResponseForBot(bot, context.messageBody, context);
+        if (aiResponse) {
+          await WhatsAppService.sendMessage(context.sessionId, context.chatId, aiResponse);
+          await this.updateBotAnalytics(bot._id);
+          return true;
+        }
+
+        // If AI fails, use fallback
+        if (bot.settings.fallbackMessage) {
+          const message = this.replaceVariables(bot.settings.fallbackMessage, context);
+          await WhatsAppService.sendMessage(context.sessionId, context.chatId, message);
+          return true;
+        }
+
+        return false;
+      }
+
+      // FLOWS MODE or HYBRID MODE: Try flows first
+      logger.debug('Attempting to match flows');
       const matchedFlow = this.findMatchingFlow(bot, context.messageBody);
 
       if (matchedFlow) {
+        logger.info('Flow matched:', { flowId: matchedFlow.id, flowName: matchedFlow.name });
         await this.executeFlow(bot, matchedFlow, context);
         await this.updateBotAnalytics(bot._id);
         return true;
       }
 
-      // Try AI fallback if no flow matched
-      if (bot.settings.fallbackMessage || process.env.AI_ENABLED === 'true') {
+      logger.debug('No flow matched');
+
+      // HYBRID MODE: If no flow matched, try AI
+      if (aiMode === 'hybrid' && bot.aiConfig?.enabled) {
+        logger.info('Using AI fallback in hybrid mode');
+        const aiResponse = await this.getAIResponseForBot(bot, context.messageBody, context);
+        if (aiResponse) {
+          await WhatsAppService.sendMessage(context.sessionId, context.chatId, aiResponse);
+          await this.updateBotAnalytics(bot._id);
+          return true;
+        }
+      }
+
+      // Try fallback message if no flow matched and AI didn't respond
+      if (bot.settings.fallbackMessage) {
+        logger.debug('Using fallback message');
         await this.handleFallback(bot, context);
         return true;
       }
 
+      logger.debug('No response sent');
       return false;
+
     } catch (error) {
       logger.error('Error processing bot message:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        chatId: context.chatId
+        chatId: context.chatId,
+        userId: context.userId,
+        sessionId: context.sessionId,
+        stack: error instanceof Error ? error.stack : undefined
       });
       return false;
     }
@@ -235,6 +319,63 @@ class BotService {
   }
 
   /**
+   * Get AI-generated response using bot's custom configuration
+   */
+  private async getAIResponseForBot(bot: IBot, query: string, context: BotContext): Promise<string | null> {
+    try {
+      if (!bot.aiConfig?.enabled) {
+        return null;
+      }
+
+      const provider = bot.aiConfig.provider || 'gemini';
+      const apiKey = bot.aiConfig.apiKey || process.env.AI_API_KEY;
+
+      if (!apiKey) {
+        logger.warn('AI API key not configured for bot:', { botId: bot._id.toString() });
+        return null;
+      }
+
+      const model = bot.aiConfig.model || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-3.5-turbo');
+      const temperature = bot.aiConfig.temperature !== undefined ? bot.aiConfig.temperature : 0.7;
+      const maxTokens = bot.aiConfig.maxTokens || 500;
+
+      // Build system prompt from bot's purpose and custom prompt
+      let systemPrompt = '';
+      if (bot.purpose) {
+        systemPrompt = `You are a WhatsApp bot for ${bot.purpose}. `;
+      }
+      if (bot.aiConfig.systemPrompt) {
+        systemPrompt += bot.aiConfig.systemPrompt;
+      }
+      if (!systemPrompt) {
+        systemPrompt = 'You are a helpful WhatsApp assistant. Provide concise, friendly responses.';
+      }
+
+      logger.debug('Getting AI response for bot:', {
+        botId: bot._id.toString(),
+        provider,
+        model,
+        purpose: bot.purpose
+      });
+
+      // Use provider-specific method with custom config
+      if (provider === 'gemini') {
+        return await this.getGeminiResponseWithConfig(query, apiKey, model, systemPrompt, temperature, maxTokens, context);
+      } else if (provider === 'openai') {
+        return await this.getOpenAIResponseWithConfig(query, apiKey, model, systemPrompt, temperature, maxTokens, context);
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error getting AI response for bot:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        botId: bot._id.toString()
+      });
+      return null;
+    }
+  }
+
+  /**
    * Get response from Google Gemini AI
    */
   private async getGeminiResponse(query: string, apiKey: string, context: BotContext): Promise<string | null> {
@@ -250,11 +391,11 @@ class BotService {
 
       // Get conversation context
       const conversationHistory = this.getConversationContext(context.chatId);
-      
+
       // Build prompt with context
-      const systemPrompt = process.env.AI_SYSTEM_PROMPT || 
+      const systemPrompt = process.env.AI_SYSTEM_PROMPT ||
         'You are a helpful WhatsApp assistant. Provide concise, friendly responses. Keep answers under 500 characters.';
-      
+
       const fullPrompt = `${systemPrompt}\n\nUser: ${query}`;
 
       logger.debug('Calling Gemini API', { model, chatId: context.chatId });
@@ -280,10 +421,10 @@ class BotService {
 
       if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
         const aiResponse = response.data.candidates[0].content.parts[0].text;
-        
+
         // Store in conversation context
         this.updateConversationContext(context.chatId, query, aiResponse);
-        
+
         return aiResponse;
       }
 
@@ -293,16 +434,16 @@ class BotService {
       const statusCode = (error as any)?.response?.status;
       const statusText = (error as any)?.response?.statusText;
       const responseData = (error as any)?.response?.data;
-      
+
       logger.error('Error getting Gemini response:', {
         message: errorMessage,
         status: statusCode,
         statusText: statusText,
         responseData: responseData ? JSON.stringify(responseData).substring(0, 200) : undefined,
         isAxiosError: (error as any)?.isAxiosError || false,
-        hint: statusCode === 404 ? 'Check AI_MODEL in .env (use gemini-1.5-flash or gemini-1.5-pro)' : 
-              statusCode === 400 ? 'Check GEMINI_API_KEY in .env' :
-              statusCode === 429 ? 'Rate limit exceeded' : undefined
+        hint: statusCode === 404 ? 'Check AI_MODEL in .env (use gemini-1.5-flash or gemini-1.5-pro)' :
+          statusCode === 400 ? 'Check GEMINI_API_KEY in .env' :
+            statusCode === 429 ? 'Rate limit exceeded' : undefined
       });
       return null;
     }
@@ -316,7 +457,7 @@ class BotService {
       const model = process.env.AI_MODEL || 'gpt-3.5-turbo';
       const endpoint = 'https://api.openai.com/v1/chat/completions';
 
-      const systemPrompt = process.env.AI_SYSTEM_PROMPT || 
+      const systemPrompt = process.env.AI_SYSTEM_PROMPT ||
         'You are a helpful WhatsApp assistant. Provide concise, friendly responses. Keep answers under 500 characters.';
 
       const response = await axios.post(endpoint, {
@@ -345,12 +486,104 @@ class BotService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const statusCode = (error as any)?.response?.status;
-      
+
       logger.error('Error getting OpenAI response:', {
         message: errorMessage,
         status: statusCode,
         isAxiosError: (error as any)?.isAxiosError || false
       });
+      return null;
+    }
+  }
+
+  /**
+   * Get response from Gemini with custom configuration
+   */
+  private async getGeminiResponseWithConfig(
+    query: string,
+    apiKey: string,
+    model: string,
+    systemPrompt: string,
+    temperature: number,
+    maxTokens: number,
+    context: BotContext
+  ): Promise<string | null> {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+      const fullPrompt = `${systemPrompt}\n\nUser: ${query}`;
+
+      const response = await axios.post(endpoint, {
+        contents: [{
+          parts: [{
+            text: fullPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature,
+          maxOutputTokens: maxTokens,
+          topP: 0.8,
+          topK: 40
+        }
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000
+      });
+
+      if (response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const aiResponse = response.data.candidates[0].content.parts[0].text;
+        this.updateConversationContext(context.chatId, query, aiResponse);
+        return aiResponse;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error getting Gemini response with config:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get response from OpenAI with custom configuration
+   */
+  private async getOpenAIResponseWithConfig(
+    query: string,
+    apiKey: string,
+    model: string,
+    systemPrompt: string,
+    temperature: number,
+    maxTokens: number,
+    context: BotContext
+  ): Promise<string | null> {
+    try {
+      const endpoint = 'https://api.openai.com/v1/chat/completions';
+
+      const response = await axios.post(endpoint, {
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: query }
+        ],
+        max_tokens: maxTokens,
+        temperature
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        timeout: 10000
+      });
+
+      if (response.data?.choices?.[0]?.message?.content) {
+        const aiResponse = response.data.choices[0].message.content;
+        this.updateConversationContext(context.chatId, query, aiResponse);
+        return aiResponse;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Error getting OpenAI response with config:', error);
       return null;
     }
   }
@@ -419,12 +652,12 @@ class BotService {
   private updateConversationContext(chatId: string, query: string, response: string): void {
     const context = this.getConversationContext(chatId);
     context.push({ query, response, timestamp: new Date() });
-    
+
     // Keep only last 5 exchanges
     if (context.length > 5) {
       context.shift();
     }
-    
+
     this.conversationContext.set(chatId, context);
   }
 
@@ -457,21 +690,39 @@ class BotService {
   }
 
   /**
-   * Create or update bot
-   */
+  * Create or update bot
+  */
   async saveBot(userId: string, sessionId: string, botData: Partial<IBot>): Promise<IBot> {
     try {
-      const existingBot = await Bot.findOne({ userId, sessionId });
+      // The sessionId parameter can be either:
+      // 1. A session's _id (ObjectId as string) - from frontend
+      // 2. A session's sessionId field (string) - legacy
+
+      // Try to find session by _id first
+      let session = await WhatsappSession.findById(sessionId);
+
+      // If not found by _id, try finding by sessionId field
+      if (!session) {
+        session = await WhatsappSession.findOne({ userId, sessionId });
+      }
+
+      if (!session) {
+        throw new Error('WhatsApp session not found');
+      }
+
+      // Always use the session's _id for bot storage
+      const existingBot = await Bot.findOne({ userId, sessionId: session._id });
 
       if (existingBot) {
         Object.assign(existingBot, botData);
+        existingBot.sessionId = session._id;
         await existingBot.save();
         return existingBot;
       }
 
       const newBot = new Bot({
         userId,
-        sessionId,
+        sessionId: session._id,
         ...botData
       });
 
@@ -480,34 +731,75 @@ class BotService {
     } catch (error) {
       logger.error('Error saving bot:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        userId: botData.userId?.toString()
+        userId: userId,
+        sessionId: sessionId
       });
       throw error;
     }
   }
 
+
   /**
-   * Get bot by session
-   */
+  * Get bot by session
+  */
   async getBotBySession(userId: string, sessionId: string): Promise<IBot | null> {
     try {
-      return await Bot.findOne({ userId, sessionId });
+      // Try to find session by _id first
+      let session = await WhatsappSession.findById(sessionId);
+
+      // If not found by _id, try finding by sessionId field
+      if (!session) {
+        session = await WhatsappSession.findOne({ userId, sessionId });
+      }
+
+      if (!session) {
+        return null;
+      }
+
+      return await Bot.findOne({ userId, sessionId: session._id });
     } catch (error) {
       logger.error('Error getting bot:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        sessionId: sessionId.toString()
+        sessionId: sessionId
       });
       return null;
     }
   }
+
 
   /**
    * Get all bots for user
    */
   async getUserBots(userId: string): Promise<IBot[]> {
     try {
+      // First, perform a self-healing check for bots with broken references
+      const rawBots = await Bot.find({ userId });
+
+      for (const bot of rawBots) {
+        // Check if the referenced session exists
+        const sessionExists = await WhatsappSession.exists({ _id: bot.sessionId });
+
+        if (!sessionExists) {
+          // If not found by _id, try to find by sessionId string (legacy/bugged reference)
+          const rawId = bot.sessionId.toString();
+          const session = await WhatsappSession.findOne({ sessionId: rawId });
+
+          if (session) {
+            logger.info('Repairing bot with wrong sessionId reference', {
+              botId: bot._id.toString(),
+              oldId: rawId,
+              newId: session._id.toString()
+            });
+
+            bot.sessionId = session._id;
+            await bot.save();
+          }
+        }
+      }
+
+      // Now fetch properly populated bots
       const bots = await Bot.find({ userId }).populate('sessionId', 'sessionId phoneNumber');
-      
+
       // Filter out bots with null/deleted sessions and log them
       const validBots = bots.filter(bot => {
         if (!bot.sessionId) {
@@ -520,7 +812,7 @@ class BotService {
         }
         return true;
       });
-      
+
       return validBots;
     } catch (error) {
       logger.error('Error getting user bots:', {
@@ -538,11 +830,11 @@ class BotService {
     try {
       const bots = await Bot.find({ userId });
       let deletedCount = 0;
-      
+
       for (const bot of bots) {
         // Check if sessionId exists in WhatsappSession collection
         const session = await WhatsappSession.findById(bot.sessionId);
-        
+
         if (!session) {
           await Bot.findByIdAndDelete(bot._id);
           deletedCount++;
@@ -553,7 +845,7 @@ class BotService {
           });
         }
       }
-      
+
       return deletedCount;
     } catch (error) {
       logger.error('Error cleaning up orphaned bots:', {

@@ -79,13 +79,10 @@ export class BotController {
     }
   }
 
-  /**
-   * Create or update bot
-   */
   async saveBot(req: Request, res: Response): Promise<void> {
     try {
       const userId = (req.user as IUser)._id.toString();
-      const { sessionId, name, description, flows, defaultFlow, settings, isActive } = req.body;
+      const { sessionId, name, description, flows, defaultFlow, settings, isActive, aiConfig, purpose } = req.body;
 
       if (!sessionId || !name) {
         res.status(400).json({
@@ -98,6 +95,7 @@ export class BotController {
       const botData = {
         name,
         description,
+        purpose,
         flows: flows || [],
         defaultFlow,
         settings: settings || {
@@ -105,6 +103,7 @@ export class BotController {
           enableForUnknown: true,
           fallbackMessage: 'Sorry, I didn\'t understand that. Type "help" for available commands.'
         },
+        aiConfig: aiConfig || undefined,
         isActive: isActive !== undefined ? isActive : true
       };
 
@@ -117,12 +116,19 @@ export class BotController {
       });
     } catch (error) {
       logger.error('Error saving bot:', error);
-      res.status(500).json({
+
+      // More specific error message
+      const errorMessage = error instanceof Error && error.message === 'WhatsApp session not found'
+        ? 'WhatsApp session not found. Please ensure the session exists and is active.'
+        : 'Failed to save bot';
+
+      res.status(error instanceof Error && error.message === 'WhatsApp session not found' ? 404 : 500).json({
         success: false,
-        error: 'Failed to save bot'
+        error: errorMessage
       });
     }
   }
+
 
   /**
    * Delete bot
