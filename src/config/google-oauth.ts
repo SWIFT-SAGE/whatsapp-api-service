@@ -32,6 +32,9 @@ const getBaseUrl = (): string => {
 
   // Priority 5: Default production URL
   if (config.isProduction) {
+    console.warn('⚠️  WARNING: Running in production but GOOGLE_CALLBACK_URL and PRODUCTION_URL are not set!');
+    console.warn('⚠️  Using default production URL. This may cause OAuth redirect issues.');
+    console.warn('⚠️  Please set GOOGLE_CALLBACK_URL or PRODUCTION_URL environment variable.');
     return 'https://apimessinging.com/auth/google/callback';
   }
 
