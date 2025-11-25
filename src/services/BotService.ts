@@ -31,11 +31,12 @@ class BotService {
    */
   async processMessage(context: BotContext): Promise<boolean> {
     try {
-      logger.info('Processing message:', {
+      logger.info('🤖 [BOT] Processing message:', {
         userId: context.userId,
         sessionId: context.sessionId,
         messageBody: context.messageBody,
-        chatId: context.chatId
+        chatId: context.chatId,
+        isGroup: context.isGroup
       });
 
       // Find active bot for this session
@@ -46,7 +47,10 @@ class BotService {
         isActive: true
       });
 
-      logger.debug('Bot found by direct sessionId lookup:', !!bot);
+      logger.info(`🔍 [BOT] Bot found by direct sessionId lookup: ${!!bot}`, {
+        searchedSessionId: context.sessionId,
+        searchedUserId: context.userId
+      });
 
       // If not found by sessionId (_id), try finding by legacy sessionId string
       if (!bot) {
@@ -56,7 +60,9 @@ class BotService {
           sessionId: context.sessionId
         });
 
-        logger.debug('Session found by sessionId field:', !!session);
+        logger.info(`🔍 [BOT] Session found by sessionId field: ${!!session}`, {
+          searchedSessionId: context.sessionId
+        });
 
         if (session) {
           bot = await Bot.findOne({
@@ -64,12 +70,17 @@ class BotService {
             sessionId: session._id,
             isActive: true
           });
-          logger.debug('Bot found by session._id lookup:', !!bot);
+          logger.info(`🔍 [BOT] Bot found by session._id lookup: ${!!bot}`, {
+            sessionObjectId: session._id.toString()
+          });
         }
       }
 
       if (!bot) {
-        logger.debug('No active bot found for session');
+        logger.warn('⚠️  [BOT] No active bot found for session', {
+          userId: context.userId,
+          sessionId: context.sessionId
+        });
         return false;
       }
 
@@ -351,6 +362,19 @@ class BotService {
         systemPrompt = 'You are a helpful WhatsApp assistant. Provide concise, friendly responses.';
       }
 
+      // Validate Gemini model name
+      if (provider === 'gemini') {
+        const validGeminiModels = ['gemini-pro', 'gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-1.5-flash-8b'];
+        if (!validGeminiModels.includes(model)) {
+          logger.warn(`Invalid Gemini model "${model}", using default "gemini-1.5-flash"`, {
+            botId: bot._id.toString(),
+            configuredModel: model
+          });
+          // Use default model instead of failing
+          return await this.getGeminiResponseWithConfig(query, apiKey, 'gemini-1.5-flash', systemPrompt, temperature, maxTokens, context);
+        }
+      }
+
       logger.debug('Getting AI response for bot:', {
         botId: bot._id.toString(),
         provider,
@@ -369,7 +393,8 @@ class BotService {
     } catch (error) {
       logger.error('Error getting AI response for bot:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        botId: bot._id.toString()
+        botId: bot._id.toString(),
+        stack: error instanceof Error ? error.stack : undefined
       });
       return null;
     }
@@ -539,7 +564,16 @@ class BotService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting Gemini response with config:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const statusCode = (error as any)?.response?.status;
+      const statusText = (error as any)?.response?.statusText;
+
+      logger.error('Error getting Gemini response with config:', {
+        message: errorMessage,
+        status: statusCode,
+        statusText: statusText,
+        isAxiosError: (error as any)?.isAxiosError || false
+      });
       return null;
     }
   }
@@ -583,7 +617,14 @@ class BotService {
 
       return null;
     } catch (error) {
-      logger.error('Error getting OpenAI response with config:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const statusCode = (error as any)?.response?.status;
+
+      logger.error('Error getting OpenAI response with config:', {
+        message: errorMessage,
+        status: statusCode,
+        isAxiosError: (error as any)?.isAxiosError || false
+      });
       return null;
     }
   }
@@ -698,17 +739,36 @@ class BotService {
       // 1. A session's _id (ObjectId as string) - from frontend
       // 2. A session's sessionId field (string) - legacy
 
-      // Try to find session by _id first
-      let session = await WhatsappSession.findById(sessionId);
+      // Try to find session by _id first (if it's a valid ObjectId)
+      let session = null;
 
-      // If not found by _id, try finding by sessionId field
+      // Check if sessionId is a valid ObjectId format
+      if (mongoose.Types.ObjectId.isValid(sessionId)) {
+        session = await WhatsappSession.findById(sessionId);
+      }
+
+      // If not found by _id, try finding by sessionId field with userId
       if (!session) {
-        session = await WhatsappSession.findOne({ userId, sessionId });
+        session = await WhatsappSession.findOne({
+          userId: new mongoose.Types.ObjectId(userId),
+          sessionId: sessionId
+        });
       }
 
       if (!session) {
+        logger.error('WhatsApp session not found', {
+          userId,
+          sessionId,
+          isValidObjectId: mongoose.Types.ObjectId.isValid(sessionId)
+        });
         throw new Error('WhatsApp session not found');
       }
+
+      logger.debug('Found session for bot', {
+        sessionObjectId: session._id.toString(),
+        sessionIdField: session.sessionId,
+        inputSessionId: sessionId
+      });
 
       // Always use the session's _id for bot storage
       const existingBot = await Bot.findOne({ userId, sessionId: session._id });
@@ -717,6 +777,7 @@ class BotService {
         Object.assign(existingBot, botData);
         existingBot.sessionId = session._id;
         await existingBot.save();
+        logger.info('Updated existing bot', { botId: existingBot._id.toString() });
         return existingBot;
       }
 
@@ -727,6 +788,7 @@ class BotService {
       });
 
       await newBot.save();
+      logger.info('Created new bot', { botId: newBot._id.toString(), sessionId: session._id.toString() });
       return newBot;
     } catch (error) {
       logger.error('Error saving bot:', {
@@ -800,18 +862,20 @@ class BotService {
       // Now fetch properly populated bots
       const bots = await Bot.find({ userId }).populate('sessionId', 'sessionId phoneNumber');
 
-      // Filter out bots with null/deleted sessions and log them
-      const validBots = bots.filter(bot => {
+      // Auto-delete bots with null/deleted sessions instead of just filtering
+      const validBots: IBot[] = [];
+      for (const bot of bots) {
         if (!bot.sessionId) {
-          logger.warn('Bot has null sessionId (orphaned bot):', {
+          logger.info('Auto-deleting orphaned bot:', {
             botId: bot._id.toString(),
             botName: bot.name,
             userId: userId.toString()
           });
-          return false;
+          await Bot.findByIdAndDelete(bot._id);
+        } else {
+          validBots.push(bot);
         }
-        return true;
-      });
+      }
 
       return validBots;
     } catch (error) {

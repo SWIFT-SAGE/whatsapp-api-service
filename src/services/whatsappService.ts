@@ -84,11 +84,11 @@ class WhatsAppService {
 
           // Create client for all sessions - RemoteAuth will handle reconnection
           const result = await this.createClient(session.sessionId, session.userId.toString());
-          
+
           // If client creation failed due to ProtocolError, skip it gracefully
           if (!result.success) {
-            const isProtocolError = result.message.includes('Execution context was destroyed') || 
-                                   result.message.includes('ProtocolError');
+            const isProtocolError = result.message.includes('Execution context was destroyed') ||
+              result.message.includes('ProtocolError');
             if (isProtocolError) {
               logger.warn(`Session ${session.sessionId} has stale context, skipping restoration. User can re-authenticate later.`);
               skippedCount++;
@@ -107,7 +107,7 @@ class WhatsAppService {
         } catch (sessionError: any) {
           const errorMessage = sessionError instanceof Error ? sessionError.message : String(sessionError);
           const isProtocolError = sessionError?.name === 'ProtocolError' || errorMessage.includes('Execution context was destroyed');
-          
+
           if (isProtocolError) {
             logger.warn(`Session ${session.sessionId} has stale browser context, skipping restoration:`, errorMessage);
           } else {
@@ -299,9 +299,9 @@ class WhatsAppService {
 
         // For ProtocolError with destroyed context, return a more helpful message
         if (isContextDestroyed) {
-          return { 
-            success: false, 
-            message: 'Session browser context was destroyed. Please re-authenticate by creating a new session or restarting this one.' 
+          return {
+            success: false,
+            message: 'Session browser context was destroyed. Please re-authenticate by creating a new session or restarting this one.'
           };
         }
 
@@ -481,78 +481,90 @@ class WhatsAppService {
   }
 
   private async handleIncomingMessage(message: Message, sessionId: string, userId: string): Promise<void> {
-  try {
-    // Skip if message is from self
-    if (message.fromMe) {
-      logger.debug('Skipping message from self');
-      return;
+    try {
+      // Skip if message is from self
+      if (message.fromMe) {
+        logger.debug('Skipping message from self');
+        return;
+      }
+
+      logger.info('📩 Incoming message:', {
+        from: message.from,
+        body: message.body,
+        sessionId: sessionId,
+        isGroup: message.from.includes('@g.us')
+      });
+
+      // Log the message
+      await this.logMessage(message, sessionId, userId, 'inbound');
+
+      // Get session settings
+      const session = await WhatsappSession.findOne({ sessionId });
+      if (!session) {
+        logger.warn(`❌ Session not found for incoming message: ${sessionId}`);
+        return;
+      }
+
+      logger.info('✅ Session found:', {
+        sessionId: sessionId,
+        sessionDbId: session._id.toString(),
+        userId: session.userId,
+        autoReply: session.settings?.autoReply || false
+      });
+
+      // Try bot processing first
+      const BotService = require('./BotService').default;
+
+      // Try to get contact info, but don't fail if it errors
+      let contactName = 'User';
+      try {
+        const contact = await message.getContact();
+        contactName = contact.pushname || contact.name || 'User';
+      } catch (contactError) {
+        logger.warn('Could not get contact info, using default name:', {
+          error: contactError instanceof Error ? contactError.message : 'Unknown error'
+        });
+        // Use phone number as fallback
+        contactName = message.from.split('@')[0];
+      }
+
+      const botContext = {
+        userId,
+        sessionId: session._id.toString(),
+        chatId: message.from,
+        messageBody: message.body || '',
+        isGroup: message.from.includes('@g.us'),
+        contactName: contactName
+      };
+
+      logger.info('🤖 Attempting bot processing:', botContext);
+
+      const botProcessed = await BotService.processMessage(botContext);
+
+      // If bot handled the message, skip auto-reply
+      if (botProcessed) {
+        logger.info(`✅ Bot handled message from ${message.from}`);
+        return;
+      }
+
+      logger.info('⚠️  Bot did not process message, checking auto-reply');
+
+      // Auto-reply if enabled and bot didn't handle
+      if (session.settings?.autoReply && session.settings?.autoReplyMessage) {
+        logger.info('📤 Sending auto-reply message');
+        await this.sendMessage(sessionId, message.from, session.settings.autoReplyMessage);
+      } else {
+        logger.debug('ℹ️  Auto-reply not enabled or no message configured');
+      }
+    } catch (error) {
+      logger.error('❌ Error handling incoming message:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        sessionId: sessionId,
+        userId: userId
+      });
     }
-
-    logger.info('📩 Incoming message:', {
-      from: message.from,
-      body: message.body,
-      sessionId: sessionId,
-      isGroup: message.from.includes('@g.us')
-    });
-
-    // Log the message
-    await this.logMessage(message, sessionId, userId, 'inbound');
-
-    // Get session settings
-    const session = await WhatsappSession.findOne({ sessionId });
-    if (!session) {
-      logger.warn(`❌ Session not found for incoming message: ${sessionId}`);
-      return;
-    }
-
-    logger.info('✅ Session found:', {
-      sessionId: sessionId,
-      sessionDbId: session._id.toString(),
-      userId: session.userId,
-      autoReply: session.settings?.autoReply || false
-    });
-
-    // Try bot processing first
-    const BotService = require('./BotService').default;
-    const contact = await message.getContact();
-
-    const botContext = {
-      userId,
-      sessionId: session._id.toString(),
-      chatId: message.from,
-      messageBody: message.body || '',
-      isGroup: message.from.includes('@g.us'),
-      contactName: contact.pushname || contact.name || 'User'
-    };
-
-    logger.info('🤖 Attempting bot processing:', botContext);
-
-    const botProcessed = await BotService.processMessage(botContext);
-
-    // If bot handled the message, skip auto-reply
-    if (botProcessed) {
-      logger.info(`✅ Bot handled message from ${message.from}`);
-      return;
-    }
-
-    logger.info('⚠️  Bot did not process message, checking auto-reply');
-
-    // Auto-reply if enabled and bot didn't handle
-    if (session.settings?.autoReply && session.settings?.autoReplyMessage) {
-      logger.info('📤 Sending auto-reply message');
-      await this.sendMessage(sessionId, message.from, session.settings.autoReplyMessage);
-    } else {
-      logger.debug('ℹ️  Auto-reply not enabled or no message configured');
-    }
-  } catch (error) {
-    logger.error('❌ Error handling incoming message:', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      sessionId: sessionId,
-      userId: userId
-    });
   }
-}
 
 
   /**
