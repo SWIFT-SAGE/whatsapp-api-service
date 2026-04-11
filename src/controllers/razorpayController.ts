@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
+import crypto from 'crypto';
 import razorpayService from '../services/razorpayService';
 import Payment from '../models/Payment';
 import User, { IUser } from '../models/User';
@@ -209,44 +210,65 @@ export class RazorpayController {
   }
 
   /**
-   * Handle Razorpay webhook events
+   * Handle Razorpay webhook events.
+   * Signature is verified with HMAC-SHA256 before processing.
+   * Requires raw body — ensure express.json() is NOT applied to this route;
+   * use express.raw({ type: 'application/json' }) instead so the body bytes
+   * used for signing match exactly what Razorpay sent.
    */
   async handleWebhook(req: Request, res: Response): Promise<void> {
     try {
-      const webhookEvent = req.body;
       const signature = req.headers['x-razorpay-signature'] as string;
-      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || '';
+      const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-      // Verify webhook signature if secret is configured
-      if (!signature) {
-        logger.warn('Webhook received without signature');
-      }
-
+      // Reject if secret is not configured — never process unsigned webhooks in production
       if (!webhookSecret) {
-        logger.warn('Webhook secret not configured. Skipping signature verification.');
+        logger.error('RAZORPAY_WEBHOOK_SECRET is not set. Rejecting webhook.');
+        res.status(500).json({ success: false, message: 'Webhook secret not configured' });
+        return;
       }
 
+      // Reject if no signature header
+      if (!signature) {
+        logger.warn('Razorpay webhook received without x-razorpay-signature header', { ip: req.ip });
+        res.status(401).json({ success: false, message: 'Missing webhook signature' });
+        return;
+      }
+
+      // Verify HMAC-SHA256 signature using the raw request body
+      const rawBody: Buffer = (req as any).rawBody || Buffer.from(JSON.stringify(req.body));
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(rawBody)
+        .digest('hex');
+
+      const signaturesMatch = crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, 'hex'),
+        Buffer.from(signature, 'hex')
+      );
+
+      if (!signaturesMatch) {
+        logger.warn('Razorpay webhook signature mismatch — possible forgery', { ip: req.ip });
+        res.status(401).json({ success: false, message: 'Invalid webhook signature' });
+        return;
+      }
+
+      const webhookEvent = req.body;
       await razorpayService.handleWebhook(webhookEvent, signature, webhookSecret);
 
       logger.info('Razorpay webhook processed successfully', {
         event: webhookEvent.event,
-        entity: webhookEvent.entity
+        entity: webhookEvent.entity,
       });
 
       res.status(200).json({ success: true });
-
     } catch (error: any) {
       logger.error('Failed to process Razorpay webhook', {
         event: req.body?.event,
-        entity: req.body?.entity,
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
       });
-
-      res.status(500).json({
-        success: false,
-        message: 'Webhook processing failed'
-      });
+      res.status(500).json({ success: false, message: 'Webhook processing failed' });
     }
   }
 

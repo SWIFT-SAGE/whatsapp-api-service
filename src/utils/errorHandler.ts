@@ -254,31 +254,50 @@ export const handleUncaughtException = () => {
 };
 
 // Graceful shutdown handler
-export const gracefulShutdown = (server: any) => {
-  const shutdown = (signal: string) => {
+export const gracefulShutdown = (server: any, whatsappService?: { shutdown: () => Promise<void> }) => {
+  const shutdown = async (signal: string) => {
     logger.info(`Received ${signal}, starting graceful shutdown`);
 
-    server.close((err: Error) => {
-      if (err) {
-        logger.error('Error during server shutdown', { error: err.message });
-        process.exit(1);
-      }
-
-      logger.info('Server closed successfully');
-      
-      // Close database connections
-      if (mongoose.connection.readyState === 1) {
-        mongoose.connection.close()
-      } else {
-        process.exit(0);
-      }
-    });
-
-    // Force shutdown after timeout
-    setTimeout(() => {
+    // Force shutdown after 30 seconds
+    const forceExitTimer = setTimeout(() => {
       logger.error('Forced shutdown due to timeout');
       process.exit(1);
-    }, 10000);
+    }, 30000);
+    forceExitTimer.unref();
+
+    try {
+      // 1. Destroy all WhatsApp clients first (closes Chromium processes cleanly)
+      if (whatsappService) {
+        logger.info('Destroying WhatsApp clients...');
+        await whatsappService.shutdown();
+      }
+
+      // 2. Stop accepting new HTTP connections
+      await new Promise<void>((resolve, reject) => {
+        server.close((err?: Error) => {
+          if (err) {
+            logger.error('Error during server shutdown', { error: err.message });
+            reject(err);
+          } else {
+            logger.info('HTTP server closed successfully');
+            resolve();
+          }
+        });
+      });
+
+      // 3. Close database connection
+      if (mongoose.connection.readyState === 1) {
+        await mongoose.connection.close();
+        logger.info('MongoDB connection closed');
+      }
+
+      clearTimeout(forceExitTimer);
+      logger.info('Graceful shutdown complete');
+      process.exit(0);
+    } catch (err) {
+      logger.error('Error during graceful shutdown', { error: err });
+      process.exit(1);
+    }
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

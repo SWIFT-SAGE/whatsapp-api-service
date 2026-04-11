@@ -1,26 +1,33 @@
-<footer style="background: #1f1f1f; border-top: 3px solid #25d366;  width: 100%; z-index: 1000;">
+<div class="footer-gradient-divider"></div>
+<footer style="background: #1f1f1f; width: 100%; z-index: 1000;">
     <div class="container py-5">
         <div class="row g-4 py-4">
             <!-- Brand Section -->
             <div class="col-lg-4 col-md-6">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="fab fa-whatsapp me-2" style="font-size: 32px; color: #25d366;"></i>
-                    <h5 class="mb-0" style="font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">API MESSAGING</h5>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="fab fa-whatsapp wa-icon-animated" style="font-size: 28px; color: #25d366;"></i>
+                    <h5 class="mb-0" style="font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">API MESSAGING</h5>
                 </div>
                 <p style="line-height: 1.8; color: #b8b8b8; font-size: 14px;">Professional WhatsApp Business API integration for modern applications. Scale your messaging with confidence.</p>
-                <div class="d-flex gap-3 mt-4">
-                    <a href="https://twitter.com" target="_blank" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(37, 211, 102, 0.1); border-radius: 8px; color: #25d366; font-size: 18px; transition: all 0.3s;" onmouseover="this.style.background='#25d366'; this.style.color='#fff'" onmouseout="this.style.background='rgba(37, 211, 102, 0.1)'; this.style.color='#25d366'">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a href="https://github.com" target="_blank" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(37, 211, 102, 0.1); border-radius: 8px; color: #25d366; font-size: 18px; transition: all 0.3s;" onmouseover="this.style.background='#25d366'; this.style.color='#fff'" onmouseout="this.style.background='rgba(37, 211, 102, 0.1)'; this.style.color='#25d366'">
-                        <i class="fab fa-github"></i>
-                    </a>
-                    <a href="https://linkedin.com" target="_blank" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(37, 211, 102, 0.1); border-radius: 8px; color: #25d366; font-size: 18px; transition: all 0.3s;" onmouseover="this.style.background='#25d366'; this.style.color='#fff'" onmouseout="this.style.background='rgba(37, 211, 102, 0.1)'; this.style.color='#25d366'">
-                        <i class="fab fa-linkedin"></i>
-                    </a>
-                    <a href="https://discord.com" target="_blank" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(37, 211, 102, 0.1); border-radius: 8px; color: #25d366; font-size: 18px; transition: all 0.3s;" onmouseover="this.style.background='#25d366'; this.style.color='#fff'" onmouseout="this.style.background='rgba(37, 211, 102, 0.1)'; this.style.color='#25d366'">
-                        <i class="fab fa-discord"></i>
-                    </a>
+                <!-- Newsletter -->
+                <div class="mb-3">
+                    <p style="font-size:13px;color:#888;margin-bottom:8px;">Get product updates in your inbox</p>
+                    <div class="footer-newsletter-group">
+                        <input type="email" placeholder="your@email.com" id="footer-newsletter-email">
+                        <button type="button" onclick="document.getElementById('footer-newsletter-email').value='';this.textContent='✓'">Subscribe</button>
+                    </div>
+                </div>
+                <!-- Uptime badge -->
+                <div class="footer-uptime-badge">
+                    <span class="pulse-dot"></span>
+                    99.9% uptime — All systems operational
+                </div>
+                <!-- Social links -->
+                <div class="d-flex gap-2 mt-4">
+                    <a href="https://twitter.com" target="_blank" class="footer-social-link" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(37,211,102,0.1);border-radius:8px;color:#25d366;font-size:16px;transition:all 0.25s;" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='rgba(37,211,102,0.1)';this.style.color='#25d366'"><i class="fab fa-twitter"></i></a>
+                    <a href="https://github.com" target="_blank" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(37,211,102,0.1);border-radius:8px;color:#25d366;font-size:16px;transition:all 0.25s;" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='rgba(37,211,102,0.1)';this.style.color='#25d366'"><i class="fab fa-github"></i></a>
+                    <a href="https://linkedin.com" target="_blank" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(37,211,102,0.1);border-radius:8px;color:#25d366;font-size:16px;transition:all 0.25s;" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='rgba(37,211,102,0.1)';this.style.color='#25d366'"><i class="fab fa-linkedin"></i></a>
+                    <a href="https://discord.com" target="_blank" style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(37,211,102,0.1);border-radius:8px;color:#25d366;font-size:16px;transition:all 0.25s;" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='rgba(37,211,102,0.1)';this.style.color='#25d366'"><i class="fab fa-discord"></i></a>
                 </div>
             </div>
 

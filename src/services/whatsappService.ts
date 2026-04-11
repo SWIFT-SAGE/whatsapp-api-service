@@ -1088,6 +1088,55 @@ class WhatsAppService {
   }
 
   /**
+   * Gracefully shut down all WhatsApp clients.
+   * Call this during SIGTERM/SIGINT before closing the process.
+   */
+  async shutdown(): Promise<void> {
+    const sessionIds = Object.keys(this.clients);
+    if (sessionIds.length === 0) {
+      logger.info('No active WhatsApp clients to shut down');
+      return;
+    }
+
+    logger.info(`Shutting down ${sessionIds.length} WhatsApp client(s) gracefully...`);
+
+    // Mark all connected sessions as cleanly disconnected in DB first
+    // so next startup knows to restore (not show as errored)
+    try {
+      await WhatsappSession.updateMany(
+        { sessionId: { $in: sessionIds }, isConnected: true },
+        {
+          isConnected: false,
+          status: 'disconnected',
+          lastActivity: new Date(),
+          'errorLog.lastError': 'Server shutdown'
+        }
+      );
+    } catch (dbErr) {
+      logger.warn('Could not update session statuses before shutdown:', dbErr);
+    }
+
+    // Destroy each client (closes the Chromium process cleanly)
+    await Promise.allSettled(
+      sessionIds.map(async (sessionId) => {
+        try {
+          const client = this.clients[sessionId];
+          if (client) {
+            await client.destroy();
+            logger.info(`WhatsApp client destroyed for session: ${sessionId}`);
+          }
+        } catch (err) {
+          logger.warn(`Error destroying client for session ${sessionId}:`, err);
+        } finally {
+          delete this.clients[sessionId];
+        }
+      })
+    );
+
+    logger.info('All WhatsApp clients shut down');
+  }
+
+  /**
    * Get all active sessions
    */
   getActiveSessions(): string[] {

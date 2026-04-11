@@ -114,12 +114,20 @@
                 </ul>
             </nav>
         </div>
-        <div id="messages-empty" class="text-center py-5" style="display: none;">
-            <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No messages yet</h5>
-            <p class="text-muted">Send your first message to get started</p>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#composeMessageModal">
-                <i class="fas fa-plus me-2"></i>Send Message
+        <div id="messages-empty" class="empty-state-v2" style="display: none;">
+            <svg class="empty-illustration" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="120" rx="20" fill="rgba(33,128,141,0.08)"/>
+                <rect x="18" y="50" width="60" height="40" rx="10" fill="rgba(37,211,102,0.15)" stroke="var(--wa-green)" stroke-width="2"/>
+                <polygon points="28,90 20,105 42,90" fill="rgba(37,211,102,0.15)" stroke="var(--wa-green)" stroke-width="2" stroke-linejoin="round"/>
+                <ellipse cx="80" cy="42" rx="12" ry="20" fill="var(--brand-teal)" opacity="0.85" transform="rotate(-30 80 42)"/>
+                <circle cx="80" cy="42" r="6" fill="white" opacity="0.6"/>
+                <polygon points="68,52 62,66 75,58" fill="var(--wa-green)" opacity="0.7"/>
+                <ellipse cx="70" cy="62" rx="5" ry="8" fill="#f59e0b" opacity="0.7" transform="rotate(-30 70 62)"/>
+            </svg>
+            <h4>No Messages Yet</h4>
+            <p>Send your first WhatsApp message through the API. Connect a session first, then fire off a message in seconds.</p>
+            <button class="btn-hero-primary" data-bs-toggle="modal" data-bs-target="#composeMessageModal" style="border:none;cursor:pointer;">
+                <i class="fas fa-paper-plane"></i>Send First Message
             </button>
         </div>
     </div>

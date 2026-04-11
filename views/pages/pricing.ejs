@@ -1,65 +1,113 @@
 <!-- Pricing View -->
     <div id="pricing-view" class="view">
-        <div class="pricing-container py-5">
-            <div class="container py-4">
-                <div class="row text-center mb-5 pb-3">
-                    <div class="col-lg-8 mx-auto">
-                        <h1 class="display-4 fw-bold mb-4">Choose Your Plan</h1>
-                        <p class="lead text-muted mb-0">Start free and scale as you grow</p>
+        <div class="pricing-container" style="padding-top:100px;">
+            <div class="container py-5">
+                <!-- Header -->
+                <div class="text-center mb-5">
+                    <div class="section-eyebrow-center mx-auto d-inline-flex mb-3">
+                        <i class="fas fa-tags me-2"></i>Simple Pricing
+                    </div>
+                    <h1 class="section-title-xl mb-3">Choose Your Plan</h1>
+                    <p class="section-sub-text">Start free, scale as you grow. No hidden fees.</p>
+                </div>
+
+                <!-- Toggle -->
+                <div class="d-flex justify-content-center align-items-center mb-5 gap-3">
+                    <div class="pricing-toggle-wrap" id="billingToggle">
+                        <button class="pricing-toggle-btn active" id="monthlyBtn" type="button">Monthly</button>
+                        <button class="pricing-toggle-btn" id="yearlyBtn" type="button">
+                            Yearly
+                            <span class="pricing-save-badge">Save 20%</span>
+                        </button>
                     </div>
                 </div>
-                <div class="d-flex justify-content-center gap-3 mb-5">
-                    <button class="btn btn-outline-primary btn-sm px-4 py-2 active" type="button">Monthly</button>
-                    <button class="btn btn-outline-secondary btn-sm px-4 py-2" type="button">Yearly – Save 20%</button>
-                </div>
-                <div class="row g-4 justify-content-center mb-5">
+
+                <!-- Cards -->
+                <div class="row g-4 justify-content-center mb-5 align-items-stretch">
                     <% plans.forEach((plan, index) => { %>
-                    <div class="col-lg-4">
-                        <div class="pricing-card <%= plan.name === 'Basic' ? 'popular' : '' %>">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="pricing-card-v2 <%= plan.name === 'Basic' ? 'popular' : '' %>">
                             <% if (plan.name === 'Basic') { %>
-                            <div class="popular-badge">Most Popular</div>
+                            <div class="popular-badge-v2">⭐ Most Popular</div>
                             <% } %>
-                            <div class="pricing-header">
-                                <h4><%= plan.name %></h4>
-                                <div class="price">
-                                    <% if (plan.name === 'Free') { %>
-                                        <span class="amount">Free</span>
-                                        <span class="period">Forever</span>
-                                    <% } else { %>
-                                        <span class="amount monthly-price">$<%= plan.monthlyPrice %></span>
-                                        <span class="amount yearly-price" style="display: none;">$<%= Math.round(plan.yearlyPrice / 12) %></span>
-                                        <span class="period monthly-period">/month</span>
-                                        <span class="period yearly-period" style="display: none;">/month (billed yearly)</span>
-                                        <div class="yearly-savings" style="display: none;">
-                                            <small class="text-success">Save $<%= (plan.monthlyPrice * 12) - plan.yearlyPrice %>/year</small>
-                                        </div>
-                                    <% } %>
+
+                            <div class="pricing-plan-name"><%= plan.name %></div>
+
+                            <% if (plan.name === 'Free') { %>
+                                <div class="pricing-amount-v2">Free</div>
+                                <div class="pricing-period-v2">Forever — no credit card needed</div>
+                            <% } else { %>
+                                <div class="pricing-amount-v2">
+                                    <sup>$</sup><span class="monthly-price"><%= plan.monthlyPrice %></span><span class="yearly-price" style="display:none;"><%= Math.round(plan.yearlyPrice / 12) %></span>
                                 </div>
-                            </div>
-                            <ul class="pricing-features">
+                                <div class="pricing-period-v2">
+                                    <span class="monthly-period">per month, billed monthly</span>
+                                    <span class="yearly-period" style="display:none;">per month, billed yearly</span>
+                                    <span class="yearly-savings ms-2 pricing-save-badge" style="display:none;">
+                                        Save $<%= (plan.monthlyPrice * 12) - plan.yearlyPrice %>/yr
+                                    </span>
+                                </div>
+                            <% } %>
+
+                            <div class="pricing-divider"></div>
+
+                            <ul class="pricing-feature-list-v2">
                                 <% plan.features.forEach(feature => { %>
-                                <li><i class="fas fa-check"></i><%= feature %></li>
+                                <li>
+                                    <span class="fi-check"><i class="fas fa-check" style="font-size:9px;"></i></span>
+                                    <%= feature %>
+                                </li>
                                 <% }); %>
                             </ul>
+
                             <% if (user && user.subscription && user.subscription.plan === plan.name.toLowerCase()) { %>
-                                <button class="btn btn-success w-100" disabled>
+                                <button class="btn-pricing primary" disabled style="opacity:0.7;cursor:not-allowed;">
                                     <i class="fas fa-check me-2"></i>Current Plan
                                 </button>
                             <% } else if (plan.name === 'Free') { %>
-                                <button class="btn btn-outline-primary w-100">Get Started</button>
+                                <a href="/register" class="btn-pricing outline">Get Started Free</a>
+                            <% } else if (plan.name === 'Basic') { %>
+                                <button class="btn-pricing primary" data-action="upgrade" data-plan="<%= plan.name.toLowerCase() %>">
+                                    <i class="fas fa-rocket me-2"></i>Start Free Trial
+                                </button>
                             <% } else { %>
-                                <button class="btn <%= plan.name === 'Basic' ? 'btn-primary' : 'btn-outline-primary' %> w-100" 
-                                        data-action="upgrade" data-plan="<%= plan.name.toLowerCase() %>">
-                                    Upgrade Now
+                                <button class="btn-pricing outline" data-action="upgrade" data-plan="<%= plan.name.toLowerCase() %>">
+                                    Upgrade to <%= plan.name %>
                                 </button>
                             <% } %>
                         </div>
                     </div>
                     <% }); %>
                 </div>
-                <div class="text-center mt-5 pt-3">
-                    <small class="text-muted">All paid plans include a 14‑day free trial. Cancel anytime.</small>
+
+                <div class="text-center">
+                    <p class="text-muted" style="font-size:14px;">
+                        <i class="fas fa-shield-alt me-1" style="color:var(--wa-green);"></i>
+                        All paid plans include a 14-day free trial. Cancel anytime. No questions asked.
+                    </p>
                 </div>
+
+                <script>
+                (function() {
+                    var monthlyBtn = document.getElementById('monthlyBtn');
+                    var yearlyBtn  = document.getElementById('yearlyBtn');
+                    if (!monthlyBtn || !yearlyBtn) return;
+                    function showMonthly() {
+                        monthlyBtn.classList.add('active');
+                        yearlyBtn.classList.remove('active');
+                        document.querySelectorAll('.monthly-price, .monthly-period').forEach(function(el) { el.style.display = ''; });
+                        document.querySelectorAll('.yearly-price, .yearly-period, .yearly-savings').forEach(function(el) { el.style.display = 'none'; });
+                    }
+                    function showYearly() {
+                        yearlyBtn.classList.add('active');
+                        monthlyBtn.classList.remove('active');
+                        document.querySelectorAll('.yearly-price, .yearly-period, .yearly-savings').forEach(function(el) { el.style.display = ''; });
+                        document.querySelectorAll('.monthly-price, .monthly-period').forEach(function(el) { el.style.display = 'none'; });
+                    }
+                    monthlyBtn.addEventListener('click', showMonthly);
+                    yearlyBtn.addEventListener('click', showYearly);
+                })();
+                </script>
 
                 <!-- FAQ Section -->
                 <div class="row mt-5 pt-5">

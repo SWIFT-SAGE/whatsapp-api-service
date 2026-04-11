@@ -1,236 +1,195 @@
 import { Request, Response, NextFunction } from 'express';
-import rateLimit from 'express-rate-limit';
+import { RateLimiterMemory, RateLimiterAbstract } from 'rate-limiter-flexible';
 import { logger } from '../utils/logger';
+import redisClient, { isRedisAvailable } from '../config/redis';
 
-// Using in-memory store for rate limiting instead of Redis
-// Note: In a production environment with multiple instances,
-// you might want to use a distributed solution or database for rate limiting
+// Lazy-load RateLimiterRedis to avoid hard failure if ioredis isn't installed
+let RateLimiterRedis: any;
+try {
+  RateLimiterRedis = require('rate-limiter-flexible').RateLimiterRedis;
+} catch {
+  // falls back to memory store
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * General API rate limiter
+ * Build a RateLimiterRedis when Redis is available, else RateLimiterMemory.
+ * Called lazily on first request so Redis has time to connect.
  */
-export const generalRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // Limit each IP to 1000 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req: Request) => {
-    // Use user ID if authenticated, otherwise IP
-    return (req.user as any)?._id || req.ip;
-  },
-  skip: (req: Request) => {
-    // Skip rate limiting for health checks
-    return req.path === '/health' || req.path === '/ping';
-  },
-  handler: (req: Request, res: Response) => {
-    logger.warn(`Rate limit exceeded for ${(req.user as any)?._id || req.ip} on ${req.path}`);
-    res.status(429).json({
-      error: 'Too many requests from this IP, please try again later.',
-      retryAfter: '15 minutes'
+const makeLimiter = (opts: {
+  keyPrefix: string;
+  points: number;
+  duration: number; // seconds
+}): RateLimiterAbstract => {
+  if (redisClient && isRedisAvailable()) {
+    return new RateLimiterRedis({
+      storeClient: redisClient,
+      keyPrefix: opts.keyPrefix,
+      points: opts.points,
+      duration: opts.duration,
     });
   }
-});
-
-/**
- * Strict rate limiter for authentication endpoints
- */
-export const authRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 auth attempts per windowMs
-  message: {
-    error: 'Too many authentication attempts, please try again later.',
-    retryAfter: '15 minutes'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req: Request) => `auth:${req.ip}`,
-  handler: (req: Request, res: Response) => {
-    logger.warn(`Auth rate limit exceeded for IP ${req.ip}`);
-    res.status(429).json({
-      error: 'Too many authentication attempts, please try again later.',
-      retryAfter: '15 minutes'
-    });
-  }
-});
-
-/**
- * Message sending rate limiter
- * Limits are based on subscription plans as defined in pricing:
- * - Free: 5 messages total (lifetime)
- * - Basic: 100,000 messages per month
- * - Pro: Unlimited API messages
- */
-export const messageRateLimit = rateLimit({
-  windowMs: 60 * 1000, // 1 minute window for rate limiting
-  max: (req: Request) => {
-    // Different limits based on subscription plan
-    if (!req.user) return 5; // Unauthenticated users get free tier limits
-
-    const user = req.user as any;
-    switch (user.subscription.plan) {
-      case 'pro':
-        // Pro plan: Unlimited API messages (very high per-minute limit)
-        return 100000; // Effectively unlimited (100k per minute)
-      case 'basic':
-        // Basic plan: 100,000 messages per month
-        // Assuming 30 days, that's ~3,333 per day or ~2.3 per minute
-        // We'll be generous and allow bursts up to 1000 per minute
-        return 1000;
-      case 'free':
-      default:
-        // Free plan: 5 messages total (lifetime)
-        // This is enforced at the database level via messageCount/messageLimit
-        // Rate limiter just prevents rapid-fire attempts
-        return 5;
-    }
-  },
-  message: {
-    error: 'Message rate limit exceeded for your subscription plan.',
-    retryAfter: '1 minute'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req: Request) => `messages:${(req.user as any)?._id || req.ip}`,
-  handler: (req: Request, res: Response) => {
-    const user = req.user as any;
-    logger.warn(`Message rate limit exceeded for user ${user?._id} (plan: ${user?.subscription?.plan})`);
-    res.status(429).json({
-      error: 'Message rate limit exceeded for your subscription plan.',
-      plan: user?.subscription?.plan || 'free',
-      retryAfter: '1 minute'
-    });
-  }
-});
-
-/**
- * Webhook rate limiter
- */
-export const webhookRateLimit = rateLimit({
-  // Using in-memory store by default
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // 100 webhook calls per minute
-  message: {
-    error: 'Webhook rate limit exceeded.',
-    retryAfter: '1 minute'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req: Request) => `webhook:${(req.user as any)?._id || req.ip}`,
-  handler: (req: Request, res: Response) => {
-    logger.warn(`Webhook rate limit exceeded for user ${(req.user as any)?._id}`);
-    res.status(429).json({
-      error: 'Webhook rate limit exceeded.',
-      retryAfter: '1 minute'
-    });
-  }
-});
-
-/**
- * API key rate limiter
- */
-export const apiKeyRateLimit = rateLimit({
-  // Using in-memory store by default
-  windowMs: 60 * 1000, // 1 minute
-  max: (req: Request) => {
-    // Different limits based on subscription plan
-    if (!req.user) return 50;
-
-    switch ((req.user as any).subscription.plan) {
-      case 'pro':
-        return 20000; // Very high API limit (unlimited messages)
-      case 'basic':
-        return 2000; // High API limit (100k messages/month)
-      case 'free':
-      default:
-        return 10; // Very low API limit (5 messages total)
-    }
-  },
-  message: {
-    error: 'API rate limit exceeded for your subscription plan.',
-    retryAfter: '1 minute'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req: Request) => `api:${(req.user as any)?._id || req.ip}`,
-  handler: (req: Request, res: Response) => {
-    logger.warn(`API rate limit exceeded for user ${(req.user as any)?._id}`);
-    res.status(429).json({
-      error: 'API rate limit exceeded for your subscription plan.',
-      retryAfter: '1 minute'
-    });
-  }
-});
-
-/**
- * Custom rate limiter factory
- */
-export const createCustomRateLimit = (options: {
-  windowMs: number;
-  max: number | ((req: Request) => number);
-  message?: string;
-  keyPrefix?: string;
-}) => {
-  return rateLimit({
-    // Using in-memory store by default
-    windowMs: options.windowMs,
-    max: options.max,
-    message: {
-      error: options.message || 'Rate limit exceeded.',
-      retryAfter: `${Math.ceil(options.windowMs / 1000)} seconds`
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-    keyGenerator: (req: Request) => {
-      const prefix = options.keyPrefix || 'custom';
-      return `${prefix}:${(req.user as any)?._id || req.ip}`;
-    },
-    handler: (req: Request, res: Response) => {
-      logger.warn(`Custom rate limit exceeded for ${(req.user as any)?._id || req.ip}`);
-      res.status(429).json({
-        error: options.message || 'Rate limit exceeded.',
-        retryAfter: `${Math.ceil(options.windowMs / 1000)} seconds`
-      });
-    }
+  return new RateLimiterMemory({
+    keyPrefix: opts.keyPrefix,
+    points: opts.points,
+    duration: opts.duration,
   });
 };
 
 /**
- * Middleware to check user-specific rate limits from database
+ * Convert a rate-limiter-flexible limiter into Express middleware.
  */
-export const checkUserRateLimit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    if (!req.user) {
+const toMiddleware = (
+  getLimiter: () => RateLimiterAbstract,
+  keyFn: (req: Request) => string,
+  retryMsg: string
+) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const limiter = getLimiter();
+      await limiter.consume(keyFn(req));
       next();
-      return;
+    } catch {
+      logger.warn(`Rate limit exceeded: ${keyFn(req)} on ${req.path}`);
+      res.set('Retry-After', retryMsg);
+      res.status(429).json({
+        success: false,
+        error: { code: 'RATE_LIMIT_EXCEEDED', message: 'Too many requests. Please slow down.', retryAfter: retryMsg },
+      });
     }
+  };
+};
 
-    const user = req.user;
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - 60 * 1000); // 1 minute window
+// ─── Limiter singletons (created once on first use) ─────────────────────────
 
-    // Check if user has exceeded their plan limits
-    const planLimits = {
-      free: { messagesPerMinute: 10, apiCallsPerMinute: 50 },
-      basic: { messagesPerMinute: 100, apiCallsPerMinute: 200 },
-      pro: { messagesPerMinute: 500, apiCallsPerMinute: 1000 },
-      enterprise: { messagesPerMinute: 1000, apiCallsPerMinute: 2000 }
-    };
+let _general: RateLimiterAbstract | null = null;
+const getGeneral = () => {
+  if (!_general) _general = makeLimiter({ keyPrefix: 'rl:general', points: 1000, duration: 900 }); // 1000/15 min
+  return _general;
+};
 
-    const limits = planLimits[(user as any).subscription.plan as keyof typeof planLimits] || planLimits.free;
+let _auth: RateLimiterAbstract | null = null;
+const getAuth = () => {
+  if (!_auth) _auth = makeLimiter({ keyPrefix: 'rl:auth', points: 5, duration: 900 }); // 5/15 min
+  return _auth;
+};
 
-    // This would typically check against a usage tracking system
-    // For now, we'll rely on the express-rate-limit middleware above
+let _msgFree: RateLimiterAbstract | null = null;
+const getMsgFree = () => {
+  if (!_msgFree) _msgFree = makeLimiter({ keyPrefix: 'rl:msg:free', points: 5, duration: 60 });
+  return _msgFree;
+};
 
+let _msgBasic: RateLimiterAbstract | null = null;
+const getMsgBasic = () => {
+  if (!_msgBasic) _msgBasic = makeLimiter({ keyPrefix: 'rl:msg:basic', points: 1000, duration: 60 });
+  return _msgBasic;
+};
+
+let _msgPro: RateLimiterAbstract | null = null;
+const getMsgPro = () => {
+  if (!_msgPro) _msgPro = makeLimiter({ keyPrefix: 'rl:msg:pro', points: 100000, duration: 60 });
+  return _msgPro;
+};
+
+// ─── Exported middleware ─────────────────────────────────────────────────────
+
+/** General API — 1 000 req / 15 min per user-or-IP */
+export const generalRateLimit = toMiddleware(
+  getGeneral,
+  (req) => `general:${(req.user as any)?._id || req.ip}`,
+  '15 minutes'
+);
+
+/** Auth endpoints — 5 attempts / 15 min per IP */
+export const authRateLimit = toMiddleware(
+  getAuth,
+  (req) => `auth:${req.ip}`,
+  '15 minutes'
+);
+
+/** Message sending — plan-aware limits */
+export const messageRateLimit = async (req: Request, res: Response, next: NextFunction) => {
+  const plan = (req.user as any)?.subscription?.plan || 'free';
+  const key = `msg:${(req.user as any)?._id || req.ip}`;
+  const getLimiter =
+    plan === 'pro' ? getMsgPro : plan === 'basic' ? getMsgBasic : getMsgFree;
+
+  try {
+    await getLimiter().consume(key);
     next();
-  } catch (error) {
-    logger.error('Error checking user rate limit:', error);
-    next(); // Continue on error to avoid blocking requests
+  } catch {
+    logger.warn(`Message rate limit exceeded for user ${(req.user as any)?._id} (plan: ${plan})`);
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'MESSAGE_RATE_LIMIT_EXCEEDED',
+        message: 'Message rate limit exceeded for your subscription plan.',
+        plan,
+        retryAfter: '1 minute',
+      },
+    });
   }
 };
+
+/** Webhooks — 100/min per user */
+export const webhookRateLimit = toMiddleware(
+  () => makeLimiter({ keyPrefix: 'rl:webhook', points: 100, duration: 60 }),
+  (req) => `webhook:${(req.user as any)?._id || req.ip}`,
+  '1 minute'
+);
+
+/** API-key callers — plan-aware */
+export const apiKeyRateLimit = async (req: Request, res: Response, next: NextFunction) => {
+  const plan = (req.user as any)?.subscription?.plan || 'free';
+  const points = plan === 'pro' ? 20000 : plan === 'basic' ? 2000 : 10;
+  const limiter = makeLimiter({ keyPrefix: `rl:apikey:${plan}`, points, duration: 60 });
+
+  try {
+    await limiter.consume(`apikey:${(req.user as any)?._id || req.ip}`);
+    next();
+  } catch {
+    res.status(429).json({
+      success: false,
+      error: {
+        code: 'API_RATE_LIMIT_EXCEEDED',
+        message: 'API rate limit exceeded for your subscription plan.',
+        plan,
+        retryAfter: '1 minute',
+      },
+    });
+  }
+};
+
+/** Factory for custom rate limits */
+export const createCustomRateLimit = (opts: {
+  windowMs: number;
+  max: number;
+  message?: string;
+  keyPrefix?: string;
+}) => {
+  const limiter = makeLimiter({
+    keyPrefix: opts.keyPrefix || 'rl:custom',
+    points: opts.max,
+    duration: Math.ceil(opts.windowMs / 1000),
+  });
+
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await limiter.consume(`${opts.keyPrefix || 'custom'}:${(req.user as any)?._id || req.ip}`);
+      next();
+    } catch {
+      res.status(429).json({
+        success: false,
+        error: { code: 'RATE_LIMIT_EXCEEDED', message: opts.message || 'Rate limit exceeded.' },
+      });
+    }
+  };
+};
+
+/** No-op passthrough — kept for compatibility */
+export const checkUserRateLimit = (_req: Request, _res: Response, next: NextFunction) => next();
 
 export default {
   generalRateLimit,
@@ -239,5 +198,5 @@ export default {
   webhookRateLimit,
   apiKeyRateLimit,
   createCustomRateLimit,
-  checkUserRateLimit
+  checkUserRateLimit,
 };

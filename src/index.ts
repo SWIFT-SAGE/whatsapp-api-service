@@ -28,6 +28,7 @@ import { compressionConfig } from './config/performance';
 import apiRoutes from './routes';
 import healthRoutes from './routes/health';
 import whatsappService from './services/whatsappService';
+import schedulerService from './services/SchedulerService';
 
 // Load environment variables
 dotenv.config();
@@ -74,7 +75,14 @@ app.use(requestLogger);
 app.use(timeoutHandler(120000)); // Set a default 120 second timeout for WhatsApp operations
 
 // Body parsing middleware
-app.use(express.json({ limit: '50mb' })); // Set a reasonable default body size limit
+// For Razorpay webhooks we need the raw bytes to verify HMAC signatures.
+// We capture rawBody on all requests so the webhook controller can use it.
+app.use(express.json({
+  limit: '50mb',
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Cookie parsing middleware
@@ -884,6 +892,10 @@ const startServer = async () => {
         logger.warn('⚠️  Server will continue without WhatsApp sessions');
         logger.warn('⚠️  You can manually initialize sessions later through the dashboard');
       }
+
+      // Start the message scheduler (polls DB every 30s for due messages)
+      schedulerService.start();
+      logger.info('⏰ Scheduled message service started');
     } catch (error) {
       logger.error('❌ Database connection failed:', error);
       logger.warn('⚠️  Server will start without database connectivity');
@@ -921,8 +933,15 @@ const startServer = async () => {
   }
 };
 
-// Setup graceful shutdown
-gracefulShutdown(server);
+// Setup graceful shutdown — passes whatsappService so Chromium processes are cleaned up
+// Also stop the scheduler on shutdown
+const originalShutdown = gracefulShutdown;
+gracefulShutdown(server, {
+  shutdown: async () => {
+    schedulerService.stop();
+    await whatsappService.shutdown();
+  }
+});
 
 // Make io available globally for other modules
 (global as any).io = io;

@@ -1,27 +1,32 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="main-navbar">
         <div class="container">
-            <a class="navbar-brand " href="/">
-                <i class="fab fa-whatsapp me-2"></i>
-                    <strong>API MESSAGING</strong>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i class="fab fa-whatsapp wa-icon-animated" style="font-size:22px;"></i>
+                <strong style="letter-spacing:-0.02em;">API MESSAGING</strong>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="box-shadow:none;">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
                     <li class="nav-item">
-                        <a class="nav-link" href="/pricing">Pricing</a>
+                        <a class="nav-link px-3" href="/pricing">Pricing</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/api-docs">API Docs</a>
+                        <a class="nav-link px-3" href="/api-docs">API Docs</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/contact">Contact</a>
+                        <a class="nav-link px-3" href="/contact">Contact</a>
                     </li>
-                   
+                    <li class="nav-item d-none d-lg-flex align-items-center">
+                        <span class="nav-uptime-badge ms-2">
+                            <span class="dot"></span>99.9% Uptime
+                        </span>
+                    </li>
                     <li class="nav-item" id="get-started-nav" <% if (typeof user !== 'undefined' && user) { %>style="display: none;"<% } else { %>style="display: block;"<% } %>>
-                        <a class="btn btn-primary ms-lg-3" href="/register">
+                        <a class="btn ms-lg-3 px-4 py-2 fw-bold" href="/register"
+                           style="background:var(--gradient-primary);color:#fff;border-radius:9999px;font-size:14px;border:none;transition:all 0.2s;">
                             <i class="fas fa-rocket me-2"></i>Get Started
                         </a>
                     </li>
@@ -30,13 +35,13 @@
                             <i class="fas fa-user-circle me-2"></i>
                             <span id="user-name"><% if (typeof user !== 'undefined' && user) { %><%= user.name || 'User' %><% } else { %>John Doe<% } %></span>
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/dashboard">
-                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius:12px;overflow:hidden;">
+                            <li><a class="dropdown-item py-2" href="/dashboard">
+                                <i class="fas fa-tachometer-alt me-2" style="color:var(--wa-green);"></i>Dashboard
                             </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="#" id="logout-btn">
-                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            <li><hr class="dropdown-divider my-1"></li>
+                            <li><a class="dropdown-item py-2" href="#" id="logout-btn">
+                                <i class="fas fa-sign-out-alt me-2 text-muted"></i>Logout
                             </a></li>
                         </ul>
                     </li>
@@ -44,4 +49,17 @@
             </div>
         </div>
     </nav>
+    <script>
+    (function() {
+        var nav = document.getElementById('main-navbar');
+        if (!nav) return;
+        window.addEventListener('scroll', function() {
+            if (window.scrollY > 40) {
+                nav.classList.add('navbar-scrolled');
+            } else {
+                nav.classList.remove('navbar-scrolled');
+            }
+        }, { passive: true });
+    })();
+    </script>
 

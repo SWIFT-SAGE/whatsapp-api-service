@@ -1,66 +1,80 @@
 <!-- Overview Section -->
 <div id="dashboard-overview" class="dashboard-section">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Dashboard Overview</h2>
-        <div class="badge bg-success fs-6" id="plan-badge">Loading...</div>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1" style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;">Dashboard Overview</h2>
+            <p class="mb-0 text-muted" style="font-size:13px;">Welcome back! Here's what's happening with your API.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge fs-6" id="plan-badge" style="background:var(--gradient-primary);color:#fff;border-radius:9999px;padding:6px 14px;font-size:13px !important;">Loading...</span>
+        </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards — Glassmorphism -->
     <div class="row g-4 mb-5">
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card">
-                <div class="stat-icon text-primary">
+            <div class="stat-card stat-card-glass">
+                <div class="stat-icon" style="background:rgba(37,211,102,0.12);color:var(--wa-green-dark);">
                     <i class="fas fa-paper-plane"></i>
                 </div>
-                <div class="stat-info">
-                    <h3 id="messages-sent" data-stat="totalMessages">
-                        <span class="loading-placeholder">Loading...</span>
-                    </h3>
-                    <p>Messages Sent</p>
-                    <small class="text-muted" id="message-limit-text">Loading...</small>
+                <div class="stat-value" id="messages-sent" data-stat="totalMessages">—</div>
+                <div class="stat-label">Messages Sent</div>
+                <div class="stat-trend up" id="message-limit-text">
+                    <i class="fas fa-arrow-up"></i><span>Loading...</span>
                 </div>
+                <!-- Sparkline SVG -->
+                <svg class="sparkline-wrap" width="80" height="36" viewBox="0 0 80 36" fill="none">
+                    <polyline points="0,28 15,22 30,18 45,10 60,14 75,4" stroke="var(--wa-green)" stroke-width="2" fill="none" opacity="0.7"/>
+                    <polyline points="0,28 15,22 30,18 45,10 60,14 75,4 75,36 0,36" fill="var(--wa-green)" opacity="0.08"/>
+                </svg>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card">
-                <div class="stat-icon text-success">
+            <div class="stat-card stat-card-glass">
+                <div class="stat-icon" style="background:rgba(33,128,141,0.12);color:var(--brand-teal);">
                     <i class="fas fa-mobile-alt"></i>
                 </div>
-                <div class="stat-info">
-                    <h3 id="active-sessions" data-stat="activeSessions">
-                        <span class="loading-placeholder">Loading...</span>
-                    </h3>
-                    <p>Active Sessions</p>
-                    <small class="text-muted">WhatsApp connected</small>
+                <div class="stat-value" id="active-sessions" data-stat="activeSessions">—</div>
+                <div class="stat-label">Active Sessions</div>
+                <div class="stat-trend up">
+                    <i class="fas fa-circle" style="font-size:8px;"></i><span>WhatsApp connected</span>
                 </div>
+                <svg class="sparkline-wrap" width="80" height="36" viewBox="0 0 80 36" fill="none">
+                    <polyline points="0,30 15,26 30,20 45,24 60,12 75,8" stroke="var(--brand-teal)" stroke-width="2" fill="none" opacity="0.7"/>
+                    <polyline points="0,30 15,26 30,20 45,24 60,12 75,8 75,36 0,36" fill="var(--brand-teal)" opacity="0.08"/>
+                </svg>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card">
-                <div class="stat-icon text-warning">
+            <div class="stat-card stat-card-glass">
+                <div class="stat-icon" style="background:rgba(245,166,35,0.12);color:#d97706;">
                     <i class="fas fa-chart-bar"></i>
                 </div>
-                <div class="stat-info">
-                    <h3 id="delivery-rate" data-stat="deliveryRate">
-                        <span class="loading-placeholder">Loading...</span>
-                    </h3>
-                    <p>Delivery Rate</p>
-                    <small class="text-muted">Last 30 days</small>
+                <div class="stat-value" id="delivery-rate" data-stat="deliveryRate">—</div>
+                <div class="stat-label">Delivery Rate</div>
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i><span>Last 30 days</span>
                 </div>
+                <svg class="sparkline-wrap" width="80" height="36" viewBox="0 0 80 36" fill="none">
+                    <polyline points="0,24 15,20 30,16 45,18 60,8 75,6" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.7"/>
+                    <polyline points="0,24 15,20 30,16 45,18 60,8 75,6 75,36 0,36" fill="#f59e0b" opacity="0.08"/>
+                </svg>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="stat-card">
-                <div class="stat-icon text-info">
+            <div class="stat-card stat-card-glass">
+                <div class="stat-icon" style="background:rgba(139,92,246,0.12);color:#7c3aed;">
                     <i class="fas fa-key"></i>
                 </div>
-                <div class="stat-info">
-                    <h3 id="total-sessions">
-                        <span class="loading-placeholder">Loading...</span>
-                    </h3>
-                    <p>Total Sessions</p>
-                    <small class="text-muted">All systems operational</small>
+                <div class="stat-value" id="total-sessions">—</div>
+                <div class="stat-label">Total Sessions</div>
+                <div class="stat-trend up">
+                    <i class="fas fa-shield-alt" style="font-size:10px;"></i><span>All systems operational</span>
                 </div>
+                <svg class="sparkline-wrap" width="80" height="36" viewBox="0 0 80 36" fill="none">
+                    <polyline points="0,28 15,24 30,28 45,16 60,18 75,10" stroke="#8b5cf6" stroke-width="2" fill="none" opacity="0.7"/>
+                    <polyline points="0,28 15,24 30,28 45,16 60,18 75,10 75,36 0,36" fill="#8b5cf6" opacity="0.08"/>
+                </svg>
             </div>
         </div>
     </div>

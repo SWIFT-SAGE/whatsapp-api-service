@@ -8,6 +8,9 @@ import billingRoutes from './billing';
 import templateRoutes from './templates';
 import botRoutes from './bot';
 import chatbotRoutes from './chatbot';
+import contactRoutes from './contacts';
+import scheduledMessageRoutes from './scheduled-messages';
+import campaignRoutes from './campaigns';
 import { authenticateToken, authenticateApiKey } from '../middleware/auth';
 
 const router = express.Router();
@@ -36,7 +39,10 @@ router.get('/', (req, res) => {
       payments: '/api/payments',
       billing: '/api/billing',
       templates: '/api/templates',
-      health: '/api/health'
+      contacts: '/api/contacts',
+      scheduledMessages: '/api/scheduled-messages',
+      campaigns: '/api/campaigns',
+      health: '/api/health',
     },
     documentation: '/api-docs'
   });
@@ -54,6 +60,11 @@ router.use('/payments', paymentRoutes);
 router.use('/billing', billingRoutes);
 router.use('/templates', templateRoutes);
 router.use('/dashboard', dashboardRoutes);
+
+// New features
+router.use('/contacts', authenticateToken, contactRoutes);
+router.use('/scheduled-messages', authenticateToken, scheduledMessageRoutes);
+router.use('/campaigns', authenticateToken, campaignRoutes);
 
 // 404 handler for API routes
 router.use('*', (req, res) => {

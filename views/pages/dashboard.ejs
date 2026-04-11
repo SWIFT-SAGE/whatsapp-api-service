@@ -204,6 +204,27 @@
                             <!-- Content will be loaded dynamically here -->
                         </div>
 
+                        <!-- Quick Actions Floating Panel -->
+                        <div class="quick-actions-panel" id="quickActionsPanel">
+                            <div class="quick-actions-menu" id="quickActionsMenu" style="display:none;">
+                                <a class="quick-action-item" href="#" onclick="document.querySelector('[data-section=sessions]').click();document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
+                                    <span class="qa-label">New Session</span>
+                                    <button class="qa-btn qa-session"><i class="fas fa-mobile-alt"></i></button>
+                                </a>
+                                <a class="quick-action-item" href="#" onclick="document.querySelector('[data-section=messages]').click();document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
+                                    <span class="qa-label">Send Message</span>
+                                    <button class="qa-btn qa-message"><i class="fas fa-paper-plane"></i></button>
+                                </a>
+                                <a class="quick-action-item" href="#" onclick="document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
+                                    <span class="qa-label">New Campaign</span>
+                                    <button class="qa-btn qa-campaign"><i class="fas fa-broadcast-tower"></i></button>
+                                </a>
+                            </div>
+                            <button class="quick-actions-toggle" id="quickActionsToggle" title="Quick Actions" onclick="(function(){var m=document.getElementById('quickActionsMenu');var t=document.getElementById('quickActionsToggle');if(m.style.display==='none'){m.style.display='flex';t.classList.add('open');}else{m.style.display='none';t.classList.remove('open');}})()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+
 
 
                     </div>

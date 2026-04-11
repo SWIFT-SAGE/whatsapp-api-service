@@ -2,92 +2,249 @@
     <div id="landing-view" class="view">
         <!-- Hero Section -->
         <section class="hero-section">
-            <div class="container">
-                <div class="row align-items-center min-vh-100 py-5">
-                    <div class="col-lg-6">
-                        <h1 class="display-4 fw-bold mb-4">
-                            WhatsApp Business API Integration 
+            <div class="container" style="position:relative;z-index:1;">
+                <div class="row align-items-center" style="min-height:100vh;padding:100px 0 60px;">
+                    <div class="col-lg-6 mb-5 mb-lg-0">
+                        <div class="hero-eyebrow">
+                            <i class="fab fa-whatsapp"></i>WhatsApp Business API Platform
+                        </div>
+                        <h1 class="hero-headline">
+                            Send WhatsApp<br>Messages at <span class="text-gradient">Scale</span>
                         </h1>
-                        <p class="lead mb-4">
-                            Build powerful WhatsApp chatbot solutions with our REST API. Automate marketing campaigns, integrate e-commerce platforms like Shopify, and boost customer engagement with real-time messaging automation.
+                        <p class="hero-subtext">
+                            Build powerful WhatsApp automation with our REST API. Multi-session support, AI chatbots, broadcast campaigns, webhooks — everything a developer needs.
                         </p>
-                        <div class="d-flex gap-3 flex-wrap">
-                            <a href="/register" class="btn btn-primary btn-lg">
-                                <i class="fas fa-rocket me-2"></i>Start Building Now
+                        <div class="hero-cta-group">
+                            <a href="/register" class="btn-hero-primary">
+                                <i class="fas fa-rocket"></i>Start Building Free
                             </a>
-                            <a href="/api-docs" class="btn btn-outline-light btn-lg">
-                                <i class="fas fa-code me-2"></i>Explore Developer Docs
+                            <a href="/api-docs" class="btn-hero-secondary">
+                                <i class="fas fa-code"></i>View API Docs
                             </a>
                         </div>
-                        <div class="mt-4">
-                            <small class="text-muted">
-                                <i class="fas fa-check-circle me-2"></i>Free WhatsApp API integration • 5 messages included • No credit card required
-                            </small>
+                        <div class="hero-trust-strip">
+                            <span class="trust-item"><i class="fas fa-check-circle"></i>Free to start</span>
+                            <span class="trust-item"><i class="fas fa-shield-alt"></i>No credit card needed</span>
+                            <span class="trust-item"><i class="fas fa-bolt"></i>Live in 30 seconds</span>
                         </div>
                     </div>
-                    <div class="col-lg-6">
-                        <div class="hero-image">
-                            <div class="phone-mockup">
-                                <div class="phone-screen">
-                                    <div class="whatsapp-chat">
-                                        <div class="message sent">
-                                            <div class="message-content">Hello! Welcome to our API Messaging Platform</div>
-                                            <div class="message-time">2:30 PM</div>
+                    <div class="col-lg-6 d-flex justify-content-center">
+                        <div class="hero-phone-wrap">
+                            <!-- Phone mockup -->
+                            <div class="phone-mockup-v2">
+                                <div class="phone-notch"></div>
+                                <div class="phone-screen-v2">
+                                    <div class="wa-chat-header">
+                                        <div class="avatar">A</div>
+                                        <div class="info">
+                                            <div class="name">API Messaging Bot</div>
+                                            <div class="status">● Online</div>
                                         </div>
-                                        <div class="message received">
-                                            <div class="message-content">Thanks! This is amazing 🚀</div>
-                                            <div class="message-time">2:31 PM</div>
+                                    </div>
+                                    <div class="wa-messages">
+                                        <div class="wa-msg in">
+                                            Hi! I just signed up for the API 👋
+                                            <div class="msg-time">2:28 PM</div>
                                         </div>
-                                        <div class="message received typing">
-                                            <div class="message-content">
-                                                <div class="typing-dots"><span></span><span></span><span></span></div>
-                                            </div>
-                                            <div class="message-time">typing...</div>
+                                        <div class="wa-msg out">
+                                            Welcome! Your API key is ready. You can now send messages via REST API 🚀
+                                            <div class="msg-time">2:29 PM ✓✓</div>
+                                        </div>
+                                        <div class="wa-msg in">
+                                            Wow, that was fast! How do I set up a chatbot?
+                                            <div class="msg-time">2:30 PM</div>
+                                        </div>
+                                        <div class="wa-msg out">
+                                            Head to the Chatbot section in your dashboard. It takes about 2 minutes! ⚡
+                                            <div class="msg-time">2:30 PM ✓✓</div>
+                                        </div>
+                                        <div class="wa-typing-indicator">
+                                            <span></span><span></span><span></span>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                            <!-- Floating dashboard mini card -->
+                            <div class="hero-dashboard-card">
+                                <div class="dash-label">Messages Sent Today</div>
+                                <div class="dash-value">24,891</div>
+                                <div class="dash-change"><i class="fas fa-arrow-up me-1"></i>+18% vs yesterday</div>
+                            </div>
+                            <!-- API endpoint badge -->
+                            <div class="hero-api-badge">
+                                <span class="method-tag">POST</span>/api/v1/send-message
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
-        
-        <!-- How It Works -->
-        <section class="py-5 bg-light">
+
+        <!-- Trusted By Strip -->
+        <div class="trusted-strip">
             <div class="container">
+                <div class="d-flex align-items-center gap-4 flex-wrap">
+                    <span class="label">Trusted by teams at</span>
+                    <div class="trusted-logos">
+                        <div class="trusted-logo-item"><i class="fab fa-shopify fa-lg"></i> Shopify stores</div>
+                        <div class="trusted-logo-item"><i class="fab fa-node-js fa-lg"></i> Node.js apps</div>
+                        <div class="trusted-logo-item"><i class="fab fa-python fa-lg"></i> Python services</div>
+                        <div class="trusted-logo-item"><i class="fab fa-react fa-lg"></i> React dashboards</div>
+                        <div class="trusted-logo-item"><i class="fas fa-store fa-lg"></i> WooCommerce</div>
+                        <div class="trusted-logo-item"><i class="fab fa-laravel fa-lg"></i> Laravel apps</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <section class="features-section">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <div class="features-section section-eyebrow mx-auto d-inline-flex">
+                        <i class="fas fa-layer-group me-2"></i>Everything You Need
+                    </div>
+                    <h2 class="section-title-xl mt-2">Built for Developers,<br>Loved by Businesses</h2>
+                    <p class="section-sub-text mt-3 mx-auto" style="max-width:520px;">
+                        A complete WhatsApp API platform with everything to build, automate, and scale your messaging.
+                    </p>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card-v2">
+                            <div class="feature-icon-wrap"><i class="fas fa-layer-group"></i></div>
+                            <h5>Multi-Session Management</h5>
+                            <p>Connect and manage multiple WhatsApp numbers from one unified dashboard. Scale without limits.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card-v2">
+                            <div class="feature-icon-wrap"><i class="fas fa-robot"></i></div>
+                            <h5>AI Chatbot Builder</h5>
+                            <p>Create intelligent chatbots with custom rules and keyword responses. No coding required for basic flows.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card-v2">
+                            <div class="feature-icon-wrap"><i class="fas fa-chart-line"></i></div>
+                            <h5>Real-time Analytics</h5>
+                            <p>Track message delivery, open rates, and engagement metrics. Charts powered by Chart.js.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card-v2">
+                            <div class="feature-icon-wrap"><i class="fas fa-bolt"></i></div>
+                            <h5>Webhook Integration</h5>
+                            <p>Receive real-time events for incoming messages, delivery updates, and session status changes.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card-v2">
+                            <div class="feature-icon-wrap"><i class="fas fa-clock"></i></div>
+                            <h5>Scheduled Messages</h5>
+                            <p>Queue messages for future delivery. Set it and forget it — with timezone-aware scheduling.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="feature-card-v2">
+                            <div class="feature-icon-wrap"><i class="fas fa-broadcast-tower"></i></div>
+                            <h5>Broadcast Campaigns</h5>
+                            <p>Send targeted messages to thousands of contacts. Build segmented lists and track campaign performance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- API Demo Code Block -->
+        <section class="api-demo-section">
+            <div class="container">
+                <div class="row align-items-center g-5">
+                    <div class="col-lg-5">
+                        <div class="section-eyebrow-center d-inline-flex mb-3" style="background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.2);border-radius:9999px;padding:5px 12px;font-size:12px;font-weight:700;color:#25D366;text-transform:uppercase;letter-spacing:0.08em;">
+                            <i class="fas fa-code me-2"></i>Simple REST API
+                        </div>
+                        <h2 class="section-title-xl mb-3" style="color:#fff;">Send a message<br>in one API call</h2>
+                        <p style="font-size:15px;color:rgba(255,255,255,0.6);line-height:1.7;margin-bottom:28px;">
+                            Our API is designed for simplicity. Send your first WhatsApp message in under 5 minutes — no complex setup required.
+                        </p>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(37,211,102,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-check" style="color:#25D366;font-size:13px;"></i></div>
+                                <span style="color:rgba(255,255,255,0.7);font-size:14px;">REST API with JSON responses</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(37,211,102,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-check" style="color:#25D366;font-size:13px;"></i></div>
+                                <span style="color:rgba(255,255,255,0.7);font-size:14px;">Works with any programming language</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div style="width:36px;height:36px;border-radius:50%;background:rgba(37,211,102,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-check" style="color:#25D366;font-size:13px;"></i></div>
+                                <span style="color:rgba(255,255,255,0.7);font-size:14px;">Webhook events for every message state</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="code-window">
+                            <div class="code-window-header">
+                                <span class="code-window-dot red"></span>
+                                <span class="code-window-dot yellow"></span>
+                                <span class="code-window-dot green"></span>
+                                <span class="code-window-title">send-message.js</span>
+                            </div>
+                            <pre><code><span class="hl-comment">// Send a WhatsApp message via REST API</span>
+<span class="hl-keyword">const</span> response = <span class="hl-keyword">await</span> <span class="hl-function">fetch</span>(<span class="hl-string">'https://api.apimessaging.io/v1/send'</span>, {
+  <span class="hl-prop">method</span>: <span class="hl-string">'POST'</span>,
+  <span class="hl-prop">headers</span>: {
+    <span class="hl-string">'Authorization'</span>: <span class="hl-string">`Bearer <span class="hl-number">${YOUR_API_KEY}</span>`</span>,
+    <span class="hl-string">'Content-Type'</span>: <span class="hl-string">'application/json'</span>
+  },
+  <span class="hl-prop">body</span>: <span class="hl-function">JSON</span>.<span class="hl-function">stringify</span>({
+    <span class="hl-prop">session</span>: <span class="hl-string">'my-session'</span>,
+    <span class="hl-prop">to</span>: <span class="hl-string">'919876543210'</span>,
+    <span class="hl-prop">message</span>: <span class="hl-string">'Hello from API Messaging! 🚀'</span>
+  })
+});
+
+<span class="hl-keyword">const</span> { <span class="hl-prop">messageId</span>, <span class="hl-prop">status</span> } = <span class="hl-keyword">await</span> response.<span class="hl-function">json</span>();
+<span class="hl-comment">// { messageId: "msg_abc123", status: "sent" }</span></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <section class="py-5" style="background:#f9f7f4;">
+            <div class="container py-4">
                 <div class="row text-center mb-5">
                     <div class="col-lg-8 mx-auto">
-                        <h2 class="h1 fw-bold">WhatsApp API Integration in 3 Easy Steps</h2>
-                        <p class="lead text-muted">Start sending automated WhatsApp messages in minutes</p>
+                        <h2 class="section-title-xl">Up and running in<br>3 simple steps</h2>
+                        <p class="section-sub-text mt-3">Start sending automated WhatsApp messages in minutes</p>
                     </div>
                 </div>
                 <div class="row g-4">
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <div class="display-6 mb-3"><i class="fas fa-user-plus text-whatsapp"></i></div>
-                                <h3 class="h5">Create Developer Account</h3>
-                                <p>Sign up instantly and get your WhatsApp Business API credentials from the dashboard.</p>
-                            </div>
+                        <div class="feature-card-v2 text-center">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;margin:0 auto 20px;">1</div>
+                            <div class="feature-icon-wrap mx-auto mb-3"><i class="fas fa-user-plus"></i></div>
+                            <h5>Create Developer Account</h5>
+                            <p>Sign up instantly and get your WhatsApp Business API credentials from the dashboard.</p>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <div class="display-6 mb-3"><i class="fas fa-qrcode text-whatsapp"></i></div>
-                                <h3 class="h5">Connect WhatsApp Session</h3>
-                                <p>Set up your messaging session with QR code authentication. Ready in 30 seconds.</p>
-                            </div>
+                        <div class="feature-card-v2 text-center">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;margin:0 auto 20px;">2</div>
+                            <div class="feature-icon-wrap mx-auto mb-3"><i class="fas fa-qrcode"></i></div>
+                            <h5>Connect WhatsApp Session</h5>
+                            <p>Set up your messaging session with QR code authentication. Ready in 30 seconds.</p>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body text-center">
-                                <div class="display-6 mb-3"><i class="fas fa-paper-plane text-whatsapp"></i></div>
-                                <h3 class="h5">Send Automated Messages</h3>
-                                <p>Use our REST API with webhooks to automate WhatsApp messaging and chatbot responses.</p>
-                            </div>
+                        <div class="feature-card-v2 text-center">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--gradient-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;margin:0 auto 20px;">3</div>
+                            <div class="feature-icon-wrap mx-auto mb-3"><i class="fas fa-paper-plane"></i></div>
+                            <h5>Send Automated Messages</h5>
+                            <p>Use our REST API with webhooks to automate WhatsApp messaging and chatbot responses.</p>
                         </div>
                     </div>
                 </div>
@@ -236,53 +393,54 @@
         </section>
 
         <!-- Testimonials -->
-        <section class="py-5 bg-light">
-            <div class="container">
-                <div class="row text-center mb-5">
-                    <div class="col-lg-8 mx-auto">
-                        <h2 class="h1 fw-bold">Trusted by Developers Worldwide</h2>
-                        <p class="lead text-muted">Real results from WhatsApp API integration projects</p>
+        <section class="py-5" style="background:#f9f7f4;">
+            <div class="container py-4">
+                <div class="text-center mb-5">
+                    <div class="section-eyebrow-center mx-auto d-inline-flex">
+                        <i class="fas fa-star me-2"></i>Social Proof
                     </div>
+                    <h2 class="section-title-xl mt-2">Trusted by 1,250+ Developers</h2>
+                    <p class="section-sub-text mt-3">Real results from WhatsApp API integration projects worldwide</p>
                 </div>
                 <div class="row g-4">
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <p class="mb-3">"Super quick to integrate. We shipped WhatsApp notifications in a day."</p>
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="/images/Priya K.webp" alt="Priya K. - CTO at ShopWave" class="rounded-circle" loading="lazy" width="50" height="50" style="width:50px;height:50px;object-fit:cover;">
-                                    <div>
-                                        <strong>Priya K.</strong>
-                                        <div class="text-muted">CTO, ShopWave</div>
-                                    </div>
+                        <div class="testimonial-card-v2">
+                            <div class="testimonial-quote-icon">"</div>
+                            <div class="testimonial-stars">★★★★★</div>
+                            <p class="testimonial-text">"Super quick to integrate. We shipped WhatsApp order notifications in a single day. The API docs are phenomenal."</p>
+                            <div class="testimonial-author">
+                                <img src="/images/Priya K.webp" alt="Priya K." loading="lazy">
+                                <div>
+                                    <div class="author-name">Priya K.</div>
+                                    <div class="author-role">CTO, ShopWave</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <p class="mb-3">"Reliable delivery and great docs. The dashboard is a bonus."</p>
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="/images/Marco R.webp" alt="Marco R. - Lead Engineer at Notifi" class="rounded-circle" loading="lazy" width="50" height="50" style="width:50px;height:50px;object-fit:cover;">
-                                    <div>
-                                        <strong>Marco R.</strong>
-                                        <div class="text-muted">Lead Engineer, Notifi</div>
-                                    </div>
+                        <div class="testimonial-card-v2">
+                            <div class="testimonial-quote-icon">"</div>
+                            <div class="testimonial-stars">★★★★★</div>
+                            <p class="testimonial-text">"Reliable delivery rates and superb documentation. The analytics dashboard is a huge bonus for our team."</p>
+                            <div class="testimonial-author">
+                                <img src="/images/Marco R.webp" alt="Marco R." loading="lazy">
+                                <div>
+                                    <div class="author-name">Marco R.</div>
+                                    <div class="author-role">Lead Engineer, Notifi</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <p class="mb-3">"Upgraded to Premium for the chatbot. Totally worth it."</p>
-                                <div class="d-flex align-items-center gap-3">
-                                    <img src="/images/Sara L.webp" alt="Sara L. - Founder at HelpMate" class="rounded-circle" loading="lazy" width="50" height="50" style="width:50px;height:50px;object-fit:cover;">
-                                    <div>
-                                        <strong>Sara L.</strong>
-                                        <div class="text-muted">Founder, HelpMate</div>
-                                    </div>
+                        <div class="testimonial-card-v2">
+                            <div class="testimonial-quote-icon">"</div>
+                            <div class="testimonial-stars">★★★★★</div>
+                            <p class="testimonial-text">"Upgraded to the Pro plan for the AI chatbot feature. Completely transformed our customer support response times."</p>
+                            <div class="testimonial-author">
+                                <img src="/images/Sara L.webp" alt="Sara L." loading="lazy">
+                                <div>
+                                    <div class="author-name">Sara L.</div>
+                                    <div class="author-role">Founder, HelpMate</div>
                                 </div>
                             </div>
                         </div>
