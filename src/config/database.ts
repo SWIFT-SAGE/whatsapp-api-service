@@ -141,8 +141,10 @@ class DatabaseManager {
     if (this.state.connectionAttempts < this.config.retryAttempts) {
       this.scheduleReconnect();
     } else {
-      logger.error('Max connection attempts reached. Exiting...');
-      process.exit(1);
+      logger.error('Max MongoDB connection attempts reached. Will keep retrying in background.');
+      // Reset counter so reconnection keeps trying instead of killing the process.
+      this.state.connectionAttempts = 0;
+      this.scheduleReconnect();
     }
   }
 
