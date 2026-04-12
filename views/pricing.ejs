@@ -13,36 +13,37 @@
    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+    <style>
+      body { background: #f9f7f4; }
+      #pricing-navbar { background: rgba(7,94,84,0.95); backdrop-filter: blur(16px); }
+    </style>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="pricing-navbar">
         <div class="container">
-            <a class="navbar-brand text-white" href="/">
-                <i class="fab fa-whatsapp me-2"></i> API MESSAGING
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i class="fab fa-whatsapp wa-icon-animated" style="font-size:22px;"></i>
+                <strong style="letter-spacing:-0.02em;">API MESSAGING</strong>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" style="box-shadow:none;">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/">Home</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/pricing">Pricing</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/api-docs">API Docs</a>
-                    </li>
+                <ul class="navbar-nav ms-auto align-items-center gap-1">
+                    <li class="nav-item"><a class="nav-link px-3" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link px-3 fw-bold" href="/pricing" style="color:var(--wa-green);">Pricing</a></li>
+                    <li class="nav-item"><a class="nav-link px-3" href="/api-docs">API Docs</a></li>
                     <% if (user) { %>
                         <li class="nav-item">
-                            <a class="nav-link" href="/dashboard">Dashboard</a>
+                            <a class="btn ms-2 px-4 py-2 fw-bold" href="/dashboard" style="background:var(--gradient-primary);color:#fff;border-radius:9999px;font-size:14px;border:none;">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
                         </li>
                     <% } else { %>
+                        <li class="nav-item"><a class="nav-link px-3" href="/login">Sign In</a></li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/login">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="btn btn-primary btn-sm ms-2" href="/register">Sign Up</a>
+                            <a class="btn ms-2 px-4 py-2 fw-bold" href="/register" style="background:var(--gradient-primary);color:#fff;border-radius:9999px;font-size:14px;border:none;">
+                                <i class="fas fa-rocket me-2"></i>Get Started
+                            </a>
                         </li>
                     <% } %>
                 </ul>
@@ -53,7 +54,8 @@
     <!-- Include the pricing content -->
     <%- include('pages/pricing', { user: user, plans: plans }) %>
 
-    <footer style="background: #1f1f1f; border-top: 3px solid #25d366;">
+    <div class="footer-gradient-divider"></div>
+    <footer style="background: #1f1f1f;">
         <div class="container py-5">
             <div class="row g-4 py-4">
                 <!-- Brand Section -->
