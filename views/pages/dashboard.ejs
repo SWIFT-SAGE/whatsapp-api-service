@@ -9,11 +9,8 @@
     <style>
         .loading-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -21,256 +18,175 @@
             border-radius: 8px;
             backdrop-filter: blur(2px);
         }
-        
-        .loading-content {
-            text-align: center;
-            padding: 2rem;
-        }
-        
-        .loading-content .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
-        
-        .dashboard-section {
-            position: relative;
-            min-height: 200px;
-        }
-
-        /* Mobile Sidebar Toggle Button */
-        .sidebar-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1050;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--whatsapp-green) 0%, var(--whatsapp-green-dark) 100%);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(37, 211, 102, 0.5);
-        }
-
-        .sidebar-toggle:active {
-            transform: scale(0.95);
-        }
-
-        /* Sidebar Close Button */
-        .sidebar-close {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-close:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: rotate(90deg);
-        }
-
-        /* Sidebar Overlay */
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1040;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Mobile Sidebar Styles */
-        @media (max-width: 991.98px) {
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: -100%;
-                width: 280px;
-                height: 100vh;
-                z-index: 1045;
-                transition: left 0.3s ease;
-                overflow-y: auto;
-            }
-
-            .sidebar.active {
-                left: 0;
-            }
-
-            .sidebar-header {
-                position: relative;
-                padding-right: 4rem;
-            }
-
-            .dashboard-content {
-                margin-top: 80px;
-            }
-        }
-
-        /* Desktop - Hide mobile controls */
-        @media (min-width: 992px) {
-            .sidebar-toggle,
-            .sidebar-close,
-            .sidebar-overlay {
-                display: none !important;
-            }
-        }
+        .loading-content { text-align: center; padding: 2rem; }
+        .loading-content .spinner-border { width: 3rem; height: 3rem; }
+        .dashboard-section { position: relative; min-height: 200px; }
     </style>
-    <div class="dashboard-container">
-        <div class="container-fluid">
-            <!-- Mobile Toggle Button -->
-            <button class="sidebar-toggle d-lg-none" id="sidebarToggle" aria-label="Toggle Sidebar">
-                <i class="fas fa-bars"></i>
-            </button>
+    <div class="dashboard-container-v2">
 
-            <div class="row">
-                <!-- Sidebar -->
-                <div class="col-lg-3 col-xl-2 px-0">
-                    <div class="sidebar" id="dashboardSidebar">
-                        <div class="sidebar-header">
-                            <h5>Dashboard</h5>
-                            <button class="sidebar-close d-lg-none" id="sidebarClose" aria-label="Close Sidebar">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <nav class="sidebar-nav">
-                            <a href="#" class="nav-link active" data-section="overview">
-                                <i class="fas fa-chart-line me-2"></i>Overview
-                            </a>
-                            <a href="#" class="nav-link" data-section="sessions">
-                                <i class="fas fa-mobile-alt me-2"></i>Sessions
-                            </a>
-                            <a href="#" class="nav-link" data-section="messages">
-                                <i class="fas fa-comments me-2"></i>Messages
-                            </a>
-                            <a href="#" class="nav-link" data-section="templates">
-                                <i class="fas fa-file-alt me-2"></i>Templates
-                            </a>
-                            <a href="#" class="nav-link" data-section="chatbot" id="chatbot-nav">
-                                <i class="fas fa-robot me-2"></i>Chatbot
-                            </a>
-                            <a href="#" class="nav-link" data-section="analytics">
-                                <i class="fas fa-chart-pie me-2"></i>Analytics
-                            </a>
-                            <a href="#" class="nav-link" data-section="billing">
-                                <i class="fas fa-credit-card me-2"></i>Billing
-                            </a>
-                            <a href="#" class="nav-link" data-section="profile">
-                                <i class="fas fa-user me-2"></i>Profile
-                            </a>
-                            <a href="/api-docs" class="nav-link" target="_blank">
-                                <i class="fas fa-code me-2"></i>API Docs
-                            </a>
-                        </nav>
-                    </div>
+        <!-- Mobile overlay -->
+        <div class="sv2-mobile-overlay" id="sv2Overlay"></div>
+
+        <!-- Mobile hamburger toggle -->
+        <button class="sv2-mobile-toggle" id="sv2MobileToggle" aria-label="Open sidebar">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Sidebar V2 -->
+        <aside class="sidebar-v2" id="dashboardSidebar">
+            <!-- Header -->
+            <div class="sv2-header" style="position:relative;">
+                <div class="sv2-logo-icon">
+                    <i class="fab fa-whatsapp wa-icon-animated"></i>
                 </div>
-
-                <!-- Sidebar Overlay for Mobile -->
-                <div class="sidebar-overlay d-lg-none" id="sidebarOverlay"></div>
-
-                <!-- Main Content -->
-                <div class="col-lg-9 col-xl-10">
-                    <div class="dashboard-content">
-                        <!-- Dynamic Content Container -->
-                        <div id="dashboard-content-container">
-                            <!-- Content will be loaded dynamically here -->
-                        </div>
-
-                        <!-- Quick Actions Floating Panel -->
-                        <div class="quick-actions-panel" id="quickActionsPanel">
-                            <div class="quick-actions-menu" id="quickActionsMenu" style="display:none;">
-                                <a class="quick-action-item" href="#" onclick="document.querySelector('[data-section=sessions]').click();document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
-                                    <span class="qa-label">New Session</span>
-                                    <button class="qa-btn qa-session"><i class="fas fa-mobile-alt"></i></button>
-                                </a>
-                                <a class="quick-action-item" href="#" onclick="document.querySelector('[data-section=messages]').click();document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
-                                    <span class="qa-label">Send Message</span>
-                                    <button class="qa-btn qa-message"><i class="fas fa-paper-plane"></i></button>
-                                </a>
-                                <a class="quick-action-item" href="#" onclick="document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
-                                    <span class="qa-label">New Campaign</span>
-                                    <button class="qa-btn qa-campaign"><i class="fas fa-broadcast-tower"></i></button>
-                                </a>
-                            </div>
-                            <button class="quick-actions-toggle" id="quickActionsToggle" title="Quick Actions" onclick="(function(){var m=document.getElementById('quickActionsMenu');var t=document.getElementById('quickActionsToggle');if(m.style.display==='none'){m.style.display='flex';t.classList.add('open');}else{m.style.display='none';t.classList.remove('open');}})()">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-
-
-
-                    </div>
-                </div>
-
-                <!-- Modal cleanup script -->
-                <script>
-                    // Clean up modal backdrop when QR code modal is closed
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const qrModal = document.getElementById('qrCodeModal');
-                        if (qrModal) {
-                            qrModal.addEventListener('hidden.bs.modal', function() {
-                                // Remove any lingering backdrop
-                                const backdrops = document.querySelectorAll('.modal-backdrop');
-                                backdrops.forEach(backdrop => backdrop.remove());
-                                
-                                // Remove modal-open class from body
-                                document.body.classList.remove('modal-open');
-                                
-                                // Reset body style
-                                document.body.style.overflow = '';
-                                document.body.style.paddingRight = '';
-                                
-                            });
-                        }
-                    });
-                </script>
-
-                <!-- Session button group styling -->
-                <style>
-                    .btn-group .btn {
-                        margin-right: 2px;
-                    }
-                    .btn-group .btn:last-child {
-                        margin-right: 0;
-                    }
-                    .btn-group .btn-sm {
-                        font-size: 0.75rem;
-                        padding: 0.25rem 0.5rem;
-                    }
-                    .session-card .btn-group {
-                        margin-top: 0.5rem;
-                    }
-                </style>
+                <span class="sv2-brand-text">API MESSAGING</span>
+                <button class="sv2-collapse-btn" id="sv2CollapseBtn" title="Toggle sidebar" aria-label="Toggle sidebar">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
             </div>
-        </div>
+
+            <!-- Nav -->
+            <nav class="sv2-nav">
+                <a href="#" class="sv2-link active" data-section="overview" data-tooltip="Overview">
+                    <span class="sv2-icon"><i class="fas fa-chart-line"></i></span>
+                    <span class="sv2-label">Overview</span>
+                </a>
+                <a href="#" class="sv2-link" data-section="sessions" data-tooltip="Sessions">
+                    <span class="sv2-icon"><i class="fas fa-mobile-alt"></i></span>
+                    <span class="sv2-label">Sessions</span>
+                </a>
+                <a href="#" class="sv2-link" data-section="messages" data-tooltip="Messages">
+                    <span class="sv2-icon"><i class="fas fa-comments"></i></span>
+                    <span class="sv2-label">Messages</span>
+                </a>
+                <a href="#" class="sv2-link" data-section="templates" data-tooltip="Templates">
+                    <span class="sv2-icon"><i class="fas fa-file-alt"></i></span>
+                    <span class="sv2-label">Templates</span>
+                </a>
+                <a href="#" class="sv2-link" data-section="chatbot" id="chatbot-nav" data-tooltip="Chatbot">
+                    <span class="sv2-icon"><i class="fas fa-robot"></i></span>
+                    <span class="sv2-label">Chatbot</span>
+                </a>
+                <a href="#" class="sv2-link" data-section="analytics" data-tooltip="Analytics">
+                    <span class="sv2-icon"><i class="fas fa-chart-pie"></i></span>
+                    <span class="sv2-label">Analytics</span>
+                </a>
+
+                <div class="sv2-divider"></div>
+
+                <a href="#" class="sv2-link" data-section="billing" data-tooltip="Billing">
+                    <span class="sv2-icon"><i class="fas fa-credit-card"></i></span>
+                    <span class="sv2-label">Billing</span>
+                </a>
+                <a href="#" class="sv2-link" data-section="profile" data-tooltip="Profile">
+                    <span class="sv2-icon"><i class="fas fa-user"></i></span>
+                    <span class="sv2-label">Profile</span>
+                </a>
+                <a href="/api-docs" class="sv2-link" target="_blank" data-tooltip="API Docs">
+                    <span class="sv2-icon"><i class="fas fa-code"></i></span>
+                    <span class="sv2-label">API Docs</span>
+                </a>
+            </nav>
+
+            <!-- Footer -->
+            <div class="sv2-footer">
+                <a href="/" class="sv2-link" style="margin-bottom:0;" data-tooltip="Back to Home">
+                    <span class="sv2-icon"><i class="fas fa-home"></i></span>
+                    <span class="sv2-label" style="font-size:12px;color:#999;">Back to Home</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="dashboard-main-v2" id="dashboardMain">
+            <!-- Dynamic Content Container -->
+            <div id="dashboard-content-container">
+                <!-- Content will be loaded dynamically here -->
+            </div>
+
+            <!-- Quick Actions Floating Panel -->
+            <div class="quick-actions-panel" id="quickActionsPanel">
+                <div class="quick-actions-menu" id="quickActionsMenu" style="display:none;">
+                    <a class="quick-action-item" href="#" onclick="document.querySelector('[data-section=sessions]').click();document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
+                        <span class="qa-label">New Session</span>
+                        <button class="qa-btn qa-session"><i class="fas fa-mobile-alt"></i></button>
+                    </a>
+                    <a class="quick-action-item" href="#" onclick="document.querySelector('[data-section=messages]').click();document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
+                        <span class="qa-label">Send Message</span>
+                        <button class="qa-btn qa-message"><i class="fas fa-paper-plane"></i></button>
+                    </a>
+                    <a class="quick-action-item" href="#" onclick="document.getElementById('quickActionsMenu').style.display='none';document.getElementById('quickActionsToggle').classList.remove('open');return false;">
+                        <span class="qa-label">New Campaign</span>
+                        <button class="qa-btn qa-campaign"><i class="fas fa-broadcast-tower"></i></button>
+                    </a>
+                </div>
+                <button class="quick-actions-toggle" id="quickActionsToggle" title="Quick Actions" onclick="(function(){var m=document.getElementById('quickActionsMenu');var t=document.getElementById('quickActionsToggle');if(m.style.display==='none'){m.style.display='flex';t.classList.add('open');}else{m.style.display='none';t.classList.remove('open');}})()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+        </main>
+
+        <!-- Modal cleanup script -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Clean up modal backdrop when QR code modal is closed
+                const qrModal = document.getElementById('qrCodeModal');
+                if (qrModal) {
+                    qrModal.addEventListener('hidden.bs.modal', function() {
+                        document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    });
+                }
+
+                // ── Sidebar V2 collapse logic (desktop) ──
+                const sidebar   = document.getElementById('dashboardSidebar');
+                const mainArea  = document.getElementById('dashboardMain');
+                const collapseBtn = document.getElementById('sv2CollapseBtn');
+
+                const COLLAPSED_KEY = 'sv2_collapsed';
+                if (localStorage.getItem(COLLAPSED_KEY) === '1') {
+                    sidebar.classList.add('collapsed');
+                    if (mainArea) mainArea.style.marginLeft = '64px';
+                }
+
+                if (collapseBtn) {
+                    collapseBtn.addEventListener('click', function() {
+                        const isCollapsed = sidebar.classList.toggle('collapsed');
+                        if (mainArea) mainArea.style.marginLeft = isCollapsed ? '64px' : '240px';
+                        localStorage.setItem(COLLAPSED_KEY, isCollapsed ? '1' : '0');
+                    });
+                }
+
+                // ── Mobile sidebar toggle ──
+                const mobileToggle  = document.getElementById('sv2MobileToggle');
+                const mobileOverlay = document.getElementById('sv2Overlay');
+
+                function openSidebar()  { sidebar.classList.add('mobile-open');    mobileOverlay.classList.add('active');    document.body.style.overflow = 'hidden'; }
+                function closeSidebar() { sidebar.classList.remove('mobile-open'); mobileOverlay.classList.remove('active'); document.body.style.overflow = ''; }
+
+                if (mobileToggle)  mobileToggle.addEventListener('click', openSidebar);
+                if (mobileOverlay) mobileOverlay.addEventListener('click', closeSidebar);
+
+                // Close mobile sidebar when a nav link is clicked
+                sidebar.querySelectorAll('.sv2-link[data-section]').forEach(function(link) {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth < 992) closeSidebar();
+                    });
+                });
+            });
+        </script>
+
+        <!-- Session button group styling -->
+        <style>
+            .btn-group .btn { margin-right: 2px; }
+            .btn-group .btn:last-child { margin-right: 0; }
+            .btn-group .btn-sm { font-size: 0.75rem; padding: 0.25rem 0.5rem; }
+            .session-card .btn-group { margin-top: 0.5rem; }
+            /* Dashboard body resets for v2 layout */
+            body { overflow-x: hidden; }
+        </style>
     </div>
 </div>
 
@@ -416,45 +332,9 @@
             }
         }, 30000);
         
-        // Mobile Sidebar Toggle Functionality
-        const sidebarToggle = document.getElementById('sidebarToggle');
-        const sidebarClose = document.getElementById('sidebarClose');
+        // Sidebar V2 — handled by the inline DOMContentLoaded block in the HTML above.
+        // These references are kept as no-ops for backwards-compat references below.
         const sidebar = document.getElementById('dashboardSidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        
-        function openSidebar() {
-            sidebar.classList.add('active');
-            sidebarOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        
-        function closeSidebar() {
-            sidebar.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-        
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', openSidebar);
-        }
-        
-        if (sidebarClose) {
-            sidebarClose.addEventListener('click', closeSidebar);
-        }
-        
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', closeSidebar);
-        }
-        
-        // Close sidebar when clicking on a nav link (mobile only)
-        const sidebarNavLinks = document.querySelectorAll('.sidebar-nav .nav-link');
-        sidebarNavLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                if (window.innerWidth < 992) {
-                    closeSidebar();
-                }
-            });
-        });
         
         // Global cleanup function for modal backdrops
         window.cleanupModalBackdrops = function cleanupModalBackdrops() {
@@ -1724,7 +1604,7 @@
                 connectNewSessionBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     // Navigate to sessions page
-                    const sessionsLink = document.querySelector('.sidebar-nav .nav-link[data-section="sessions"]');
+                    const sessionsLink = document.querySelector('.sv2-link[data-section="sessions"]');
                     if (sessionsLink) {
                         sessionsLink.click();
                     }
@@ -2095,7 +1975,7 @@
         })
 
         // Dashboard tab navigation
-        const sidebarLinks = document.querySelectorAll('.sidebar-nav .nav-link[data-section]');
+        const sidebarLinks = document.querySelectorAll('.sv2-link[data-section]');
         const contentContainer = document.getElementById('dashboard-content-container');
 
         sidebarLinks.forEach(link => {
@@ -2118,7 +1998,7 @@
         });
 
         // Handle data-view navigation (like API Docs)
-        const viewLinks = document.querySelectorAll('.sidebar-nav .nav-link[data-view]');
+        const viewLinks = document.querySelectorAll('.sv2-link[data-view]');
         viewLinks.forEach(link => {
             link.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -2215,7 +2095,7 @@
                         }
                         
                         // If we're currently on the sessions page, reload it
-                        const currentSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                        const currentSection = document.querySelector('.sv2-link.active')?.getAttribute('data-section');
                         if (currentSection === 'sessions') {
                             setTimeout(() => {
                                 loadSectionPage('sessions');
@@ -2238,7 +2118,7 @@
                     }
 
                     // Reload overview section to update UI only if we're on the overview page
-                    const currentSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                    const currentSection = document.querySelector('.sv2-link.active')?.getAttribute('data-section');
                     if (currentSection === 'overview') {
                         setTimeout(async () => {
                             try {
@@ -2769,7 +2649,7 @@
             const isLoggedIn = sessionStorage.getItem('isLoggedIn') === 'true';
             if (isLoggedIn) {
                 // Only refresh data for the currently active section
-                const activeSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                const activeSection = document.querySelector('.sv2-link.active')?.getAttribute('data-section');
                 if (activeSection === 'overview') {
                     await loadDashboardData();
                     // Restore API key visibility state after refresh
@@ -3124,7 +3004,7 @@
                         }
                         
                         // If we're currently on the sessions page, reload it
-                        const currentSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                        const currentSection = document.querySelector('.sv2-link.active')?.getAttribute('data-section');
                         if (currentSection === 'sessions') {
                             setTimeout(() => {
                                 loadSectionPage('sessions');
@@ -3705,7 +3585,7 @@
                             }, 2000);
                             
                             // Get current active section before refreshing
-                            const activeSection = document.querySelector('.sidebar-nav .nav-link.active')?.getAttribute('data-section');
+                            const activeSection = document.querySelector('.sv2-link.active')?.getAttribute('data-section');
                             
                             // Refresh sessions data immediately
                             if (typeof window.loadSessionsData === 'function') {
