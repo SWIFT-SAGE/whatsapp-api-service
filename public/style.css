@@ -3810,8 +3810,8 @@ footer a:hover .fa-lg {
 .sidebar-v2 {
   width: 240px;
   min-height: 100vh;
-  background: #fff;
-  border-right: 1px solid rgba(0,0,0,0.07);
+  background: #1B3A2D;
+  border-right: none;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -3820,49 +3820,51 @@ footer a:hover .fa-lg {
   z-index: 200;
   transition: width 0.28s cubic-bezier(0.4,0,0.2,1), box-shadow 0.28s;
   overflow: hidden;
-  box-shadow: 2px 0 16px rgba(0,0,0,0.06);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.18);
 }
 .sidebar-v2.collapsed {
   width: 64px;
 }
 [data-color-scheme="dark"] .sidebar-v2 {
-  background: #1a1f2e;
-  border-right-color: rgba(255,255,255,0.07);
-  box-shadow: 2px 0 20px rgba(0,0,0,0.3);
+  background: #142A1F;
+  border-right-color: rgba(255,255,255,0.05);
+  box-shadow: 4px 0 24px rgba(0,0,0,0.4);
 }
 
 /* Brand header */
 .sidebar-v2 .sv2-header {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  height: 64px;
-  min-height: 64px;
-  background: var(--gradient-dark, linear-gradient(135deg, #075E54 0%, #1a4a50 100%));
+  padding: 0 14px;
+  height: 68px;
+  min-height: 68px;
+  background: rgba(0,0,0,0.2);
   overflow: hidden;
   flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .sidebar-v2 .sv2-logo-icon {
-  width: 40px;
-  height: 40px;
-  min-width: 40px;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
   border-radius: 10px;
-  background: rgba(255,255,255,0.15);
+  background: #25D366;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: #25D366;
+  font-size: 17px;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37,211,102,0.4);
 }
 .sidebar-v2 .sv2-brand-text {
-  margin-left: 12px;
+  margin-left: 10px;
   white-space: nowrap;
   overflow: hidden;
   opacity: 1;
   transition: opacity 0.2s, margin 0.28s;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
   color: #fff;
 }
 .sidebar-v2.collapsed .sv2-brand-text {
@@ -3874,59 +3876,58 @@ footer a:hover .fa-lg {
 /* Collapse toggle button */
 .sidebar-v2 .sv2-collapse-btn {
   position: absolute;
-  top: 16px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  top: 18px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   background: rgba(255,255,255,0.12);
   border: none;
-  color: #fff;
+  color: rgba(255,255,255,0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 11px;
   transition: background 0.2s, transform 0.28s;
   flex-shrink: 0;
 }
-.sidebar-v2 .sv2-collapse-btn:hover { background: rgba(255,255,255,0.2); }
-.sidebar-v2.collapsed .sv2-collapse-btn { transform: rotate(180deg); right: 16px; }
+.sidebar-v2 .sv2-collapse-btn:hover { background: rgba(255,255,255,0.22); }
+.sidebar-v2.collapsed .sv2-collapse-btn { transform: rotate(180deg); right: 18px; }
 
 /* Nav items */
 .sidebar-v2 .sv2-nav {
-  padding: 12px 8px;
+  padding: 16px 10px 12px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
 }
 .sidebar-v2 .sv2-nav::-webkit-scrollbar { width: 4px; }
-.sidebar-v2 .sv2-nav::-webkit-scrollbar-thumb { background: rgba(37,211,102,0.25); border-radius: 2px; }
+.sidebar-v2 .sv2-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
 
 .sv2-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 10px 12px;
-  border-radius: 10px;
-  color: #555;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.65);
   text-decoration: none;
   font-size: 13.5px;
   font-weight: 500;
   white-space: nowrap;
-  transition: background 0.18s, color 0.18s, transform 0.18s;
+  transition: background 0.18s, color 0.18s;
   margin-bottom: 2px;
   position: relative;
   overflow: hidden;
 }
 .sv2-link:hover {
-  background: rgba(37,211,102,0.1);
-  color: #25D366;
-  transform: translateX(2px);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
 }
 .sv2-link.active {
-  background: linear-gradient(135deg, rgba(37,211,102,0.15) 0%, rgba(33,128,141,0.15) 100%);
-  color: #1ea952;
+  background: rgba(37,211,102,0.2);
+  color: #fff;
   font-weight: 600;
 }
 .sv2-link.active::before {
@@ -3935,27 +3936,30 @@ footer a:hover .fa-lg {
   left: 0; top: 20%; bottom: 20%;
   width: 3px;
   border-radius: 0 2px 2px 0;
-  background: var(--wa-green, #25D366);
+  background: #25D366;
 }
-[data-color-scheme="dark"] .sv2-link { color: #aaa; }
-[data-color-scheme="dark"] .sv2-link:hover { background: rgba(37,211,102,0.12); color: #25D366; }
-[data-color-scheme="dark"] .sv2-link.active { background: rgba(37,211,102,0.15); color: #25D366; }
+[data-color-scheme="dark"] .sv2-link { color: rgba(255,255,255,0.6); }
+[data-color-scheme="dark"] .sv2-link:hover { background: rgba(255,255,255,0.1); color: #fff; }
+[data-color-scheme="dark"] .sv2-link.active { background: rgba(37,211,102,0.2); color: #fff; }
 
 .sv2-link .sv2-icon {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
   background: transparent;
+  color: rgba(255,255,255,0.6);
   transition: background 0.18s, color 0.18s;
 }
-.sv2-link:hover .sv2-icon,
+.sv2-link:hover .sv2-icon {
+  color: #fff;
+}
 .sv2-link.active .sv2-icon {
-  background: rgba(37,211,102,0.12);
+  background: rgba(37,211,102,0.25);
   color: #25D366;
 }
 
@@ -3982,7 +3986,7 @@ footer a:hover .fa-lg {
   left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  background: #222;
+  background: #1B3A2D;
   color: #fff;
   padding: 5px 10px;
   border-radius: 6px;
@@ -3990,38 +3994,47 @@ footer a:hover .fa-lg {
   white-space: nowrap;
   z-index: 9999;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Section divider */
 .sv2-divider {
   height: 1px;
-  background: rgba(0,0,0,0.07);
-  margin: 8px 8px;
+  background: rgba(255,255,255,0.08);
+  margin: 8px 10px;
   flex-shrink: 0;
 }
-[data-color-scheme="dark"] .sv2-divider { background: rgba(255,255,255,0.07); }
+[data-color-scheme="dark"] .sv2-divider { background: rgba(255,255,255,0.06); }
 
 /* Bottom footer area */
 .sidebar-v2 .sv2-footer {
-  padding: 12px 8px;
-  border-top: 1px solid rgba(0,0,0,0.07);
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
   flex-shrink: 0;
   overflow: hidden;
 }
-[data-color-scheme="dark"] .sidebar-v2 .sv2-footer { border-top-color: rgba(255,255,255,0.07); }
+[data-color-scheme="dark"] .sidebar-v2 .sv2-footer { border-top-color: rgba(255,255,255,0.06); }
 
 /* Main content shifts with sidebar */
 .dashboard-container-v2 {
   display: flex;
   min-height: 100vh;
+  background: #f7f8fa;
+}
+[data-color-scheme="dark"] .dashboard-container-v2 {
+  background: #0f1a14;
 }
 .dashboard-main-v2 {
   margin-left: 240px;
   flex: 1;
   transition: margin-left 0.28s cubic-bezier(0.4,0,0.2,1);
-  padding: 24px;
+  padding: 0;
   min-width: 0;
+  background: #f7f8fa;
+}
+[data-color-scheme="dark"] .dashboard-main-v2 {
+  background: #0f1a14;
 }
 .sidebar-v2.collapsed ~ .dashboard-main-v2,
 body.sidebar-collapsed .dashboard-main-v2 {
@@ -4044,7 +4057,9 @@ body.sidebar-collapsed .dashboard-main-v2 {
   .sidebar-v2 .sv2-brand-text { opacity: 1 !important; margin-left: 12px !important; }
   .sidebar-v2 .sv2-link { padding: 10px 12px !important; justify-content: flex-start !important; }
   .sidebar-v2 .sv2-collapse-btn { display: none; }
-  .dashboard-main-v2 { margin-left: 0 !important; padding: 80px 16px 16px; }
+  .dashboard-main-v2 { margin-left: 0 !important; padding: 0; }
+  #dashboard-overview .bmd-body { padding: 16px; }
+  #dashboard-overview .bmd-topbar { padding: 60px 16px 14px; }
   .sv2-mobile-toggle {
     position: fixed;
     top: 14px;
@@ -4077,4 +4092,9 @@ body.sidebar-collapsed .dashboard-main-v2 {
 @media (min-width: 992px) {
   .sv2-mobile-toggle, .sv2-mobile-overlay { display: none !important; }
 }
+}
+
+/* ── Dashboard content padding for non-overview sections ── */
+#dashboard-content-container > .dashboard-section:not(#dashboard-overview) {
+  padding: 28px;
 }

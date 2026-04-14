@@ -879,7 +879,6 @@ const startServer = async () => {
           setTimeout(() => reject(new Error('Database connection timeout (60s)')), 60000)
         )
       ]);
-      logger.info('✅ Database connected successfully');
       databaseConnected = true;
       
       // Initialize WhatsApp service after database connection
